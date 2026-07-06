@@ -1,0 +1,3264 @@
+{
+ "generatedFrom": "Sample fallback (data guru dianonimkan). Data asli dibaca live dari Google Sheets di produksi.",
+ "openProjects": [
+  {
+   "id": "ASN-11",
+   "platform": "ASN",
+   "subtes": "Verbal Analogi - 2 Kata",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 25,
+   "sisa": 25
+  },
+  {
+   "id": "ASN-12",
+   "platform": "ASN",
+   "subtes": "Verbal Analogi - Kalimat",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 25,
+   "sisa": 25
+  },
+  {
+   "id": "ASN-13",
+   "platform": "ASN",
+   "subtes": "Verbal Silogisme - 2 Premis - Logika Kondisional",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 9,
+   "sisa": 9
+  },
+  {
+   "id": "ASN-14",
+   "platform": "ASN",
+   "subtes": "Verbal Silogisme - 2 Premis - Ekuivalensi Logika",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 11,
+   "sisa": 11
+  },
+  {
+   "id": "ASN-15",
+   "platform": "ASN",
+   "subtes": "Verbal Silogisme - Logika Kuantor",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 25,
+   "sisa": 25
+  },
+  {
+   "id": "ASN-16",
+   "platform": "ASN",
+   "subtes": "Verbal Analitis - Susunan & Posisi",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 12,
+   "sisa": 12
+  },
+  {
+   "id": "ASN-17",
+   "platform": "ASN",
+   "subtes": "Verbal Analitis - Urutan & Peringkat",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 7,
+   "sisa": 7
+  },
+  {
+   "id": "ASN-18",
+   "platform": "ASN",
+   "subtes": "Verbal Analitis - Jadwal",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 7,
+   "sisa": 7
+  },
+  {
+   "id": "ASN-19",
+   "platform": "ASN",
+   "subtes": "Verbal Analitis - Rute & Jalur",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 9,
+   "sisa": 9
+  },
+  {
+   "id": "ASN-20",
+   "platform": "ASN",
+   "subtes": "Verbal Analitis - Logika Pernyataan",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 6,
+   "sisa": 6
+  },
+  {
+   "id": "ASN-21",
+   "platform": "ASN",
+   "subtes": "Verbal Analitis - Distribusi & kategori",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 9,
+   "sisa": 9
+  },
+  {
+   "id": "ASN-22",
+   "platform": "ASN",
+   "subtes": "Numerik Berhitung Sederhana",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 45,
+   "sisa": 45
+  },
+  {
+   "id": "ASN-23",
+   "platform": "ASN",
+   "subtes": "Numerik Deret Angka - 1 Towew (1 Larik)",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 11,
+   "sisa": 11
+  },
+  {
+   "id": "ASN-24",
+   "platform": "ASN",
+   "subtes": "Numerik Deret Angka - 2 Towew (2 Larik)",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 8,
+   "sisa": 8
+  },
+  {
+   "id": "ASN-25",
+   "platform": "ASN",
+   "subtes": "Numerik Deret Angka - 3 Towew (3 Larik)",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 6,
+   "sisa": 6
+  },
+  {
+   "id": "ASN-26",
+   "platform": "ASN",
+   "subtes": "Numerik Deret Angka - Hijab",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 8,
+   "sisa": 8
+  },
+  {
+   "id": "ASN-27",
+   "platform": "ASN",
+   "subtes": "Numerik Deret Angka - Fibonacci",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 4,
+   "sisa": 4
+  },
+  {
+   "id": "ASN-28",
+   "platform": "ASN",
+   "subtes": "Numerik Deret Angka - Campuran",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 4,
+   "sisa": 4
+  },
+  {
+   "id": "ASN-29",
+   "platform": "ASN",
+   "subtes": "Numerik Deret Angka - Template",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 4,
+   "sisa": 4
+  },
+  {
+   "id": "ASN-30",
+   "platform": "ASN",
+   "subtes": "Numerik Soal Cerita - Perbandingan Senilai dan Berbalik",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 3,
+   "sisa": 3
+  },
+  {
+   "id": "ASN-31",
+   "platform": "ASN",
+   "subtes": "Numerik Soal Cerita - Polemik Proyekk",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 11,
+   "sisa": 11
+  },
+  {
+   "id": "ASN-32",
+   "platform": "ASN",
+   "subtes": "Numerik Soal Cerita - Tabel",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 11,
+   "sisa": 11
+  },
+  {
+   "id": "ASN-33",
+   "platform": "ASN",
+   "subtes": "Numerik Soal Cerita - Rata-rata",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 8,
+   "sisa": 8
+  },
+  {
+   "id": "ASN-34",
+   "platform": "ASN",
+   "subtes": "Numerik Soal Cerita - JKW (Jarak, Kecepatan, Waktu)",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 8,
+   "sisa": 8
+  },
+  {
+   "id": "ASN-35",
+   "platform": "ASN",
+   "subtes": "Numerik Soal Cerita - VDW (Volume, Debit, Waktu)",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 8,
+   "sisa": 8
+  },
+  {
+   "id": "ASN-36",
+   "platform": "ASN",
+   "subtes": "Numerik Soal Cerita - Aritmatika Sosial",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 11,
+   "sisa": 11
+  },
+  {
+   "id": "ASN-37",
+   "platform": "ASN",
+   "subtes": "Numerik Perbandingan Kuantitatif - Tabel dan Hubungan 2 Variabel + Berhitung",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 23,
+   "sisa": 23
+  },
+  {
+   "id": "ASN-38",
+   "platform": "ASN",
+   "subtes": "Numerik Perbandingan Kuantitatif - Tabel dan Hubungan 2 Variabel + Soal Cerita",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 22,
+   "sisa": 22
+  },
+  {
+   "id": "ASN-39",
+   "platform": "ASN",
+   "subtes": "Figural Analogi",
+   "output": "Lengkap",
+   "harga": 13000,
+   "kebutuhan": 40,
+   "sisa": 40
+  },
+  {
+   "id": "ASN-40",
+   "platform": "ASN",
+   "subtes": "Figural Ketidaksamaan",
+   "output": "Lengkap",
+   "harga": 13000,
+   "kebutuhan": 40,
+   "sisa": 40
+  },
+  {
+   "id": "ASN-41",
+   "platform": "ASN",
+   "subtes": "Figural Serial - The Next Box",
+   "output": "Lengkap",
+   "harga": 13000,
+   "kebutuhan": 25,
+   "sisa": 25
+  },
+  {
+   "id": "ASN-42",
+   "platform": "ASN",
+   "subtes": "Figural Serial - Kotak 3x3 (9 Kotak)",
+   "output": "Lengkap",
+   "harga": 13000,
+   "kebutuhan": 30,
+   "sisa": 30
+  },
+  {
+   "id": "ASN-43",
+   "platform": "ASN",
+   "subtes": "TWK Bahasa Negara - Ide pokok atau gagasan utama",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 11,
+   "sisa": 11
+  },
+  {
+   "id": "ASN-44",
+   "platform": "ASN",
+   "subtes": "TWK Bahasa Negara - Simpulan paragraf",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 11,
+   "sisa": 11
+  },
+  {
+   "id": "ASN-45",
+   "platform": "ASN",
+   "subtes": "TWK Bahasa Negara - Kalimat efektif dan tidak efektif",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 8,
+   "sisa": 8
+  },
+  {
+   "id": "ASN-46",
+   "platform": "ASN",
+   "subtes": "TWK Bahasa Negara - Kata baku dan tidak baku",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 8,
+   "sisa": 8
+  },
+  {
+   "id": "ASN-47",
+   "platform": "ASN",
+   "subtes": "TWK Bahasa Negara - Penulisan tanda baca",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 11,
+   "sisa": 11
+  },
+  {
+   "id": "ASN-48",
+   "platform": "ASN",
+   "subtes": "TWK Bahasa Negara - Penulisan Ejaan Bahasa Indonesia yang Disempurnakan (EYD)",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 11,
+   "sisa": 11
+  },
+  {
+   "id": "ASN-49",
+   "platform": "ASN",
+   "subtes": "TWK Nasionalisme",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 60,
+   "sisa": 60
+  },
+  {
+   "id": "ASN-50",
+   "platform": "ASN",
+   "subtes": "TWK Integritas",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 60,
+   "sisa": 60
+  },
+  {
+   "id": "ASN-51",
+   "platform": "ASN",
+   "subtes": "TWK Bela Negara",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 60,
+   "sisa": 60
+  },
+  {
+   "id": "ASN-52",
+   "platform": "ASN",
+   "subtes": "TWK Pilar Negara",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 60,
+   "sisa": 60
+  },
+  {
+   "id": "ASN-53",
+   "platform": "ASN",
+   "subtes": "TKP Pelayanan Publik",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 70,
+   "sisa": 70
+  },
+  {
+   "id": "ASN-54",
+   "platform": "ASN",
+   "subtes": "TKP Jejaring Kerja",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 70,
+   "sisa": 70
+  },
+  {
+   "id": "ASN-55",
+   "platform": "ASN",
+   "subtes": "TKP Sosial Budaya",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 70,
+   "sisa": 70
+  },
+  {
+   "id": "ASN-56",
+   "platform": "ASN",
+   "subtes": "TKP TIK",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 65,
+   "sisa": 65
+  },
+  {
+   "id": "ASN-57",
+   "platform": "ASN",
+   "subtes": "TKP Profesionalisme",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 65,
+   "sisa": 65
+  },
+  {
+   "id": "ASN-58",
+   "platform": "ASN",
+   "subtes": "TKP Anti Radikalisme",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 65,
+   "sisa": 65
+  },
+  {
+   "id": "Bappenas-2",
+   "platform": "Bappenas",
+   "subtes": "Verbal Sinonim",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 170,
+   "sisa": 170
+  },
+  {
+   "id": "Bappenas-3",
+   "platform": "Bappenas",
+   "subtes": "Verbal Antonim",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 90,
+   "sisa": 90
+  },
+  {
+   "id": "Bappenas-4",
+   "platform": "Bappenas",
+   "subtes": "Verbal Analogi - 2 Kata",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 130,
+   "sisa": 130
+  },
+  {
+   "id": "Bappenas-5",
+   "platform": "Bappenas",
+   "subtes": "Varbal Pemahaman Bacaan",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 90,
+   "sisa": 90
+  },
+  {
+   "id": "Bappenas-6",
+   "platform": "Bappenas",
+   "subtes": "Hitung Berhitung - Berhitung",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 31,
+   "sisa": 31
+  },
+  {
+   "id": "Bappenas-7",
+   "platform": "Bappenas",
+   "subtes": "Hitung Berhitung - Aljabar",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 19,
+   "sisa": 19
+  },
+  {
+   "id": "Bappenas-8",
+   "platform": "Bappenas",
+   "subtes": "Hitung Berhitung - Persamaan",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 11,
+   "sisa": 11
+  },
+  {
+   "id": "Bappenas-9",
+   "platform": "Bappenas",
+   "subtes": "Hitung Berhitung - Fungsi",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 7,
+   "sisa": 7
+  },
+  {
+   "id": "Bappenas-10",
+   "platform": "Bappenas",
+   "subtes": "Hitung Berhitung - Operasi Biner",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 7,
+   "sisa": 7
+  },
+  {
+   "id": "Bappenas-11",
+   "platform": "Bappenas",
+   "subtes": "Hitung Berhitung - JKW (Jarak, Kecepatan, Waktu)",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 7,
+   "sisa": 7
+  },
+  {
+   "id": "Bappenas-12",
+   "platform": "Bappenas",
+   "subtes": "Hitung Berhitung - VDW (Volume, Debit, Waktu)",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 7,
+   "sisa": 7
+  },
+  {
+   "id": "Bappenas-13",
+   "platform": "Bappenas",
+   "subtes": "Hitung Berhitung - Geometri",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 11,
+   "sisa": 11
+  },
+  {
+   "id": "Bappenas-14",
+   "platform": "Bappenas",
+   "subtes": "Hitung Berhitung - Analitis",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 30,
+   "sisa": 30
+  },
+  {
+   "id": "Bappenas-15",
+   "platform": "Bappenas",
+   "subtes": "Deret Angka - 1 Towew (1 Larik)",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 29,
+   "sisa": 29
+  },
+  {
+   "id": "Bappenas-16",
+   "platform": "Bappenas",
+   "subtes": "Deret Angka - 2 Towew (2 Larik)",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 18,
+   "sisa": 18
+  },
+  {
+   "id": "Bappenas-17",
+   "platform": "Bappenas",
+   "subtes": "Deret Angka - 3 Towew (3 Larik)",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 7,
+   "sisa": 7
+  },
+  {
+   "id": "Bappenas-18",
+   "platform": "Bappenas",
+   "subtes": "Deret Angka - Hijab",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 15,
+   "sisa": 15
+  },
+  {
+   "id": "Bappenas-19",
+   "platform": "Bappenas",
+   "subtes": "Deret Angka - Fibonacci",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 7,
+   "sisa": 7
+  },
+  {
+   "id": "Bappenas-20",
+   "platform": "Bappenas",
+   "subtes": "Deret Angka - Campuran",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 15,
+   "sisa": 15
+  },
+  {
+   "id": "Bappenas-21",
+   "platform": "Bappenas",
+   "subtes": "Deret Angka - Template",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 7,
+   "sisa": 7
+  },
+  {
+   "id": "Bappenas-22",
+   "platform": "Bappenas",
+   "subtes": "Deret Non-Angka - 1 Towew (1 Larik)",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 38,
+   "sisa": 38
+  },
+  {
+   "id": "Bappenas-23",
+   "platform": "Bappenas",
+   "subtes": "Matriks Deret",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 54,
+   "sisa": 54
+  },
+  {
+   "id": "Bappenas-24",
+   "platform": "Bappenas",
+   "subtes": "Komparasi Kuantitatif - Perbandingan Kuantitatif",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 48,
+   "sisa": 48
+  },
+  {
+   "id": "Bappenas-25",
+   "platform": "Bappenas",
+   "subtes": "Komparasi Kuantitatif - Pertidaksamaan",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 37,
+   "sisa": 37
+  },
+  {
+   "id": "Bappenas-26",
+   "platform": "Bappenas",
+   "subtes": "Komparasi Kuantitatif - Analitis - Perbandingan",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 7,
+   "sisa": 7
+  },
+  {
+   "id": "Bappenas-27",
+   "platform": "Bappenas",
+   "subtes": "Komparasi Kuantitatif - Geometri",
+   "output": "Lengkap",
+   "harga": 13000,
+   "kebutuhan": 30,
+   "sisa": 30
+  },
+  {
+   "id": "Bappenas-28",
+   "platform": "Bappenas",
+   "subtes": "Soal Cerita - Aljabar",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 7,
+   "sisa": 7
+  },
+  {
+   "id": "Bappenas-29",
+   "platform": "Bappenas",
+   "subtes": "Soal Cerita - Aritmatika Sosial",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 29,
+   "sisa": 29
+  },
+  {
+   "id": "Bappenas-30",
+   "platform": "Bappenas",
+   "subtes": "Soal Cerita - Diagram Venn",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 25,
+   "sisa": 25
+  },
+  {
+   "id": "Bappenas-31",
+   "platform": "Bappenas",
+   "subtes": "Soal Cerita - Geometri",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 25,
+   "sisa": 25
+  },
+  {
+   "id": "Bappenas-32",
+   "platform": "Bappenas",
+   "subtes": "Verbal Silogisme - Logika Kuantor",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 32,
+   "sisa": 32
+  },
+  {
+   "id": "Bappenas-33",
+   "platform": "Bappenas",
+   "subtes": "Verbal Silogisme - Logika Kuantor - Bentuk Ekuivalen dan Ingkaran",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 29,
+   "sisa": 29
+  },
+  {
+   "id": "Bappenas-34",
+   "platform": "Bappenas",
+   "subtes": "Verbal Silogisme - Logika Kuantor - Periksa kebenaran",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 29,
+   "sisa": 29
+  },
+  {
+   "id": "Bappenas-35",
+   "platform": "Bappenas",
+   "subtes": "Verbal Analitis - Susunan & Posisi",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 7,
+   "sisa": 7
+  },
+  {
+   "id": "Bappenas-36",
+   "platform": "Bappenas",
+   "subtes": "Verbal Analitis - Urutan & Peringkat",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 36,
+   "sisa": 36
+  },
+  {
+   "id": "Bappenas-37",
+   "platform": "Bappenas",
+   "subtes": "Verbal Analitis - Jadwal",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 18,
+   "sisa": 18
+  },
+  {
+   "id": "Bappenas-38",
+   "platform": "Bappenas",
+   "subtes": "Verbal Analitis - Rute & Jalur",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 7,
+   "sisa": 7
+  },
+  {
+   "id": "Bappenas-39",
+   "platform": "Bappenas",
+   "subtes": "Verbal Analitis - Logika Pernyataan",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 11,
+   "sisa": 11
+  },
+  {
+   "id": "Bappenas-40",
+   "platform": "Bappenas",
+   "subtes": "Verbal Analitis - Distribusi & kategori",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 11,
+   "sisa": 11
+  },
+  {
+   "id": "Bappenas-41",
+   "platform": "Bappenas",
+   "subtes": "Penalaran Keruangan - Rotasi Kubus",
+   "output": "Lengkap",
+   "harga": 13000,
+   "kebutuhan": 32,
+   "sisa": 32
+  },
+  {
+   "id": "Bappenas-42",
+   "platform": "Bappenas",
+   "subtes": "Penalaran Keruangan - Visualisasi Kubus",
+   "output": "Lengkap",
+   "harga": 13000,
+   "kebutuhan": 29,
+   "sisa": 29
+  },
+  {
+   "id": "Bappenas-43",
+   "platform": "Bappenas",
+   "subtes": "Penalaran Keruangan - Jaring-jaring Kubus",
+   "output": "Lengkap",
+   "harga": 13000,
+   "kebutuhan": 29,
+   "sisa": 29
+  },
+  {
+   "id": "Bappenas-44",
+   "platform": "Bappenas",
+   "subtes": "Figural Serial - The Next Box",
+   "output": "Lengkap",
+   "harga": 13000,
+   "kebutuhan": 75,
+   "sisa": 75
+  },
+  {
+   "id": "Bappenas-45",
+   "platform": "Bappenas",
+   "subtes": "Figural Serial - Kotak 3x3 (9 Kotak)",
+   "output": "Lengkap",
+   "harga": 13000,
+   "kebutuhan": 55,
+   "sisa": 55
+  }
+ ],
+ "masterProjects": [
+  {
+   "id": "KDKMP-1",
+   "platform": "BUMN",
+   "subtes": "Bentuk Geometri",
+   "output": "Soal & Pembahasan",
+   "harga": 5000,
+   "kebutuhan": 140,
+   "sisa": 0
+  },
+  {
+   "id": "KDKMP-2",
+   "platform": "BUMN",
+   "subtes": "Potongan Bentuk",
+   "output": "Soal & Pembahasan",
+   "harga": 5000,
+   "kebutuhan": 75,
+   "sisa": 0
+  },
+  {
+   "id": "ASN-1",
+   "platform": "ASN",
+   "subtes": "Figural 9 kotak",
+   "output": "Lengkap",
+   "harga": 17000,
+   "kebutuhan": 20,
+   "sisa": 0
+  },
+  {
+   "id": "Bappenas-1",
+   "platform": "Bappenas",
+   "subtes": "FR TPA Bappenas",
+   "output": "Video Pembahasan",
+   "harga": 4000,
+   "kebutuhan": 250,
+   "sisa": 0
+  },
+  {
+   "id": "ASN-2",
+   "platform": "ASN",
+   "subtes": "Numerik Berhitung",
+   "output": "Video Pembahasan",
+   "harga": 3000,
+   "kebutuhan": 100,
+   "sisa": 0
+  },
+  {
+   "id": "ASN-3",
+   "platform": "ASN",
+   "subtes": "Numerik Soal Cerita - Polemik Proyek",
+   "output": "Video Pembahasan",
+   "harga": 3000,
+   "kebutuhan": 75,
+   "sisa": 0
+  },
+  {
+   "id": "ASN-4",
+   "platform": "ASN",
+   "subtes": "Numerik Soal Cerita - Volume, Debit, Waktu",
+   "output": "Video Pembahasan",
+   "harga": 3000,
+   "kebutuhan": 40,
+   "sisa": 0
+  },
+  {
+   "id": "ASN-5",
+   "platform": "ASN",
+   "subtes": "Figural Analogi",
+   "output": "Lengkap",
+   "harga": 13000,
+   "kebutuhan": 35,
+   "sisa": 0
+  },
+  {
+   "id": "ASN-6",
+   "platform": "ASN",
+   "subtes": "Figural Ketidaksamaan",
+   "output": "Lengkap",
+   "harga": 13000,
+   "kebutuhan": 10,
+   "sisa": 0
+  },
+  {
+   "id": "ASN-7",
+   "platform": "ASN",
+   "subtes": "Figural Serial - The Next Box",
+   "output": "Lengkap",
+   "harga": 13000,
+   "kebutuhan": 20,
+   "sisa": 0
+  },
+  {
+   "id": "ASN-8",
+   "platform": "ASN",
+   "subtes": "Deret Angka",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 40,
+   "sisa": 0
+  },
+  {
+   "id": "ASN-9",
+   "platform": "ASN",
+   "subtes": "Verbal Analitis",
+   "output": "Video Pembahasan",
+   "harga": 3000,
+   "kebutuhan": 75,
+   "sisa": 0
+  },
+  {
+   "id": "ASN-10",
+   "platform": "ASN",
+   "subtes": "Numerik Perbandingan Kuantitatif",
+   "output": "Video Pembahasan",
+   "harga": 3000,
+   "kebutuhan": 91,
+   "sisa": 91
+  },
+  {
+   "id": "ASN-Bappenas-1",
+   "platform": "ASN, Bappenas",
+   "subtes": "Verbal Analogi - 2 Kata",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 195,
+   "sisa": 195
+  },
+  {
+   "id": "ASN-11",
+   "platform": "ASN",
+   "subtes": "Verbal Analogi - Kalimat",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 45,
+   "sisa": 45
+  },
+  {
+   "id": "ASN-12",
+   "platform": "ASN",
+   "subtes": "Verbal Silogisme - 2 Premis - Logika Kondisional",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 15,
+   "sisa": 15
+  },
+  {
+   "id": "ASN-13",
+   "platform": "ASN",
+   "subtes": "Verbal Silogisme - 2 Premis - Ekuivalensi Logika",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 20,
+   "sisa": 20
+  },
+  {
+   "id": "ASN-Bappenas-2",
+   "platform": "ASN, Bappenas",
+   "subtes": "Verbal Silogisme - Logika Kuantor",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 85,
+   "sisa": 85
+  },
+  {
+   "id": "ASN-14",
+   "platform": "ASN",
+   "subtes": "Verbal Analitis - Susunan & Posisi",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 20,
+   "sisa": 20
+  },
+  {
+   "id": "ASN-15",
+   "platform": "ASN",
+   "subtes": "Verbal Analitis - Urutan & Peringkat",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 12,
+   "sisa": 12
+  },
+  {
+   "id": "ASN-16",
+   "platform": "ASN",
+   "subtes": "Verbal Analitis - Jadwal",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 12,
+   "sisa": 12
+  },
+  {
+   "id": "ASN-17",
+   "platform": "ASN",
+   "subtes": "Verbal Analitis - Rute & Jalur",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 17,
+   "sisa": 17
+  },
+  {
+   "id": "ASN-18",
+   "platform": "ASN",
+   "subtes": "Verbal Analitis - Logika Pernyataan",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 12,
+   "sisa": 12
+  },
+  {
+   "id": "ASN-19",
+   "platform": "ASN",
+   "subtes": "Verbal Analitis - Distribusi & kategori",
+   "output": "Lengkap",
+   "harga": 9000,
+   "kebutuhan": 17,
+   "sisa": 17
+  },
+  {
+   "id": "ASN-20",
+   "platform": "ASN",
+   "subtes": "Numerik Berhitung Sederhana",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 80,
+   "sisa": 80
+  },
+  {
+   "id": "ASN-Bappenas-3",
+   "platform": "ASN, Bappenas",
+   "subtes": "Numerik Deret Angka - 1 Towew (1 Larik)",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 55,
+   "sisa": 55
+  },
+  {
+   "id": "ASN-Bappenas-4",
+   "platform": "ASN, Bappenas",
+   "subtes": "Numerik Deret Angka - 2 Towew (2 Larik)",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 37,
+   "sisa": 37
+  },
+  {
+   "id": "ASN-Bappenas-5",
+   "platform": "ASN, Bappenas",
+   "subtes": "Numerik Deret Angka - 3 Towew (3 Larik)",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 19,
+   "sisa": 19
+  },
+  {
+   "id": "ASN-Bappenas-6",
+   "platform": "ASN, Bappenas",
+   "subtes": "Numerik Deret Angka - Hijab",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 28,
+   "sisa": 28
+  },
+  {
+   "id": "ASN-Bappenas-7",
+   "platform": "ASN, Bappenas",
+   "subtes": "Numerik Deret Angka - Fibonacci",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 17,
+   "sisa": 17
+  },
+  {
+   "id": "ASN-Bappenas-8",
+   "platform": "ASN, Bappenas",
+   "subtes": "Numerik Deret Angka - Campuran",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 25,
+   "sisa": 25
+  },
+  {
+   "id": "ASN-Bappenas-9",
+   "platform": "ASN, Bappenas",
+   "subtes": "Numerik Deret Angka - Template",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 17,
+   "sisa": 17
+  },
+  {
+   "id": "ASN-21",
+   "platform": "ASN",
+   "subtes": "Numerik Soal Cerita - Perbandingan Senilai dan Berbalik",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 5,
+   "sisa": 5
+  },
+  {
+   "id": "ASN-22",
+   "platform": "ASN",
+   "subtes": "Numerik Soal Cerita - Polemik Proyekk",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 20,
+   "sisa": 20
+  },
+  {
+   "id": "ASN-23",
+   "platform": "ASN",
+   "subtes": "Numerik Soal Cerita - Tabel",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 20,
+   "sisa": 20
+  },
+  {
+   "id": "ASN-24",
+   "platform": "ASN",
+   "subtes": "Numerik Soal Cerita - Rata-rata",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 15,
+   "sisa": 15
+  },
+  {
+   "id": "ASN-25",
+   "platform": "ASN",
+   "subtes": "Numerik Soal Cerita - JKW (Jarak, Kecepatan, Waktu)",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 15,
+   "sisa": 15
+  },
+  {
+   "id": "ASN-26",
+   "platform": "ASN",
+   "subtes": "Numerik Soal Cerita - VDW (Volume, Debit, Waktu)",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 15,
+   "sisa": 15
+  },
+  {
+   "id": "ASN-Bappenas-10",
+   "platform": "ASN, Bappenas",
+   "subtes": "Numerik Soal Cerita - Aritmatika Sosial",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 55,
+   "sisa": 55
+  },
+  {
+   "id": "ASN-27",
+   "platform": "ASN",
+   "subtes": "Numerik Perbandingan Kuantitatif - Tabel dan Hubungan 2 Variabel + Berhitung",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 40,
+   "sisa": 40
+  },
+  {
+   "id": "ASN-28",
+   "platform": "ASN",
+   "subtes": "Numerik Perbandingan Kuantitatif - Tabel dan Hubungan 2 Variabel + Soal Cerita",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 40,
+   "sisa": 40
+  },
+  {
+   "id": "ASN-29",
+   "platform": "ASN",
+   "subtes": "Figural Analogii",
+   "output": "Lengkap",
+   "harga": 13000,
+   "kebutuhan": 70,
+   "sisa": 70
+  },
+  {
+   "id": "ASN-30",
+   "platform": "ASN",
+   "subtes": "Figural Ketidaksamaann",
+   "output": "Lengkap",
+   "harga": 13000,
+   "kebutuhan": 70,
+   "sisa": 70
+  },
+  {
+   "id": "ASN-Bappenas-11",
+   "platform": "ASN, Bappenas",
+   "subtes": "Figural Serial - The Next Boxx",
+   "output": "Lengkap",
+   "harga": 13000,
+   "kebutuhan": 130,
+   "sisa": 130
+  },
+  {
+   "id": "ASN-Bappenas-12",
+   "platform": "ASN, Bappenas",
+   "subtes": "Figural Serial - Kotak 3x3 (9 Kotak)",
+   "output": "Lengkap",
+   "harga": 13000,
+   "kebutuhan": 120,
+   "sisa": 100
+  },
+  {
+   "id": "ASN-31",
+   "platform": "ASN",
+   "subtes": "TWK Bahasa Negara - Ide pokok atau gagasan utama",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 20,
+   "sisa": 20
+  },
+  {
+   "id": "ASN-32",
+   "platform": "ASN",
+   "subtes": "TWK Bahasa Negara - Simpulan paragraf",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 20,
+   "sisa": 20
+  },
+  {
+   "id": "ASN-33",
+   "platform": "ASN",
+   "subtes": "TWK Bahasa Negara - Kalimat efektif dan tidak efektif",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 15,
+   "sisa": 15
+  },
+  {
+   "id": "ASN-34",
+   "platform": "ASN",
+   "subtes": "TWK Bahasa Negara - Kata baku dan tidak baku",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 15,
+   "sisa": 15
+  },
+  {
+   "id": "ASN-35",
+   "platform": "ASN",
+   "subtes": "TWK Bahasa Negara - Penulisan tanda baca",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 20,
+   "sisa": 20
+  },
+  {
+   "id": "ASN-36",
+   "platform": "ASN",
+   "subtes": "TWK Bahasa Negara - Penulisan Ejaan Bahasa Indonesia yang Disempurnakan (EYD)",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 20,
+   "sisa": 20
+  },
+  {
+   "id": "ASN-37",
+   "platform": "ASN",
+   "subtes": "TWK Nasionalisme",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 110,
+   "sisa": 110
+  },
+  {
+   "id": "ASN-38",
+   "platform": "ASN",
+   "subtes": "TWK Integritas",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 110,
+   "sisa": 110
+  },
+  {
+   "id": "ASN-39",
+   "platform": "ASN",
+   "subtes": "TWK Bela Negara",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 110,
+   "sisa": 110
+  },
+  {
+   "id": "ASN-40",
+   "platform": "ASN",
+   "subtes": "TWK Pilar Negara",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 110,
+   "sisa": 110
+  },
+  {
+   "id": "ASN-41",
+   "platform": "ASN",
+   "subtes": "TKP Pelayanan Publik",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 130,
+   "sisa": 130
+  },
+  {
+   "id": "ASN-42",
+   "platform": "ASN",
+   "subtes": "TKP Jejaring Kerja",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 130,
+   "sisa": 130
+  },
+  {
+   "id": "ASN-43",
+   "platform": "ASN",
+   "subtes": "TKP Sosial Budaya",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 130,
+   "sisa": 130
+  },
+  {
+   "id": "ASN-44",
+   "platform": "ASN",
+   "subtes": "TKP TIK",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 120,
+   "sisa": 120
+  },
+  {
+   "id": "ASN-45",
+   "platform": "ASN",
+   "subtes": "TKP Profesionalisme",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 120,
+   "sisa": 120
+  },
+  {
+   "id": "ASN-46",
+   "platform": "ASN",
+   "subtes": "TKP Anti Radikalisme",
+   "output": "Lengkap",
+   "harga": 10000,
+   "kebutuhan": 120,
+   "sisa": 120
+  },
+  {
+   "id": "Bappenas-2",
+   "platform": "Bappenas",
+   "subtes": "Verbal Sinonim",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 190,
+   "sisa": 190
+  },
+  {
+   "id": "Bappenas-3",
+   "platform": "Bappenas",
+   "subtes": "Verbal Antonim",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 110,
+   "sisa": 110
+  },
+  {
+   "id": "Bappenas-4",
+   "platform": "Bappenas",
+   "subtes": "Varbal Pemahaman Bacaan",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 110,
+   "sisa": 110
+  },
+  {
+   "id": "Bappenas-5",
+   "platform": "Bappenas",
+   "subtes": "Hitung Berhitung - Berhitung",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 33,
+   "sisa": 33
+  },
+  {
+   "id": "Bappenas-6",
+   "platform": "Bappenas",
+   "subtes": "Hitung Berhitung - Aljabar",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 21,
+   "sisa": 21
+  },
+  {
+   "id": "Bappenas-7",
+   "platform": "Bappenas",
+   "subtes": "Hitung Berhitung - Persamaan",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 13,
+   "sisa": 13
+  },
+  {
+   "id": "Bappenas-8",
+   "platform": "Bappenas",
+   "subtes": "Hitung Berhitung - Fungsi",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 9,
+   "sisa": 9
+  },
+  {
+   "id": "Bappenas-9",
+   "platform": "Bappenas",
+   "subtes": "Hitung Berhitung - Operasi Biner",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 9,
+   "sisa": 9
+  },
+  {
+   "id": "Bappenas-10",
+   "platform": "Bappenas",
+   "subtes": "Hitung Berhitung - JKW (Jarak, Kecepatan, Waktu)",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 9,
+   "sisa": 9
+  },
+  {
+   "id": "Bappenas-11",
+   "platform": "Bappenas",
+   "subtes": "Hitung Berhitung - VDW (Volume, Debit, Waktu)",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 9,
+   "sisa": 9
+  },
+  {
+   "id": "Bappenas-12",
+   "platform": "Bappenas",
+   "subtes": "Hitung Berhitung - Geometri",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 13,
+   "sisa": 13
+  },
+  {
+   "id": "Bappenas-13",
+   "platform": "Bappenas",
+   "subtes": "Hitung Berhitung - Analitis",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 34,
+   "sisa": 34
+  },
+  {
+   "id": "Bappenas-14",
+   "platform": "Bappenas",
+   "subtes": "Deret Non-Angka - 1 Towew (1 Larik)",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 58,
+   "sisa": 58
+  },
+  {
+   "id": "Bappenas-15",
+   "platform": "Bappenas",
+   "subtes": "Matriks Deret",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 74,
+   "sisa": 74
+  },
+  {
+   "id": "Bappenas-16",
+   "platform": "Bappenas",
+   "subtes": "Komparasi Kuantitatif - Perbandingan Kuantitatif",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 56,
+   "sisa": 56
+  },
+  {
+   "id": "Bappenas-17",
+   "platform": "Bappenas",
+   "subtes": "Komparasi Kuantitatif - Pertidaksamaan",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 43,
+   "sisa": 43
+  },
+  {
+   "id": "Bappenas-18",
+   "platform": "Bappenas",
+   "subtes": "Komparasi Kuantitatif - Analitis - Perbandingan",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 9,
+   "sisa": 9
+  },
+  {
+   "id": "Bappenas-19",
+   "platform": "Bappenas",
+   "subtes": "Komparasi Kuantitatif - Geometri",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 34,
+   "sisa": 34
+  },
+  {
+   "id": "Bappenas-20",
+   "platform": "Bappenas",
+   "subtes": "Soal Cerita - Aljabar",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 9,
+   "sisa": 9
+  },
+  {
+   "id": "Bappenas-21",
+   "platform": "Bappenas",
+   "subtes": "Soal Cerita - Diagram Venn",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 31,
+   "sisa": 31
+  },
+  {
+   "id": "Bappenas-22",
+   "platform": "Bappenas",
+   "subtes": "Soal Cerita - Geometri",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 31,
+   "sisa": 31
+  },
+  {
+   "id": "Bappenas-23",
+   "platform": "Bappenas",
+   "subtes": "Verbal Silogisme - Logika Kuantor - Bentuk Ekuivalen dan Ingkaran",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 35,
+   "sisa": 35
+  },
+  {
+   "id": "Bappenas-24",
+   "platform": "Bappenas",
+   "subtes": "Verbal Silogisme - Logika Kuantor - Periksa kebenaran",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 35,
+   "sisa": 35
+  },
+  {
+   "id": "Bappenas-25",
+   "platform": "Bappenas",
+   "subtes": "Verbal Analitis - Susunan & Posisi",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 9,
+   "sisa": 9
+  },
+  {
+   "id": "Bappenas-26",
+   "platform": "Bappenas",
+   "subtes": "Verbal Analitis - Urutan & Peringkat",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 44,
+   "sisa": 44
+  },
+  {
+   "id": "Bappenas-27",
+   "platform": "Bappenas",
+   "subtes": "Verbal Analitis - Jadwal",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 22,
+   "sisa": 22
+  },
+  {
+   "id": "Bappenas-28",
+   "platform": "Bappenas",
+   "subtes": "Verbal Analitis - Rute & Jalur",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 9,
+   "sisa": 9
+  },
+  {
+   "id": "Bappenas-29",
+   "platform": "Bappenas",
+   "subtes": "Verbal Analitis - Logika Pernyataan",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 13,
+   "sisa": 13
+  },
+  {
+   "id": "Bappenas-30",
+   "platform": "Bappenas",
+   "subtes": "Verbal Analitis - Distribusi & kategori",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 13,
+   "sisa": 13
+  },
+  {
+   "id": "Bappenas-31",
+   "platform": "Bappenas",
+   "subtes": "Penalaran Keruangan - Rotasi Kubus",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 40,
+   "sisa": 40
+  },
+  {
+   "id": "Bappenas-32",
+   "platform": "Bappenas",
+   "subtes": "Penalaran Keruangan - Visualisasi Kubus",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 35,
+   "sisa": 35
+  },
+  {
+   "id": "Bappenas-33",
+   "platform": "Bappenas",
+   "subtes": "Penalaran Keruangan - Jaring-jaring Kubus",
+   "output": "Lengkap",
+   "harga": 0,
+   "kebutuhan": 35,
+   "sisa": 35
+  }
+ ],
+ "feeLog": [
+  {
+   "tanggal": "2026-05-07",
+   "idProject": "KDKMP-1",
+   "guru": "Guru A",
+   "subtes": "Bentuk Geometri",
+   "jumlah": 40,
+   "fee": 200000,
+   "status": "Paid",
+   "pic": "Uma",
+   "bulan": "2026-05"
+  },
+  {
+   "tanggal": "2026-05-07",
+   "idProject": "KDKMP-1",
+   "guru": "Guru B",
+   "subtes": "Bentuk Geometri",
+   "jumlah": 100,
+   "fee": 500000,
+   "status": "Paid",
+   "pic": "Uma",
+   "bulan": "2026-05"
+  },
+  {
+   "tanggal": "2026-05-07",
+   "idProject": "KDKMP-2",
+   "guru": "Guru C",
+   "subtes": "Potongan Bentuk",
+   "jumlah": 75,
+   "fee": 375000,
+   "status": "Paid",
+   "pic": "Alya",
+   "bulan": "2026-05"
+  },
+  {
+   "tanggal": "2026-05-07",
+   "idProject": "ASN-1",
+   "guru": "Guru D",
+   "subtes": "Figural 9 kotak",
+   "jumlah": 20,
+   "fee": 340000,
+   "status": "Paid",
+   "pic": "Uma",
+   "bulan": "2026-05"
+  },
+  {
+   "tanggal": "2026-05-18",
+   "idProject": "Bappenas-1",
+   "guru": "Guru A",
+   "subtes": "FR TPA Bappenas",
+   "jumlah": 50,
+   "fee": 200000,
+   "status": "Paid",
+   "pic": "Uma",
+   "bulan": "2026-05"
+  },
+  {
+   "tanggal": "2026-05-18",
+   "idProject": "Bappenas-1",
+   "guru": "Guru E",
+   "subtes": "FR TPA Bappenas",
+   "jumlah": 50,
+   "fee": 200000,
+   "status": "Paid",
+   "pic": "Uma",
+   "bulan": "2026-05"
+  },
+  {
+   "tanggal": "2026-05-18",
+   "idProject": "Bappenas-1",
+   "guru": "Guru F",
+   "subtes": "FR TPA Bappenas",
+   "jumlah": 50,
+   "fee": 200000,
+   "status": "Paid",
+   "pic": "Uma",
+   "bulan": "2026-05"
+  },
+  {
+   "tanggal": "2026-05-18",
+   "idProject": "Bappenas-1",
+   "guru": "Guru G",
+   "subtes": "FR TPA Bappenas",
+   "jumlah": 50,
+   "fee": 200000,
+   "status": "Paid",
+   "pic": "Uma",
+   "bulan": "2026-05"
+  },
+  {
+   "tanggal": "2026-05-20",
+   "idProject": "Bappenas-1",
+   "guru": "Guru H",
+   "subtes": "FR TPA Bappenas",
+   "jumlah": 50,
+   "fee": 200000,
+   "status": "Paid",
+   "pic": "Uma",
+   "bulan": "2026-05"
+  },
+  {
+   "tanggal": "2026-06-15",
+   "idProject": "ASN-2",
+   "guru": "Guru E",
+   "subtes": "Numerik Berhitung",
+   "jumlah": 50,
+   "fee": 150000,
+   "status": "Paid",
+   "pic": "Uma",
+   "bulan": "2026-06"
+  },
+  {
+   "tanggal": "2026-06-15",
+   "idProject": "ASN-3",
+   "guru": "Guru E",
+   "subtes": "Numerik Soal Cerita - Polemik Proyek",
+   "jumlah": 20,
+   "fee": 60000,
+   "status": "Paid",
+   "pic": "Alya",
+   "bulan": "2026-06"
+  },
+  {
+   "tanggal": "2026-06-15",
+   "idProject": "ASN-4",
+   "guru": "Guru E",
+   "subtes": "Numerik Soal Cerita - Volume, Debit, Waktu",
+   "jumlah": 20,
+   "fee": 60000,
+   "status": "Paid",
+   "pic": "Alya",
+   "bulan": "2026-06"
+  },
+  {
+   "tanggal": "2026-06-15",
+   "idProject": "ASN-2",
+   "guru": "Guru A",
+   "subtes": "Numerik Berhitung",
+   "jumlah": 50,
+   "fee": 150000,
+   "status": "Paid",
+   "pic": "Uma",
+   "bulan": "2026-06"
+  },
+  {
+   "tanggal": "2026-06-15",
+   "idProject": "ASN-3",
+   "guru": "Guru A",
+   "subtes": "Numerik Soal Cerita - Polemik Proyek",
+   "jumlah": 20,
+   "fee": 60000,
+   "status": "Paid",
+   "pic": "Uma",
+   "bulan": "2026-06"
+  },
+  {
+   "tanggal": "2026-06-15",
+   "idProject": "ASN-4",
+   "guru": "Guru H",
+   "subtes": "Numerik Soal Cerita - Volume, Debit, Waktu",
+   "jumlah": 20,
+   "fee": 60000,
+   "status": "Paid",
+   "pic": "Alya",
+   "bulan": "2026-06"
+  },
+  {
+   "tanggal": "2026-06-15",
+   "idProject": "ASN-3",
+   "guru": "Guru H",
+   "subtes": "Numerik Soal Cerita - Polemik Proyek",
+   "jumlah": 35,
+   "fee": 105000,
+   "status": "Paid",
+   "pic": "Alya",
+   "bulan": "2026-06"
+  },
+  {
+   "tanggal": "2026-06-22",
+   "idProject": "ASN-5",
+   "guru": "Guru I",
+   "subtes": "Figural Analogi",
+   "jumlah": 35,
+   "fee": 455000,
+   "status": "QC",
+   "pic": "Uma",
+   "bulan": "2026-06"
+  },
+  {
+   "tanggal": "2026-06-22",
+   "idProject": "ASN-6",
+   "guru": "Guru A",
+   "subtes": "Figural Ketidaksamaan",
+   "jumlah": 10,
+   "fee": 130000,
+   "status": "Approved",
+   "pic": "Alya",
+   "bulan": "2026-06"
+  },
+  {
+   "tanggal": "2026-06-22",
+   "idProject": "ASN-7",
+   "guru": "Guru A",
+   "subtes": "Figural Serial - The Next Box",
+   "jumlah": 20,
+   "fee": 260000,
+   "status": "Running",
+   "pic": "Uma",
+   "bulan": "2026-06"
+  },
+  {
+   "tanggal": "2026-06-22",
+   "idProject": "ASN-8",
+   "guru": "Guru E",
+   "subtes": "Deret Angka",
+   "jumlah": 20,
+   "fee": 200000,
+   "status": "QC",
+   "pic": "Uma",
+   "bulan": "2026-06"
+  },
+  {
+   "tanggal": "2026-06-22",
+   "idProject": "ASN-9",
+   "guru": "Guru E",
+   "subtes": "Verbal Analitis",
+   "jumlah": 75,
+   "fee": 225000,
+   "status": "Approved",
+   "pic": "Uma",
+   "bulan": "2026-06"
+  },
+  {
+   "tanggal": "2026-06-22",
+   "idProject": "ASN-8",
+   "guru": "Guru J",
+   "subtes": "Deret Angka",
+   "jumlah": 20,
+   "fee": 200000,
+   "status": "QC",
+   "pic": "Uma",
+   "bulan": "2026-06"
+  },
+  {
+   "tanggal": "2026-06-30",
+   "idProject": "ASN-42",
+   "guru": "Guru A",
+   "subtes": "Figural Serial - Kotak 3x3 (9 Kotak)",
+   "jumlah": 20,
+   "fee": 200000,
+   "status": "QC",
+   "pic": "Uma",
+   "bulan": "2026-06"
+  }
+ ],
+ "feeRecaps": [
+  {
+   "bulan": "Juni",
+   "kategori": "Non Live Class",
+   "nama": "Guru 01",
+   "platform": "ASN",
+   "project": "VIDEO PEMBAHASAN",
+   "jumlah": 70,
+   "totalFee": 210000
+  },
+  {
+   "bulan": "Juni",
+   "kategori": "Non Live Class",
+   "nama": "Guru 02",
+   "platform": "ASN",
+   "project": "VIDEO PEMBAHASAN",
+   "jumlah": 90,
+   "totalFee": 270000
+  },
+  {
+   "bulan": "Juni",
+   "kategori": "Non Live Class",
+   "nama": "Guru 03",
+   "platform": "ASN",
+   "project": "VIDEO PEMBAHASAN",
+   "jumlah": 55,
+   "totalFee": 165000
+  },
+  {
+   "bulan": "Juni",
+   "kategori": "Non Live Class",
+   "nama": "Guru 04",
+   "platform": "BEASISWA",
+   "project": "MENTOR 1ON1",
+   "jumlah": 3,
+   "totalFee": 300000
+  },
+  {
+   "bulan": "Juni",
+   "kategori": "Non Live Class",
+   "nama": "Guru 05",
+   "platform": "BEASISWA",
+   "project": "MENTOR 1ON1",
+   "jumlah": 1,
+   "totalFee": 100000
+  },
+  {
+   "bulan": "Juni",
+   "kategori": "Non Live Class",
+   "nama": "Guru 06",
+   "platform": "BEASISWA",
+   "project": "OPERATOR 1ON1",
+   "jumlah": 4,
+   "totalFee": 120000
+  },
+  {
+   "bulan": "Juni",
+   "kategori": "Non Live Class",
+   "nama": "Guru 07",
+   "platform": "ALL PLATFORM",
+   "project": "KREATIF PRODUK",
+   "jumlah": "-",
+   "totalFee": 3000000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Live Class",
+   "nama": "Guru 08",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": 12,
+   "totalFee": 1650000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Live Class",
+   "nama": "Guru 09",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": 7,
+   "totalFee": 840000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Live Class",
+   "nama": "Guru 10",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": 2,
+   "totalFee": 260000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Live Class",
+   "nama": "Guru 11",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": 3,
+   "totalFee": 360000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Live Class",
+   "nama": "Guru 12",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": 7,
+   "totalFee": 945000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Live Class",
+   "nama": "Guru 13",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": 4,
+   "totalFee": 400000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Live Class",
+   "nama": "Guru 14",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": 2,
+   "totalFee": 200000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Live Class",
+   "nama": "Guru 15",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": 3,
+   "totalFee": 300000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Live Class",
+   "nama": "Guru 16",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": 4,
+   "totalFee": 400000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Live Class",
+   "nama": "Guru 17",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": 6,
+   "totalFee": 720000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Live Class",
+   "nama": "Guru 18",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": 1,
+   "totalFee": 100000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Live Class",
+   "nama": "Guru 19",
+   "platform": "Putri Aulia",
+   "project": "2026-03-02",
+   "jumlah": 120000,
+   "totalFee": 2450000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Live Class",
+   "nama": "Guru 20",
+   "platform": "Rifania",
+   "project": "2026-03-02",
+   "jumlah": 100000,
+   "totalFee": 1765000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Live Class",
+   "nama": "Guru 21",
+   "platform": "Putri Rizki Ilahi",
+   "project": "2026-03-04",
+   "jumlah": 150000,
+   "totalFee": 540000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Live Class",
+   "nama": "Guru 22",
+   "platform": "Ayuni",
+   "project": "2026-03-09",
+   "jumlah": 135000,
+   "totalFee": 930000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Live Class",
+   "nama": "Guru 23",
+   "platform": "Ayuni",
+   "project": "2026-03-05",
+   "jumlah": 135000,
+   "totalFee": 390000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Live Class",
+   "nama": "Guru 24",
+   "platform": "Alfikri Oktavian",
+   "project": "2026-03-02",
+   "jumlah": 100000,
+   "totalFee": 100000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Soal",
+   "nama": "Guru 25",
+   "platform": "POLISI",
+   "project": "SOAL",
+   "jumlah": 100,
+   "totalFee": 500000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Soal",
+   "nama": "Guru 26",
+   "platform": "POLISI",
+   "project": "SOAL & VIDEO PEMBAHASAN",
+   "jumlah": 50,
+   "totalFee": 500000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Soal",
+   "nama": "Guru 27",
+   "platform": "CEREBRUM",
+   "project": "SOAL & VIDEO PEMBAHASAN",
+   "jumlah": 120,
+   "totalFee": 1560000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Produk",
+   "nama": "Guru 06",
+   "platform": null,
+   "project": "LIVE CLASS",
+   "jumlah": 0,
+   "totalFee": 1825000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Produk",
+   "nama": "Guru 02",
+   "platform": null,
+   "project": "QC AKADEMIK",
+   "jumlah": 0,
+   "totalFee": 3500000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Produk",
+   "nama": "Guru 28",
+   "platform": null,
+   "project": "OPERASIONAL",
+   "jumlah": 0,
+   "totalFee": 3250000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Produk",
+   "nama": "Guru 29",
+   "platform": null,
+   "project": "OPERASIONAL",
+   "jumlah": 0,
+   "totalFee": 3000000
+  },
+  {
+   "bulan": "Maret",
+   "kategori": "Produk",
+   "nama": "Guru 30",
+   "platform": null,
+   "project": "KREATIF",
+   "jumlah": 0,
+   "totalFee": 2000000
+  },
+  {
+   "bulan": "April",
+   "kategori": "Live Class",
+   "nama": "Guru 17",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": 1,
+   "totalFee": 120000
+  },
+  {
+   "bulan": "April",
+   "kategori": "Live Class",
+   "nama": "Guru 10",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": 4,
+   "totalFee": 520000
+  },
+  {
+   "bulan": "April",
+   "kategori": "Live Class",
+   "nama": "Guru 15",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": 5,
+   "totalFee": 500000
+  },
+  {
+   "bulan": "April",
+   "kategori": "Live Class",
+   "nama": "Guru 08",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": 12,
+   "totalFee": 1800000
+  },
+  {
+   "bulan": "April",
+   "kategori": "Live Class",
+   "nama": "Guru 09",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": 9,
+   "totalFee": 1080000
+  },
+  {
+   "bulan": "April",
+   "kategori": "Live Class",
+   "nama": "Guru 12",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": 3,
+   "totalFee": 405000
+  },
+  {
+   "bulan": "April",
+   "kategori": "Live Class",
+   "nama": "Guru 31",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": 2,
+   "totalFee": 200000
+  },
+  {
+   "bulan": "April",
+   "kategori": "Live Class",
+   "nama": "Guru 32",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": 1,
+   "totalFee": 100000
+  },
+  {
+   "bulan": "April",
+   "kategori": "Live Class",
+   "nama": "Guru 13",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": 2,
+   "totalFee": 200000
+  },
+  {
+   "bulan": "April",
+   "kategori": "Live Class",
+   "nama": "Guru 11",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": 1,
+   "totalFee": 120000
+  },
+  {
+   "bulan": "April",
+   "kategori": "Live Class",
+   "nama": "Guru 05",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": 1,
+   "totalFee": 100000
+  },
+  {
+   "bulan": "April",
+   "kategori": "Live Class",
+   "nama": "Guru 19",
+   "platform": "Dyla Aliffah",
+   "project": "2026-04-27",
+   "jumlah": 120000,
+   "totalFee": 2870000
+  },
+  {
+   "bulan": "April",
+   "kategori": "Live Class",
+   "nama": "Guru 21",
+   "platform": "Putri R.I",
+   "project": "2026-04-28",
+   "jumlah": 150000,
+   "totalFee": 1620000
+  },
+  {
+   "bulan": "April",
+   "kategori": "Live Class",
+   "nama": "Guru 22",
+   "platform": "Romi",
+   "project": "2026-04-27",
+   "jumlah": 100000,
+   "totalFee": 200000
+  },
+  {
+   "bulan": "April",
+   "kategori": "Live Class",
+   "nama": "Guru 23",
+   "platform": "Rifania",
+   "project": "2026-04-30",
+   "jumlah": 100000,
+   "totalFee": 355000
+  },
+  {
+   "bulan": "April",
+   "kategori": "Live Class",
+   "nama": "Guru 24",
+   "platform": "Imron",
+   "project": "2026-04-30",
+   "jumlah": 100000,
+   "totalFee": 100000
+  },
+  {
+   "bulan": "April",
+   "kategori": "Soal",
+   "nama": "Guru 33",
+   "platform": "ASN",
+   "project": "SOAL & VIDEO PEMBAHASAN",
+   "jumlah": 30,
+   "totalFee": 510000
+  },
+  {
+   "bulan": "April",
+   "kategori": "Soal",
+   "nama": "Guru 34",
+   "platform": "ASN",
+   "project": "SOAL & VIDEO PEMBAHASAN",
+   "jumlah": 20,
+   "totalFee": 340000
+  },
+  {
+   "bulan": "April",
+   "kategori": "Soal",
+   "nama": "Guru 35",
+   "platform": "ASN",
+   "project": "SOAL & VIDEO PEMBAHASAN",
+   "jumlah": 30,
+   "totalFee": 510000
+  },
+  {
+   "bulan": "April",
+   "kategori": "Produk",
+   "nama": "Guru 06",
+   "platform": null,
+   "project": "LIVE CLASS",
+   "jumlah": 0,
+   "totalFee": 1905000
+  },
+  {
+   "bulan": "April",
+   "kategori": "Produk",
+   "nama": "Guru 02",
+   "platform": null,
+   "project": "QC AKADEMIK",
+   "jumlah": 0,
+   "totalFee": 3000000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Live Class",
+   "nama": "Guru 10",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": "6",
+   "totalFee": 780000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Live Class",
+   "nama": "Guru 14",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": "3",
+   "totalFee": 300000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Live Class",
+   "nama": "Guru 12",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": "9",
+   "totalFee": 1215000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Live Class",
+   "nama": "Guru 04",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": "1",
+   "totalFee": 100000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Live Class",
+   "nama": "Guru 17",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": "5",
+   "totalFee": 560000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Live Class",
+   "nama": "Guru 11",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": "6",
+   "totalFee": 720000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Live Class",
+   "nama": "Guru 09",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": "8",
+   "totalFee": 960000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Live Class",
+   "nama": "Guru 36",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": "12",
+   "totalFee": 1850000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Live Class",
+   "nama": "Guru 37",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": "2",
+   "totalFee": 200000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Live Class",
+   "nama": "Guru 13",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": "5",
+   "totalFee": 500000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Live Class",
+   "nama": "Guru 15",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": "5",
+   "totalFee": 500000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Live Class",
+   "nama": "Guru 16",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": "8",
+   "totalFee": 800000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Live Class",
+   "nama": "Guru 38",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": "1",
+   "totalFee": 100000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Live Class",
+   "nama": "Guru 05",
+   "platform": "Terlampir",
+   "project": "LIVE CLASS",
+   "jumlah": "1",
+   "totalFee": 100000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Live Class",
+   "nama": "Guru 19",
+   "platform": "Putri Aulia",
+   "project": "2026-03-30",
+   "jumlah": 120000,
+   "totalFee": 2775000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Live Class",
+   "nama": "Guru 20",
+   "platform": "Annisa N",
+   "project": "2026-03-30",
+   "jumlah": 100000,
+   "totalFee": 3085000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Live Class",
+   "nama": "Guru 21",
+   "platform": "Putri R.I",
+   "project": "2026-04-01",
+   "jumlah": 150000,
+   "totalFee": 550000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Live Class",
+   "nama": "Guru 22",
+   "platform": "Dyla Aliffah",
+   "project": "2026-03-30",
+   "jumlah": 120000,
+   "totalFee": 1080000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Live Class",
+   "nama": "Guru 23",
+   "platform": "Indah",
+   "project": "2026-04-02",
+   "jumlah": 120000,
+   "totalFee": 495000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Live Class",
+   "nama": "Guru 24",
+   "platform": "Dyla alifah",
+   "project": "2026-02-27",
+   "jumlah": 100000,
+   "totalFee": 700000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Soal",
+   "nama": "Guru 01",
+   "platform": "BUMN, TPA",
+   "project": "SOAL, VIDEO PEMBAHASAN",
+   "jumlah": 90,
+   "totalFee": 400000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Soal",
+   "nama": "Guru 31",
+   "platform": "BUMN",
+   "project": "SOAL",
+   "jumlah": 100,
+   "totalFee": 500000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Soal",
+   "nama": "Guru 39",
+   "platform": "BUMN",
+   "project": "SOAL",
+   "jumlah": 75,
+   "totalFee": 375000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Soal",
+   "nama": "Guru 14",
+   "platform": "ASN",
+   "project": "SOAL & VIDEO PEMBAHASAN",
+   "jumlah": 20,
+   "totalFee": 340000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Soal",
+   "nama": "Guru 02",
+   "platform": "TPA",
+   "project": "VIDEO PEMBAHASAN",
+   "jumlah": 50,
+   "totalFee": 200000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Soal",
+   "nama": "Guru 40",
+   "platform": "TPA",
+   "project": "VIDEO PEMBAHASAN",
+   "jumlah": 50,
+   "totalFee": 200000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Soal",
+   "nama": "Guru 41",
+   "platform": "TPA",
+   "project": "VIDEO PEMBAHASAN",
+   "jumlah": 50,
+   "totalFee": 200000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Soal",
+   "nama": "Guru 03",
+   "platform": "TPA",
+   "project": "VIDEO PEMBAHASAN",
+   "jumlah": 50,
+   "totalFee": 200000
+  },
+  {
+   "bulan": "Mei",
+   "kategori": "Soal",
+   "nama": "Guru 06",
+   "platform": "BEASISWA",
+   "project": "OPERATOR 1ON1",
+   "jumlah": 3,
+   "totalFee": 90000
+  }
+ ],
+ "teachers": [
+  {
+   "id": 1,
+   "nama": "Guru Freelance 01",
+   "status": "Guru Lama",
+   "jenisKelamin": "Perempuan",
+   "pendidikan": "S2 lulus",
+   "jurusan": "MSc Venture Creation",
+   "universitas": "National University Singapore",
+   "pekerjaan": "Karyawan Swasta",
+   "pengalaman": "Mengajar kurang dari 1 tahun, Pernah membuat soal dan pembahasan, Pernah mengisi kelas online live Zoom/Google Meet",
+   "bidang": "IPA/Saintek: Fisika, Kimia, Biologi, Pengetahuan & Wawasan Umum, Matematika & Kuantitatif, Mockup Interview",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Mengisi Live Class",
+   "liveClass": "Ya",
+   "kapasitas": 3,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 2,
+   "nama": "Guru Freelance 02",
+   "status": "Guru Lama",
+   "jenisKelamin": "Perempuan",
+   "pendidikan": "S2 lulus",
+   "jurusan": "Pendidikan Sosiologi",
+   "universitas": "Universitas Pendidikan Indonesia",
+   "pekerjaan": "Education Content Creator",
+   "pengalaman": "Mengajar 3–5 tahun, Pernah membuat soal dan pembahasan, Pernah mengisi kelas online live Zoom/Google Meet, Konten kreator edukasi YouTube/TikTok/Instagram",
+   "bidang": "Soshum: Sejarah, Geografi, Ekonomi, Sosiologi, Pengetahuan & Wawasan Umum, Psikotes, Kepribadian & Karakter Kerja",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Pembuatan video pembahasan, Paket lengkap: soal, pembahasan, dan video, Mengisi Live Class, Proyek Lainnya",
+   "liveClass": "Ya",
+   "kapasitas": 5,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 3,
+   "nama": "Guru Freelance 03",
+   "status": "Guru Lama",
+   "jenisKelamin": "Perempuan",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Sastra Inggris",
+   "universitas": "Universitas Padjadjaran",
+   "pekerjaan": "Karyawan swasta",
+   "pengalaman": "Pernah membuat soal dan pembahasan",
+   "bidang": "Bahasa Inggris",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Pembuatan video pembahasan, Paket lengkap: soal, pembahasan, dan video",
+   "liveClass": "Tidak",
+   "kapasitas": 0,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 4,
+   "nama": "Guru Freelance 04",
+   "status": "Guru Lama",
+   "jenisKelamin": "Laki-laki",
+   "pendidikan": "S3",
+   "jurusan": "Ekonomi Islam",
+   "universitas": "Universitas Islam Negeri Sunan Kalijaga Yogyakarta",
+   "pekerjaan": "Dosen dan Freelancer",
+   "pengalaman": "Mengajar 1–3 tahun",
+   "bidang": "Soshum: Sejarah, Geografi, Ekonomi, Sosiologi, Studi Islam dan Hukum Islam",
+   "jenisProyek": "Mengisi Live Class, Proyek Lainnya",
+   "liveClass": "Ya",
+   "kapasitas": 5,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 5,
+   "nama": "Guru Freelance 05",
+   "status": "Guru Lama",
+   "jenisKelamin": "Laki-laki",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Sastra Inggris",
+   "universitas": "UIN Sunan Gunung Djati",
+   "pekerjaan": "English Teacher",
+   "pengalaman": "Mengajar 3–5 tahun, Pernah membuat soal dan pembahasan, Pernah mengisi kelas online live Zoom/Google Meet",
+   "bidang": "Pengetahuan & Wawasan Umum, Bahasa Indonesia & Literasi, Bahasa Inggris",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Paket lengkap: soal, pembahasan, dan video, Proyek Lainnya",
+   "liveClass": "Mungkin",
+   "kapasitas": 4,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 6,
+   "nama": "Guru Freelance 06",
+   "status": "Guru Lama",
+   "jenisKelamin": "Perempuan",
+   "pendidikan": "S2 lulus",
+   "jurusan": "Pendidikan Biologi",
+   "universitas": "Universitas Pendidikan Indonesia",
+   "pekerjaan": "Guru Biologi SMA",
+   "pengalaman": "Mengajar 3–5 tahun, Pernah membuat soal dan pembahasan, Pernah mengisi kelas online live Zoom/Google Meet",
+   "bidang": "IPA/Saintek: Fisika, Kimia, Biologi, Bahasa Indonesia & Literasi, Penalaran Spasial/Gambar, Psikotes, Kepribadian & Karakter Kerja",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Pembuatan video pembahasan, Paket lengkap: soal, pembahasan, dan video",
+   "liveClass": "Mungkin",
+   "kapasitas": 4,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 7,
+   "nama": "Guru Freelance 07",
+   "status": "Guru Lama",
+   "jenisKelamin": "Laki-laki",
+   "pendidikan": "S2 lulus",
+   "jurusan": "Geography and Planning/Development Studies",
+   "universitas": "Utrecht University",
+   "pekerjaan": "UNDP",
+   "pengalaman": "Mengajar 1–3 tahun, Pernah mengisi kelas online live Zoom/Google Meet",
+   "bidang": "Psikotes, Kepribadian & Karakter Kerja, Beasiswa",
+   "jenisProyek": "Proyek Lainnya",
+   "liveClass": "Mungkin",
+   "kapasitas": 5,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 8,
+   "nama": "Guru Freelance 08",
+   "status": "Guru Lama",
+   "jenisKelamin": "Perempuan",
+   "pendidikan": "S2 lulus",
+   "jurusan": "Matematika",
+   "universitas": "Institut Teknologi Bandung",
+   "pekerjaan": "PNS",
+   "pengalaman": "Pernah membuat soal dan pembahasan, mengajar >5 tahun",
+   "bidang": "Matematika & Kuantitatif, Penalaran Logika, Penalaran Spasial/Gambar",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Pembuatan video pembahasan, Paket lengkap: soal, pembahasan, dan video, Mengisi Live Class, Proyek Lainnya",
+   "liveClass": "Ya",
+   "kapasitas": 5,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 9,
+   "nama": "Guru Freelance 09",
+   "status": "Guru Lama",
+   "jenisKelamin": "Perempuan",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Sastra Inggris",
+   "universitas": "Universitas Padjadjaran",
+   "pekerjaan": "Freelancer Tutor",
+   "pengalaman": "Mengajar kurang dari 1 tahun, Pernah membuat soal dan pembahasan, Pernah mengisi kelas online live Zoom/Google Meet",
+   "bidang": "Pengetahuan & Wawasan Umum, Bahasa Inggris",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Mengisi Live Class, Proyek Lainnya",
+   "liveClass": "Mungkin",
+   "kapasitas": 1,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 10,
+   "nama": "Guru Freelance 10",
+   "status": "Guru Lama",
+   "jenisKelamin": "Perempuan",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Pendidikan Bahasa Inggris",
+   "universitas": "Universitas Pendidikan Indonesia",
+   "pekerjaan": "Freelancer",
+   "pengalaman": "Mengajar 1–3 tahun, Pernah membuat soal dan pembahasan",
+   "bidang": "Bahasa Indonesia & Literasi, Bahasa Inggris",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Pembuatan video pembahasan, Paket lengkap: soal, pembahasan, dan video",
+   "liveClass": "Ya",
+   "kapasitas": 2,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 11,
+   "nama": "Guru Freelance 11",
+   "status": "Guru Baru",
+   "jenisKelamin": "Laki-laki",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Teknik Mesin",
+   "universitas": "Institut Teknologi Bandung",
+   "pekerjaan": "Freelancer Welding Engineer",
+   "pengalaman": "Mengajar kurang dari 1 tahun, Pernah mengisi kelas online live Zoom/Google Meet",
+   "bidang": "IPA/Saintek: Fisika, Kimia, Biologi, Matematika & Kuantitatif, Penalaran Logika, Penalaran Spasial/Gambar",
+   "jenisProyek": "Pembuatan video pembahasan, Mengisi Live Class, Proyek Lainnya",
+   "liveClass": "Ya",
+   "kapasitas": 4,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 12,
+   "nama": "Guru Freelance 12",
+   "status": "Guru Lama",
+   "jenisKelamin": "Perempuan",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Pendidikan Teknik Mesin",
+   "universitas": "Universitas Pendidikan Indonesia",
+   "pekerjaan": "Guru Produktif di SMK dan Freelance Tentor Matematika SD-SMA",
+   "pengalaman": "Mengajar 3–5 tahun, Pernah membuat soal dan pembahasan, Pernah mengisi kelas online live Zoom/Google Meet",
+   "bidang": "Bahasa Indonesia & Literasi, Matematika & Kuantitatif, Penalaran Logika, Penalaran Spasial/Gambar",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Pembuatan video pembahasan, Paket lengkap: soal, pembahasan, dan video, Mengisi Live Class, Proyek Lainnya",
+   "liveClass": "Ya",
+   "kapasitas": 7,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 13,
+   "nama": "Guru Freelance 13",
+   "status": "Guru Lama",
+   "jenisKelamin": "Perempuan",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Pendidikan Guru Sekolah Dasar",
+   "universitas": "Universitas Pendidikan Indonesia",
+   "pekerjaan": "Guru Kelas SD",
+   "pengalaman": "Mengajar 1–3 tahun, Pernah membuat soal dan pembahasan",
+   "bidang": "Pengetahuan & Wawasan Umum, Bahasa Indonesia & Literasi, Penalaran Logika, Psikotes, Kepribadian & Karakter Kerja",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis",
+   "liveClass": "Tidak",
+   "kapasitas": 0,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 14,
+   "nama": "Guru Freelance 14",
+   "status": "Guru Lama",
+   "jenisKelamin": "Perempuan",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Pendidikan Bahasa dan Sastra Indonesia",
+   "universitas": "Universitas  Singaperbangsa Karawang",
+   "pekerjaan": "Guru Bahasa Indonesia SMP, Freelancer guru bimbel UTBK, Ujian Mandiri, TKA, pembuat soal UTBK",
+   "pengalaman": "Mengajar 1–3 tahun, Pernah membuat soal dan pembahasan, Pernah mengisi kelas online live Zoom/Google Meet, Konten kreator edukasi YouTube/TikTok/Instagram",
+   "bidang": "Bahasa Indonesia & Literasi",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Pembuatan video pembahasan, Paket lengkap: soal, pembahasan, dan video, Mengisi Live Class, Proyek Lainnya",
+   "liveClass": "Mungkin",
+   "kapasitas": 10,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 15,
+   "nama": "Guru Freelance 15",
+   "status": "Guru Lama",
+   "jenisKelamin": "Laki-laki",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Teknik Informatika",
+   "universitas": "Universitas Sebelas April Sumedang",
+   "pekerjaan": "Freelancer",
+   "pengalaman": "Mengajar kurang dari 1 tahun, Pernah membuat soal dan pembahasan, Konten kreator edukasi YouTube/TikTok/Instagram, Memiliki pengalaman di bidang pendidikan/ pengajaran melalui kegiatan pendampingan belajar. Aktif dalam membantu proses pembelajaran  adik dengan memberikan penjelasan materi, latihan soal, serta pendampingan akademik secara terarah dan terstruktur",
+   "bidang": "IPA/Saintek: Fisika, Kimia, Biologi, Soshum: Sejarah, Geografi, Ekonomi, Sosiologi, Pengetahuan & Wawasan Umum, Bahasa Indonesia & Literasi, Bahasa Inggris, Matematika & Kuantitatif, Penalaran Logika, Penalaran Spasial/Gambar, Psikotes, Kepribadian & Karakter Kerja, Materi komputer dasar dan aplikasi perkantoran, materi teknis ASN/PPPK formasi yang berkaitan dengan informatika/computer science, materi TNI/POLRI formasi bidang kehumasan/IT",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Pembuatan video pembahasan, Paket lengkap: soal, pembahasan, dan video, Proyek Lainnya",
+   "liveClass": "Tidak",
+   "kapasitas": 0,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 16,
+   "nama": "Guru Freelance 16",
+   "status": "Guru Lama",
+   "jenisKelamin": "Laki-laki",
+   "pendidikan": "S2 sedang ditempuh",
+   "jurusan": "Apoteker",
+   "universitas": "universitas jenderal achmad yani",
+   "pekerjaan": "Apoteker",
+   "pengalaman": "Mengajar kurang dari 1 tahun, Mengajar 1–3 tahun, Mengajar 3–5 tahun, Pernah membuat soal dan pembahasan, Pernah mengisi kelas online live Zoom/Google Meet, Konten kreator edukasi YouTube/TikTok/Instagram",
+   "bidang": "IPA/Saintek: Fisika, Kimia, Biologi, Soshum: Sejarah, Geografi, Ekonomi, Sosiologi, Pengetahuan & Wawasan Umum, Bahasa Indonesia & Literasi, Bahasa Inggris, Matematika & Kuantitatif, Penalaran Logika, Penalaran Spasial/Gambar, Psikotes, Kepribadian & Karakter Kerja",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Pembuatan video pembahasan, Paket lengkap: soal, pembahasan, dan video, Mengisi Live Class, Proyek Lainnya",
+   "liveClass": "Ya",
+   "kapasitas": 4,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 17,
+   "nama": "Guru Freelance 17",
+   "status": "Guru Baru",
+   "jenisKelamin": "Laki-laki",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Matematika",
+   "universitas": "Universitas Islam Bandung",
+   "pekerjaan": "Mencari Pekerjaan",
+   "pengalaman": "Mengajar 3–5 tahun, Pernah membuat soal dan pembahasan",
+   "bidang": "Bahasa Inggris, Matematika & Kuantitatif, Psikotes, Kepribadian & Karakter Kerja",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Pembuatan video pembahasan, Paket lengkap: soal, pembahasan, dan video, Proyek Lainnya",
+   "liveClass": "Tidak",
+   "kapasitas": 0,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 18,
+   "nama": "Guru Freelance 18",
+   "status": "Guru Lama",
+   "jenisKelamin": "Perempuan",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Sastra Inggris",
+   "universitas": "Universitas Gadjah Mada",
+   "pekerjaan": "Customer Support Agent (perusahaan Australia), guru freelance.",
+   "pengalaman": "Mengajar 3–5 tahun, Pernah membuat soal dan pembahasan, Pernah mengisi kelas online live Zoom/Google Meet",
+   "bidang": "Soshum: Sejarah, Geografi, Ekonomi, Sosiologi, Bahasa Inggris",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Pembuatan video pembahasan, Paket lengkap: soal, pembahasan, dan video, Mengisi Live Class, Proyek Lainnya",
+   "liveClass": "Ya",
+   "kapasitas": 4,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 19,
+   "nama": "Guru Freelance 19",
+   "status": "Guru Lama",
+   "jenisKelamin": "Perempuan",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Perikanan",
+   "universitas": "Universitas Padjadjaran",
+   "pekerjaan": "Freelancer",
+   "pengalaman": "Mengajar 3–5 tahun, Pernah membuat soal dan pembahasan, Pernah mengisi kelas online live Zoom/Google Meet",
+   "bidang": "Matematika & Kuantitatif, Penalaran Logika, Penalaran Spasial/Gambar",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Pembuatan video pembahasan, Paket lengkap: soal, pembahasan, dan video, Mengisi Live Class",
+   "liveClass": "Ya",
+   "kapasitas": 5,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 20,
+   "nama": "Guru Freelance 20",
+   "status": "Guru Baru",
+   "jenisKelamin": "Laki-laki",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Pendidikan Fisika",
+   "universitas": "UIN Sunan Gunung Djati Bandung",
+   "pekerjaan": "Guru MTsN 6 Subang",
+   "pengalaman": "Pernah membuat soal dan pembahasan, Pernah mengisi kelas online live Zoom/Google Meet, Mengajar lebih dari 10 Tahun",
+   "bidang": "IPA/Saintek: Fisika, Kimia, Biologi, Pengetahuan & Wawasan Umum, Bahasa Inggris, Matematika & Kuantitatif, Penalaran Spasial/Gambar",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Pembuatan video pembahasan, Paket lengkap: soal, pembahasan, dan video, Mengisi Live Class, Proyek Lainnya",
+   "liveClass": "Ya",
+   "kapasitas": 5,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 21,
+   "nama": "Guru Freelance 21",
+   "status": "Guru Lama",
+   "jenisKelamin": "Laki-laki",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Psikologi",
+   "universitas": "Universitas Islam Negeri Sunan Gunung Djati",
+   "pekerjaan": "Konselor & Freelancer",
+   "pengalaman": "Mengajar 3–5 tahun, Pernah membuat soal dan pembahasan, Pernah mengisi kelas online live Zoom/Google Meet, Pembentukan Karakter Militan & Kedisiplinan",
+   "bidang": "Psikotes, Kepribadian & Karakter Kerja",
+   "jenisProyek": "Mengisi Live Class, Proyek Lainnya",
+   "liveClass": "Ya",
+   "kapasitas": 3,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 22,
+   "nama": "Guru Freelance 22",
+   "status": "Guru Baru",
+   "jenisKelamin": "Perempuan",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Matematika",
+   "universitas": "Universitas Islam Negeri Sunan Gunung Djati Bandung",
+   "pekerjaan": "Karyawan BUMN",
+   "pengalaman": "Mengajar 1–3 tahun, Pernah membuat soal dan pembahasan, Pernah mengisi kelas online live Zoom/Google Meet, Konten kreator edukasi YouTube/TikTok/Instagram",
+   "bidang": "IPA/Saintek: Fisika, Kimia, Biologi, Soshum: Sejarah, Geografi, Ekonomi, Sosiologi, Pengetahuan & Wawasan Umum, Matematika & Kuantitatif, Penalaran Logika, Penalaran Spasial/Gambar, Psikotes, Kepribadian & Karakter Kerja",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Pembuatan video pembahasan, Paket lengkap: soal, pembahasan, dan video, Mengisi Live Class, Proyek Lainnya",
+   "liveClass": "Ya",
+   "kapasitas": 14,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 23,
+   "nama": "Guru Freelance 23",
+   "status": "Guru Lama",
+   "jenisKelamin": "Perempuan",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Matematika",
+   "universitas": "Universitas Padjadjaran",
+   "pekerjaan": "Karyawan Swasta",
+   "pengalaman": "Mengajar 3–5 tahun, Pernah membuat soal dan pembahasan, Pernah mengisi kelas online live Zoom/Google Meet",
+   "bidang": "Matematika & Kuantitatif",
+   "jenisProyek": "Paket lengkap: soal, pembahasan, dan video",
+   "liveClass": "Mungkin",
+   "kapasitas": 3,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 24,
+   "nama": "Guru Freelance 24",
+   "status": "Guru Lama",
+   "jenisKelamin": "Perempuan",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Pendidikan  Bahasa dan Sastra Indonesia",
+   "universitas": "Universitas Islam Nusantara",
+   "pekerjaan": "Karyawan Swasta",
+   "pengalaman": "Mengajar 3–5 tahun, Pernah membuat soal dan pembahasan, Pernah mengisi kelas online live Zoom/Google Meet",
+   "bidang": "Bahasa Indonesia & Literasi, Psikotes, Kepribadian & Karakter Kerja",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Pembuatan video pembahasan, Paket lengkap: soal, pembahasan, dan video",
+   "liveClass": "Mungkin",
+   "kapasitas": 3,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 25,
+   "nama": "Guru Freelance 25",
+   "status": "Guru Lama",
+   "jenisKelamin": "Perempuan",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Pendidikan Sosiologi",
+   "universitas": "Universitas Pendidikan Indonesia",
+   "pekerjaan": "Guru Baca Bahasa Indonesia SD",
+   "pengalaman": "Mengajar 1–3 tahun, Pernah membuat soal dan pembahasan, Pernah mengisi kelas online live Zoom/Google Meet",
+   "bidang": "Soshum: Sejarah, Geografi, Ekonomi, Sosiologi, Pengetahuan & Wawasan Umum, Bahasa Indonesia & Literasi, Penalaran Logika",
+   "jenisProyek": "Paket lengkap: soal, pembahasan, dan video, Mengisi Live Class, Proyek Lainnya",
+   "liveClass": "Mungkin",
+   "kapasitas": 3,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 26,
+   "nama": "Guru Freelance 26",
+   "status": "Guru Lama",
+   "jenisKelamin": "Perempuan",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Ilmu Sejarah",
+   "universitas": "Universitas Padjadjaran",
+   "pekerjaan": "IRT, freelancer",
+   "pengalaman": "Mengajar 3–5 tahun, Pernah membuat soal dan pembahasan, Pernah mengisi kelas online live Zoom/Google Meet, Les privat di rumah",
+   "bidang": "Soshum: Sejarah, Geografi, Ekonomi, Sosiologi, Pengetahuan & Wawasan Umum, Bahasa Indonesia & Literasi",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Mengisi Live Class, Proyek Lainnya",
+   "liveClass": "Ya",
+   "kapasitas": 3,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 27,
+   "nama": "Guru Freelance 27",
+   "status": "Guru Baru",
+   "jenisKelamin": "Laki-laki",
+   "pendidikan": "D3/D4/S1 sedang ditempuh",
+   "jurusan": "Teknik Geologi",
+   "universitas": "Institut Teknologi Bandung",
+   "pekerjaan": "Mahasiswa dan freelancer",
+   "pengalaman": "Mengajar 1–3 tahun, Pernah membuat soal dan pembahasan, Pernah mengisi kelas online live Zoom/Google Meet, Konten kreator edukasi YouTube/TikTok/Instagram",
+   "bidang": "IPA/Saintek: Fisika, Kimia, Biologi, Pengetahuan & Wawasan Umum, Matematika & Kuantitatif, Penalaran Logika, Penalaran Spasial/Gambar",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Pembuatan video pembahasan, Paket lengkap: soal, pembahasan, dan video, Mengisi Live Class, Proyek Lainnya",
+   "liveClass": "Ya",
+   "kapasitas": 7,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 28,
+   "nama": "Guru Freelance 28",
+   "status": "Guru Lama",
+   "jenisKelamin": "Perempuan",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Pendidikan Guru Sekolah Dasar",
+   "universitas": "Universitas Pendidikan Indonesia",
+   "pekerjaan": "Guru Bahasa Indonesia di SD Swasta",
+   "pengalaman": "Mengajar 1–3 tahun, Pernah membuat soal dan pembahasan",
+   "bidang": "Pengetahuan & Wawasan Umum, Bahasa Indonesia & Literasi",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Paket lengkap: soal, pembahasan, dan video",
+   "liveClass": "Tidak",
+   "kapasitas": 0,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 29,
+   "nama": "Guru Freelance 29",
+   "status": "Guru Lama",
+   "jenisKelamin": "Perempuan",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Sastra Inggris",
+   "universitas": "Universitas Padjadjaran",
+   "pekerjaan": "Karyawan Swasta",
+   "pengalaman": "Pernah membuat soal dan pembahasan",
+   "bidang": "Bahasa Inggris",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis",
+   "liveClass": "Mungkin",
+   "kapasitas": 2,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 30,
+   "nama": "Guru Freelance 30",
+   "status": "Guru Lama",
+   "jenisKelamin": "Laki-laki",
+   "pendidikan": "S2 lulus",
+   "jurusan": "Matematika",
+   "universitas": "Institut Teknologi Bandung",
+   "pekerjaan": "Freelancer",
+   "pengalaman": "Mengajar 1–3 tahun, Pernah membuat soal dan pembahasan, Pernah mengisi kelas online live Zoom/Google Meet",
+   "bidang": "Matematika & Kuantitatif, Penalaran Logika, Penalaran Spasial/Gambar",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Pembuatan video pembahasan, Paket lengkap: soal, pembahasan, dan video",
+   "liveClass": "Mungkin",
+   "kapasitas": 2,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 31,
+   "nama": "Guru Freelance 31",
+   "status": "Guru Baru",
+   "jenisKelamin": "Laki-laki",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Matematika",
+   "universitas": "Universitas Islam Bandung",
+   "pekerjaan": "Freelancer",
+   "pengalaman": "Mengajar 1–3 tahun, Pernah membuat soal dan pembahasan, Pernah mengisi kelas online live Zoom/Google Meet, Konten kreator edukasi YouTube/TikTok/Instagram",
+   "bidang": "Matematika & Kuantitatif, Penalaran Logika",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis",
+   "liveClass": "Mungkin",
+   "kapasitas": 4,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 32,
+   "nama": "Guru Freelance 32",
+   "status": "Guru Lama",
+   "jenisKelamin": "Laki-laki",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Sastra Arab",
+   "universitas": "Universitas Padjadjaran",
+   "pekerjaan": "Karyawan Swasta",
+   "pengalaman": "Pernah membuat soal dan pembahasan",
+   "bidang": "Pengetahuan & Wawasan Umum, Bahasa Indonesia & Literasi, Penalaran Logika",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis",
+   "liveClass": "Tidak",
+   "kapasitas": 0,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 33,
+   "nama": "Guru Freelance 33",
+   "status": "Guru Baru",
+   "jenisKelamin": "Perempuan",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Manajemen informatika",
+   "universitas": "Politeknik negeri sriwijaya",
+   "pekerjaan": "Pns kemdiktisaintek",
+   "pengalaman": "Pernah membuat soal dan pembahasan,",
+   "bidang": "Matematika & Kuantitatif, Penalaran Logika",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Pembuatan video pembahasan, Paket lengkap: soal, pembahasan, dan video, Mengisi Live Class, Proyek Lainnya",
+   "liveClass": "Ya",
+   "kapasitas": 4,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 34,
+   "nama": "Guru Freelance 34",
+   "status": "Guru Baru",
+   "jenisKelamin": "Perempuan",
+   "pendidikan": "D3/D4/S1 lulus",
+   "jurusan": "Matematika",
+   "universitas": "Universitas Islam Negeri Sunan Gunung Djati",
+   "pekerjaan": "Mencari kerja",
+   "pengalaman": "Mengajar 1–3 tahun, Pernah membuat soal dan pembahasan, Pernah mengisi kelas online live Zoom/Google Meet",
+   "bidang": "Matematika & Kuantitatif, Penalaran Logika",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Pembuatan video pembahasan",
+   "liveClass": "Mungkin",
+   "kapasitas": 3,
+   "wa": null,
+   "email": null
+  },
+  {
+   "id": 35,
+   "nama": "Guru Freelance 35",
+   "status": "Guru Baru",
+   "jenisKelamin": "Laki-laki",
+   "pendidikan": "S2 lulus",
+   "jurusan": "S1 Pendidikan Bahasa Daerah, S2 Manajemen Administrasi Pendidikan",
+   "universitas": "S1 UPI, S2 UNINUS",
+   "pekerjaan": "Guru bahasa Sunda/ Guru Seni Budaya di SMA",
+   "pengalaman": "Pernah membuat soal dan pembahasan, Pernah mengisi kelas online live Zoom/Google Meet, Mengajar sejak tahun 2014 (±12 tahun)",
+   "bidang": "Pengetahuan & Wawasan Umum, Bahasa Indonesia & Literasi, Psikotes, Kepribadian & Karakter Kerja, Muatan lokal (bila ada), karena sy merupakan guru mulok bahasa sunda",
+   "jenisProyek": "Penyusunan soal dan pembahasan tertulis, Pembuatan video pembahasan, Proyek Lainnya",
+   "liveClass": "Mungkin",
+   "kapasitas": 3,
+   "wa": null,
+   "email": null
+  }
+ ]
+}
