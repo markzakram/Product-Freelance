@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { rupiah, numberID } from "@/lib/format";
+import DataBanner from "@/components/DataBanner";
 import GuideModal from "@/components/GuideModal";
-import CartDrawer from "@/components/CartDrawer";
+import CartView from "@/components/CartView";
 
 function tagClass(platform) {
   const p = (platform || "").toLowerCase();
@@ -16,18 +17,11 @@ function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
 }
 
-// ---- one project card with its own quantity stepper ----------------------
+// ---- one catalog card with its own quantity row + live fee ----------------
 function ProjectCard({ p, inCartQty, onAdd }) {
-  const [qty, setQty] = useState(1);
-  const [added, setAdded] = useState(false);
-
+  const [qty, setQty] = useState(() => inCartQty || Math.min(10, p.sisa) || 1);
   const setSafe = (v) => setQty(clamp(parseInt(v, 10), 1, p.sisa || 1));
-
-  const handleAdd = () => {
-    onAdd(p, qty);
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1400);
-  };
+  const inCart = inCartQty > 0;
 
   return (
     <div className="card proj">
@@ -45,64 +39,60 @@ function ProjectCard({ p, inCartQty, onAdd }) {
           <div className="v harga">{rupiah(p.harga)}</div>
         </div>
         <div className="m">
-          <div className="k">Sisa</div>
-          <div className="v sisa">{numberID(p.sisa)} soal</div>
+          <div className="k">Stok soal</div>
+          <div className="v sisa">{numberID(p.sisa)}</div>
         </div>
       </div>
 
-      {inCartQty > 0 ? (
-        <div className="incart-hint">
-          Di keranjang: {numberID(inCartQty)} soal
-        </div>
-      ) : null}
-
-      <div className="qty-row">
-        <div className="stepper">
-          <button
-            onClick={() => setSafe(qty - 1)}
-            disabled={qty <= 1}
-            aria-label="Kurangi"
-          >
-            −
-          </button>
-          <input
-            type="number"
-            value={qty}
-            min={1}
-            max={p.sisa}
-            onChange={(e) => setSafe(e.target.value)}
-          />
-          <button
-            onClick={() => setSafe(qty + 1)}
-            disabled={qty >= p.sisa}
-            aria-label="Tambah"
-          >
-            +
-          </button>
-        </div>
-        <div className="subtotal">
-          <span className="k">Subtotal</span>
-          <span className="v">{rupiah(qty * p.harga)}</span>
-        </div>
+      <div className="qrow">
+        <span className="qlbl">Jumlah</span>
+        <button
+          className="qbtn"
+          onClick={() => setSafe(qty - 1)}
+          disabled={qty <= 1}
+          aria-label="Kurangi"
+        >
+          −
+        </button>
+        <span className="qval">{qty}</span>
+        <button
+          className="qbtn"
+          onClick={() => setSafe(qty + 1)}
+          disabled={qty >= p.sisa}
+          aria-label="Tambah"
+        >
+          +
+        </button>
+        <span className="qfee">
+          = <b>{rupiah(qty * p.harga)}</b>
+        </span>
       </div>
 
       <button
-        className={"btn btn-blue btn-add" + (added ? " done" : "")}
-        onClick={handleAdd}
+        className={"btn btn-blue add-btn" + (inCart ? " in-cart" : "")}
+        onClick={() => onAdd(p, qty)}
       >
-        {added ? "✓ Ditambahkan" : "＋ Masukkan ke Keranjang"}
+        {inCart
+          ? `✓ Di keranjang (${numberID(inCartQty)})`
+          : "＋ Masukkan ke Keranjang"}
       </button>
     </div>
   );
 }
 
-export default function OpenBoard({ projects, waNumber, panduan = [], brand = "Cerebrum" }) {
+export default function OpenBoard({
+  projects,
+  source,
+  waNumber,
+  panduan = [],
+  brand = "Cerebrum",
+}) {
   const [q, setQ] = useState("");
   const [plat, setPlat] = useState("Semua");
   const [sort, setSort] = useState("sisa");
 
   const [cart, setCart] = useState([]);
-  const [cartOpen, setCartOpen] = useState(false);
+  const [view, setView] = useState("catalog"); // "catalog" | "cart"
   const [guideOpen, setGuideOpen] = useState(false);
 
   // Auto-show the guide once per browser (first visit).
@@ -117,15 +107,13 @@ export default function OpenBoard({ projects, waNumber, panduan = [], brand = "C
     }
   }, []);
 
+  // Adding sets the cart quantity to the card's chosen amount (replace).
   const addToCart = (p, qty) => {
     setCart((prev) => {
+      const nq = clamp(qty, 1, p.sisa);
       const found = prev.find((it) => it.id === p.id);
       if (found) {
-        return prev.map((it) =>
-          it.id === p.id
-            ? { ...it, qty: clamp(it.qty + qty, 1, p.sisa) }
-            : it
-        );
+        return prev.map((it) => (it.id === p.id ? { ...it, qty: nq } : it));
       }
       return [
         ...prev,
@@ -136,7 +124,7 @@ export default function OpenBoard({ projects, waNumber, panduan = [], brand = "C
           output: p.output,
           harga: p.harga,
           sisa: p.sisa,
-          qty: clamp(qty, 1, p.sisa),
+          qty: nq,
         },
       ];
     });
@@ -150,7 +138,10 @@ export default function OpenBoard({ projects, waNumber, panduan = [], brand = "C
     );
 
   const removeItem = (id) => setCart((prev) => prev.filter((it) => it.id !== id));
-  const clearCart = () => setCart([]);
+  const clearCart = () => {
+    setCart([]);
+    setView("catalog");
+  };
 
   const cartQtyById = useMemo(() => {
     const m = {};
@@ -158,7 +149,7 @@ export default function OpenBoard({ projects, waNumber, panduan = [], brand = "C
     return m;
   }, [cart]);
 
-  const totalSoalCart = cart.reduce((s, it) => s + it.qty, 0);
+  const feeCart = cart.reduce((s, it) => s + it.qty * it.harga, 0);
 
   const platforms = useMemo(() => {
     const s = new Set(projects.map((p) => p.platform).filter(Boolean));
@@ -186,83 +177,132 @@ export default function OpenBoard({ projects, waNumber, panduan = [], brand = "C
 
   return (
     <>
-      <div className="grid stat-grid" style={{ marginBottom: 20 }}>
-        <div className="card stat">
-          <div className="label">Proyek Buka</div>
-          <div className="value blue">{numberID(filtered.length)}</div>
-          <div className="sub">subtes tersedia</div>
+      {view === "catalog" ? (
+        <div className="hero">
+          <div className="container">
+            <h1>Open Freelance — Proyek Bulan Ini</h1>
+            <p>
+              Pilih submateri, tentukan jumlah soal yang mau kamu ambil,
+              masukkan ke keranjang, lalu kirim pesananmu ke Admin Akademik via
+              WhatsApp.
+            </p>
+          </div>
         </div>
-        <div className="card stat">
-          <div className="label">Total Soal Dibutuhkan</div>
-          <div className="value navy">{numberID(totalSisa)}</div>
-          <div className="sub">sisa kebutuhan</div>
-        </div>
-        <div className="card stat">
-          <div className="label">Potensi Fee</div>
-          <div className="value green">{rupiah(potensi)}</div>
-          <div className="sub">bila semua diselesaikan</div>
-        </div>
-        <div className="card stat">
-          <div className="label">Di Keranjang</div>
-          <div className="value amber">{numberID(cart.length)}</div>
-          <div className="sub">{numberID(totalSoalCart)} soal dipilih</div>
-        </div>
-      </div>
-
-      <div className="controls">
-        <input
-          className="input"
-          placeholder="Cari subtes, ID, atau output…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
-        <select
-          className="select"
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-        >
-          <option value="sisa">Urut: Sisa terbanyak</option>
-          <option value="harga">Urut: Harga tertinggi</option>
-          <option value="subtes">Urut: Nama subtes</option>
-        </select>
-        <button
-          className="btn btn-ghost guide-btn"
-          onClick={() => setGuideOpen(true)}
-        >
-          📘 Tata Cara
-        </button>
-      </div>
-      <div className="chips" style={{ marginBottom: 18 }}>
-        {platforms.map((p) => (
-          <button
-            key={p}
-            className={"chip" + (plat === p ? " active" : "")}
-            onClick={() => setPlat(p)}
-          >
-            {p}
-          </button>
-        ))}
-      </div>
-
-      {filtered.length === 0 ? (
-        <div className="card empty">Tidak ada proyek yang cocok dengan filter.</div>
       ) : (
-        <div className="grid proj-grid">
-          {filtered.map((p) => (
-            <ProjectCard
-              key={p.id}
-              p={p}
-              inCartQty={cartQtyById[p.id] || 0}
-              onAdd={addToCart}
-            />
-          ))}
+        <div className="hero" style={{ padding: "30px 0" }}>
+          <div className="container">
+            <h1>🛒 Keranjang Soal</h1>
+            <p>
+              Periksa daftar soal yang mau kamu ambil. Ubah jumlah bila perlu,
+              lalu kirim pesananmu ke Admin Akademik via WhatsApp.
+            </p>
+          </div>
         </div>
       )}
 
-      {cart.length > 0 ? (
-        <button className="cart-fab" onClick={() => setCartOpen(true)}>
-          🛒 Keranjang
-          <span className="fab-badge">{cart.length}</span>
+      <div className="container section">
+        {view === "cart" ? (
+          <CartView
+            cart={cart}
+            onQty={updateQty}
+            onRemove={removeItem}
+            onClear={clearCart}
+            onBack={() => setView("catalog")}
+            waNumber={waNumber}
+            brand={brand}
+          />
+        ) : (
+          <>
+            <DataBanner source={source} />
+
+            <div className="grid stat-grid" style={{ marginBottom: 20 }}>
+              <div className="card stat">
+                <div className="label">Proyek Buka</div>
+                <div className="value blue">{numberID(filtered.length)}</div>
+                <div className="sub">subtes tersedia</div>
+              </div>
+              <div className="card stat">
+                <div className="label">Total Soal Tersedia</div>
+                <div className="value navy">{numberID(totalSisa)}</div>
+                <div className="sub">stok kebutuhan</div>
+              </div>
+              <div className="card stat">
+                <div className="label">Nilai Total</div>
+                <div className="value green">{rupiah(potensi)}</div>
+                <div className="sub">bila semua diambil</div>
+              </div>
+              <div className="card stat">
+                <div className="label">Platform</div>
+                <div className="value navy">{platforms.length - 1}</div>
+                <div className="sub">jenis program</div>
+              </div>
+            </div>
+
+            <div className="controls">
+              <input
+                className="input"
+                placeholder="Cari subtes, ID, atau output…"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
+              <select
+                className="select"
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+              >
+                <option value="sisa">Urut: Sisa terbanyak</option>
+                <option value="harga">Urut: Harga tertinggi</option>
+                <option value="subtes">Urut: Nama subtes</option>
+              </select>
+              <button
+                className="btn btn-ghost"
+                onClick={() => setGuideOpen(true)}
+              >
+                📘 Tata Cara
+              </button>
+              <button
+                className="btn btn-ghost"
+                onClick={() => setView("cart")}
+              >
+                🛒 Keranjang ({cart.length})
+              </button>
+            </div>
+
+            <div className="chips" style={{ marginBottom: 18 }}>
+              {platforms.map((p) => (
+                <button
+                  key={p}
+                  className={"chip" + (plat === p ? " active" : "")}
+                  onClick={() => setPlat(p)}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+
+            {filtered.length === 0 ? (
+              <div className="card empty">
+                Tidak ada proyek yang cocok dengan filter.
+              </div>
+            ) : (
+              <div className="grid proj-grid">
+                {filtered.map((p) => (
+                  <ProjectCard
+                    key={p.id}
+                    p={p}
+                    inCartQty={cartQtyById[p.id] || 0}
+                    onAdd={addToCart}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {view === "catalog" && cart.length > 0 ? (
+        <button className="cart-fab" onClick={() => setView("cart")}>
+          🛒 Keranjang ({cart.length}) · {rupiah(feeCart)}
         </button>
       ) : null}
 
@@ -270,16 +310,6 @@ export default function OpenBoard({ projects, waNumber, panduan = [], brand = "C
         open={guideOpen}
         onClose={() => setGuideOpen(false)}
         items={panduan}
-      />
-      <CartDrawer
-        open={cartOpen}
-        onClose={() => setCartOpen(false)}
-        cart={cart}
-        onQty={updateQty}
-        onRemove={removeItem}
-        onClear={clearCart}
-        waNumber={waNumber}
-        brand={brand}
       />
     </>
   );

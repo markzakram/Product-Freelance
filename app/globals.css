@@ -207,3 +207,27 @@ td.wrap{white-space:normal;max-width:340px;color:var(--slate-600)}
 .foot-actions .btn-wa{flex:1}
 .drawer-empty{text-align:center;color:var(--slate-400);padding:60px 20px;font-size:14px;line-height:1.7}
 @media(max-width:520px){.stepper input{width:44px}.guide-thumb{width:92px;height:52px}.cart-fab{right:14px;bottom:14px}}
+
+/* ======================================================================
+   Cart CONCEPT — katalog qty row + checkout page (matches prototype)
+   ====================================================================== */
+.qrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--slate-100)}
+.qlbl{font-size:12.5px;color:var(--slate-500);font-weight:600}
+.qbtn{width:28px;height:28px;border:1px solid var(--slate-300);background:#fff;border-radius:8px;font-size:15px;font-weight:800;color:var(--slate-600);cursor:pointer;line-height:1}
+.qbtn:hover{border-color:var(--blue-400);color:var(--blue-700)}
+.qbtn:disabled{opacity:.4;cursor:not-allowed}
+.qval{min-width:26px;text-align:center;font-size:15px;font-weight:800}
+.qfee{margin-left:auto;font-size:12.5px;color:var(--slate-600)}
+.add-btn{width:100%;margin-top:2px}
+.add-btn.in-cart{background:var(--green-600)}
+
+/* checkout page: remove button, summary card */
+.xbtn{width:28px;height:28px;border:1px solid var(--slate-200);background:#fff;border-radius:8px;color:var(--red-600);font-size:16px;font-weight:800;cursor:pointer;line-height:1}
+.xbtn:hover{background:#fef2f2;border-color:#fecaca}
+.summary{border:2px solid var(--blue-600) !important}
+.sum-row{display:flex;justify-content:space-between;font-size:14px;padding:7px 0;color:var(--slate-600)}
+.sum-row span:last-child{font-weight:700;color:var(--navy)}
+.sum-total{display:flex;justify-content:space-between;align-items:center;font-size:16px;font-weight:800;padding:12px 0 2px;margin-top:6px;border-top:2px solid var(--slate-100)}
+.sum-total span:last-child{color:var(--green-700);font-size:20px}
+.btn-link{background:none;border:none;color:var(--slate-500);font-size:12.5px;font-weight:600;cursor:pointer;width:100%;margin-top:10px}
+.btn-link:hover{color:var(--slate-700)}

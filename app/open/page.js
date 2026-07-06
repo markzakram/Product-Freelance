@@ -1,5 +1,4 @@
 import TopBar from "@/components/TopBar";
-import DataBanner from "@/components/DataBanner";
 import OpenBoard from "@/components/OpenBoard";
 import { getOpenProjects, getPanduan } from "@/lib/sheets";
 
@@ -19,25 +18,13 @@ export default async function OpenPage() {
   return (
     <>
       <TopBar active="open" />
-      <div className="hero">
-        <div className="container">
-          <h1>Open Freelance — Proyek Bulan Ini</h1>
-          <p>
-            Daftar proyek soal, pembahasan &amp; video yang sedang buka. Pilih
-            yang sesuai bidangmu, atur jumlah soal, lalu masukkan ke keranjang.
-            Setelah selesai, kirim ringkasannya ke Admin Akademik via WhatsApp.
-          </p>
-        </div>
-      </div>
-      <div className="container section">
-        <DataBanner source={source} />
-        <OpenBoard
-          projects={open}
-          waNumber={waNumber}
-          panduan={panduan.rows}
-          brand={brand}
-        />
-      </div>
+      <OpenBoard
+        projects={open}
+        source={source}
+        waNumber={waNumber}
+        panduan={panduan.rows}
+        brand={brand}
+      />
       <div className="footer">
         © {new Date().getFullYear()} · Open Freelance · Data diperbarui otomatis
       </div>
