@@ -137,3 +137,73 @@ td.wrap{white-space:normal;max-width:340px;color:var(--slate-600)}
 .entry h3{margin:0;font-size:17px}
 .entry p{margin:0;color:var(--slate-500);font-size:13.5px;flex:1}
 .entry .go{margin-top:8px;font-weight:700;font-size:14px;color:var(--blue-700)}
+
+/* ======================================================================
+   Cart / keranjang + Tata Cara popup (Open Freelance page)
+   ====================================================================== */
+
+/* quantity stepper + add-to-cart on project cards */
+.qty-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:2px;padding-top:10px;border-top:1px solid var(--slate-100)}
+.stepper{display:inline-flex;align-items:center;border:1px solid var(--slate-300);border-radius:10px;overflow:hidden}
+.stepper button{width:32px;height:34px;border:none;background:var(--slate-50);color:var(--slate-700);font-size:17px;font-weight:700;cursor:pointer;line-height:1}
+.stepper button:hover{background:var(--slate-100)}
+.stepper button:disabled{opacity:.4;cursor:not-allowed}
+.stepper input{width:52px;height:34px;border:none;border-left:1px solid var(--slate-200);border-right:1px solid var(--slate-200);text-align:center;font-size:14px;font-weight:700;color:var(--navy);outline:none;-moz-appearance:textfield}
+.stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.subtotal{text-align:right}
+.subtotal .k{display:block;font-size:11px;color:var(--slate-400);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.subtotal .v{font-size:15px;font-weight:800;color:var(--green-700)}
+.incart-hint{font-size:12px;color:var(--blue-700);font-weight:600;background:var(--blue-50);border-radius:8px;padding:5px 9px}
+.btn-add{width:100%}
+.btn-add.done{background:var(--green-600)}
+.guide-btn{margin-left:auto}
+
+/* floating cart button */
+.cart-fab{position:fixed;right:22px;bottom:22px;z-index:40;display:inline-flex;align-items:center;gap:10px;background:var(--blue-700);color:#fff;border:none;cursor:pointer;padding:14px 20px;border-radius:999px;font-size:14.5px;font-weight:700;box-shadow:0 10px 24px rgba(29,78,216,.35)}
+.cart-fab:hover{filter:brightness(1.06)}
+.cart-fab .fab-badge{background:#fff;color:var(--blue-700);min-width:22px;height:22px;border-radius:999px;display:grid;place-items:center;font-size:12.5px;font-weight:800;padding:0 6px}
+
+/* shared overlay + modal + drawer */
+.overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:50;display:flex;animation:ov-fade .18s ease}
+@keyframes ov-fade{from{opacity:0}to{opacity:1}}
+.modal{margin:auto;background:#fff;border-radius:18px;width:100%;max-width:520px;max-height:88vh;overflow:auto;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:md-pop .2s ease}
+@keyframes md-pop{from{transform:translateY(12px);opacity:.6}to{transform:none;opacity:1}}
+.modal-head,.drawer-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--slate-200)}
+.modal-head h2,.drawer-head h2{margin:0;font-size:17px}
+.icon-x{width:32px;height:32px;border-radius:8px;border:none;background:var(--slate-100);color:var(--slate-600);font-size:15px;cursor:pointer;line-height:1}
+.icon-x:hover{background:var(--slate-200)}
+.modal-body{padding:16px 20px}
+.modal-foot{padding:14px 20px 20px;display:flex;justify-content:flex-end;gap:10px}
+.modal-sub{color:var(--slate-500);font-size:13px;margin:0 0 14px}
+
+/* guide (tata cara) video list */
+.guide-item{display:flex;align-items:center;gap:14px;padding:11px;border:1px solid var(--slate-200);border-radius:12px;margin-bottom:10px;transition:border-color .15s,box-shadow .15s}
+.guide-item:hover{border-color:var(--blue-400);box-shadow:var(--shadow)}
+.guide-thumb{position:relative;width:112px;height:63px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--slate-100)}
+.guide-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.guide-thumb .play{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:22px;background:rgba(15,23,42,.28)}
+.guide-item .g-txt{flex:1;min-width:0}
+.guide-item .g-no{font-size:11px;color:var(--slate-400);font-weight:700;letter-spacing:.4px}
+.guide-item .g-ket{font-size:14px;font-weight:700;margin:2px 0 0;line-height:1.35}
+.guide-item .g-go{font-size:12.5px;color:var(--blue-700);font-weight:700;margin-top:3px;display:inline-block}
+
+/* cart drawer */
+.drawer{margin-left:auto;height:100%;width:100%;max-width:430px;background:var(--slate-50);display:flex;flex-direction:column;box-shadow:-10px 0 40px rgba(0,0,0,.2);animation:dr-slide .22s ease}
+@keyframes dr-slide{from{transform:translateX(30px);opacity:.5}to{transform:none;opacity:1}}
+.drawer-head{background:#fff}
+.drawer-body{flex:1;overflow:auto;padding:16px}
+.cart-item{background:#fff;border:1px solid var(--slate-200);border-radius:12px;padding:12px;margin-bottom:10px}
+.cart-item .ci-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.cart-item h4{margin:4px 0 0;font-size:14px;line-height:1.35}
+.cart-item .ci-price{font-size:12px;color:var(--slate-500);margin-top:3px}
+.cart-item .ci-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--slate-100)}
+.cart-item .ci-sub{font-size:14px;font-weight:800;color:var(--green-700)}
+.link-rm{border:none;background:none;color:var(--red-600);font-size:12.5px;font-weight:700;cursor:pointer;padding:4px;flex-shrink:0}
+.link-rm:hover{text-decoration:underline}
+.drawer-foot{background:#fff;border-top:1px solid var(--slate-200);padding:16px}
+.foot-line{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:13.5px;color:var(--slate-600)}
+.foot-line.total{font-size:16px;font-weight:800;color:var(--navy);margin:8px 0 14px}
+.foot-actions{display:flex;gap:10px}
+.foot-actions .btn-wa{flex:1}
+.drawer-empty{text-align:center;color:var(--slate-400);padding:60px 20px;font-size:14px;line-height:1.7}
+@media(max-width:520px){.stepper input{width:44px}.guide-thumb{width:92px;height:52px}.cart-fab{right:14px;bottom:14px}}
