@@ -19,17 +19,15 @@ function clamp(n, min, max) {
 
 // ---- one catalog card with its own quantity row + live fee ----------------
 function ProjectCard({ p, inCartQty, onAdd }) {
-  const [qty, setQty] = useState(() => inCartQty || Math.min(10, p.sisa) || 1);
-  const setSafe = (v) => setQty(clamp(parseInt(v, 10), 1, p.sisa || 1));
+  const [qty, setQty] = useState(0);
+  const setSafe = (v) => setQty(clamp(parseInt(v, 10), 0, p.sisa || 0));
   const inCart = inCartQty > 0;
+  const canAdd = qty > 0;
 
   return (
     <div className="card proj">
       <div className="proj-top">
         <span className={"tag " + tagClass(p.platform)}>{p.platform}</span>
-        <span className="muted" style={{ fontSize: 12 }}>
-          {p.id}
-        </span>
       </div>
       <h3>{p.subtes}</h3>
       <div className="out">{p.output}</div>
@@ -49,7 +47,7 @@ function ProjectCard({ p, inCartQty, onAdd }) {
         <button
           className="qbtn"
           onClick={() => setSafe(qty - 1)}
-          disabled={qty <= 1}
+          disabled={qty <= 0}
           aria-label="Kurangi"
         >
           −
@@ -63,6 +61,14 @@ function ProjectCard({ p, inCartQty, onAdd }) {
         >
           +
         </button>
+        <button
+          className="qbtn qmax"
+          onClick={() => setSafe(p.sisa)}
+          disabled={qty >= p.sisa}
+          title="Ambil semua stok (maks)"
+        >
+          Max
+        </button>
         <span className="qfee">
           = <b>{rupiah(qty * p.harga)}</b>
         </span>
@@ -71,6 +77,7 @@ function ProjectCard({ p, inCartQty, onAdd }) {
       <button
         className={"btn btn-blue add-btn" + (inCart ? " in-cart" : "")}
         onClick={() => onAdd(p, qty)}
+        disabled={!canAdd}
       >
         {inCart
           ? `✓ Di keranjang (${numberID(inCartQty)})`
@@ -109,6 +116,7 @@ export default function OpenBoard({
 
   // Adding sets the cart quantity to the card's chosen amount (replace).
   const addToCart = (p, qty) => {
+    if (qty <= 0) return;
     setCart((prev) => {
       const nq = clamp(qty, 1, p.sisa);
       const found = prev.find((it) => it.id === p.id);
@@ -173,7 +181,6 @@ export default function OpenBoard({
   }, [projects, q, plat, sort]);
 
   const totalSisa = filtered.reduce((s, p) => s + p.sisa, 0);
-  const potensi = filtered.reduce((s, p) => s + p.sisa * p.harga, 0);
 
   return (
     <>
@@ -225,11 +232,6 @@ export default function OpenBoard({
                 <div className="label">Total Soal Tersedia</div>
                 <div className="value navy">{numberID(totalSisa)}</div>
                 <div className="sub">stok kebutuhan</div>
-              </div>
-              <div className="card stat">
-                <div className="label">Nilai Total</div>
-                <div className="value green">{rupiah(potensi)}</div>
-                <div className="sub">bila semua diambil</div>
               </div>
               <div className="card stat">
                 <div className="label">Platform</div>
