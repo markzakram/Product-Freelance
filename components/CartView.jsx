@@ -16,7 +16,7 @@ function buildWaMessage(cart, brand, nama, wa) {
   const soal = cart.reduce((s, it) => s + it.qty, 0);
   const fee = cart.reduce((s, it) => s + it.qty * it.harga, 0);
   let msg =
-    `Halo ${brand}, saya mau mengambil proyek soal berikut:\n\n` +
+    `Halo kak, saya mau mengambil proyek soal berikut:\n\n` +
     `${lines}\n\n———\n` +
     `Total: ${items} submateri · ${numberID(soal)} soal\n` +
     `Total fee: ${rupiah(fee)}`;

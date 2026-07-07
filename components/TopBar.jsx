@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const BRAND = process.env.NEXT_PUBLIC_BRAND || "Cerebrum";
 
@@ -11,6 +12,7 @@ export default function TopBar({ active, variant = "public" }) {
           <span>{BRAND} · Guru Freelance</span>
         </Link>
         <nav className="nav">
+          <ThemeToggle />
           {variant === "public" ? (
             <>
               <Link href="/open" className={active === "open" ? "active" : ""}>
