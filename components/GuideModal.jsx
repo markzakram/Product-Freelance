@@ -17,16 +17,33 @@ export default function GuideModal({ open, onClose, items = [] }) {
     <div className="overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
-          <h2>📘 Tata Cara Pengambilan Proyek</h2>
+          <h2>📘 Panduan</h2>
           <button className="icon-x" onClick={onClose} aria-label="Tutup">
             ✕
           </button>
         </div>
         <div className="modal-body">
           <p className="modal-sub">
-            Tonton video panduan berikut sebelum mengambil proyek, agar proses
-            input dan pengumpulan soal sesuai standar.
+            Baca dokumen briefing dan tonton video panduan berikut sebelum
+            mengambil proyek, agar proses input dan pengumpulan soal sesuai
+            standar.
           </p>
+
+          <a
+            className="guide-doc"
+            href="/panduan-kerja-guru-freelance.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span className="doc-ico">📄</span>
+            <div className="g-txt">
+              <div className="g-no">DOKUMEN</div>
+              <div className="g-ket">
+                Briefing &amp; Panduan Kerja Guru Freelance (PDF)
+              </div>
+              <span className="g-go">Buka / unduh PDF →</span>
+            </div>
+          </a>
           {items.length === 0 ? (
             <div className="empty">Panduan belum tersedia.</div>
           ) : (

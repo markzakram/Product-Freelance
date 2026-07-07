@@ -26,9 +26,6 @@ function ProjectCard({ p, inCartQty, onAdd }) {
 
   return (
     <div className="card proj">
-      <div className="proj-top">
-        <span className={"tag " + tagClass(p.platform)}>{p.platform}</span>
-      </div>
       <h3>{p.subtes}</h3>
       <div className="out">{p.output}</div>
       <div className="proj-meta">
