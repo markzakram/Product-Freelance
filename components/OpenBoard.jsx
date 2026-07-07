@@ -49,7 +49,16 @@ function ProjectCard({ p, inCartQty, onAdd }) {
         >
           −
         </button>
-        <span className="qval">{qty}</span>
+        <input
+          className="qval qinp"
+          type="number"
+          min={0}
+          max={p.sisa}
+          value={qty}
+          onChange={(e) => setSafe(e.target.value)}
+          onFocus={(e) => e.target.select()}
+          aria-label="Jumlah soal"
+        />
         <button
           className="qbtn"
           onClick={() => setSafe(qty + 1)}
