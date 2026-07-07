@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { rupiah, numberID } from "@/lib/format";
 
+const FORM_URL =
+  "https://docs.google.com/forms/d/e/1FAIpQLSdESBDdyAEaQfk7WllFk57qVb5_Kslm1zoi04wwL3OOLN1BJg/viewform";
+
 function buildWaMessage(cart, brand, nama, wa) {
   const lines = cart
     .map(
@@ -36,6 +39,7 @@ export default function CartView({
 }) {
   const [nama, setNama] = useState("");
   const [wa, setWa] = useState("");
+  const [showForm, setShowForm] = useState(false);
 
   const items = cart.length;
   const soal = cart.reduce((s, it) => s + it.qty, 0);
@@ -173,20 +177,14 @@ export default function CartView({
             <span>Total Fee</span>
             <span>{rupiah(fee)}</span>
           </div>
-          <a
+          <button
             className="btn btn-wa"
-            style={{
-              width: "100%",
-              marginTop: 14,
-              ...(canCheckout ? {} : { opacity: 0.5, pointerEvents: "none" }),
-            }}
-            href={canCheckout ? waHref : "#"}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-disabled={!canCheckout}
+            style={{ width: "100%", marginTop: 14 }}
+            onClick={() => setShowForm(true)}
+            disabled={!canCheckout}
           >
-            📩 Kirim Pesanan via WhatsApp
-          </a>
+            📩 Kirim Pesanan
+          </button>
           {!canCheckout ? (
             <div
               className="muted"
@@ -212,6 +210,51 @@ export default function CartView({
           </button>
         </div>
       </div>
+
+      {showForm ? (
+        <div className="overlay" onClick={() => setShowForm(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <h2>📋 Pendataan Guru Freelance</h2>
+              <button
+                className="icon-x"
+                onClick={() => setShowForm(false)}
+                aria-label="Tutup"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="modal-body">
+              <p className="modal-sub">
+                Sebelum mengirim pesanan, mohon isi form pendataan berikut agar
+                kamu terdaftar di database kami, mendapat info proyek
+                selanjutnya, dan dihubungi untuk pencairan fee.
+              </p>
+              <a
+                className="btn btn-blue"
+                style={{ width: "100%", marginBottom: 10 }}
+                href={FORM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                📋 Isi Form Pendataan Guru
+              </a>
+              <a
+                className="btn btn-wa"
+                href={waHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setShowForm(false)}
+              >
+                Lanjut kirim pesanan ke WhatsApp
+              </a>
+              <button className="btn-link" onClick={() => setShowForm(false)}>
+                Nanti saja
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }
