@@ -16,7 +16,6 @@ export default function TopBar({ active, variant = "public" }) {
               <Link href="/open" className={active === "open" ? "active" : ""}>
                 Open Freelance
               </Link>
-              <Link href="/admin">Login Internal</Link>
             </>
           ) : (
             <>

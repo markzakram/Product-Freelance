@@ -102,16 +102,9 @@ export default function OpenBoard({
   const [view, setView] = useState("catalog"); // "catalog" | "cart"
   const [guideOpen, setGuideOpen] = useState(false);
 
-  // Auto-show the guide once per browser (first visit).
+  // Show the guide popup on every visit to this page.
   useEffect(() => {
-    try {
-      if (!localStorage.getItem("gf_guide_seen")) {
-        setGuideOpen(true);
-        localStorage.setItem("gf_guide_seen", "1");
-      }
-    } catch (_) {
-      /* localStorage unavailable — skip auto popup */
-    }
+    setGuideOpen(true);
   }, []);
 
   // Adding sets the cart quantity to the card's chosen amount (replace).

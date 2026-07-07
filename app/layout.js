@@ -1,4 +1,5 @@
 import "./globals.css";
+import SecretAccess from "@/components/SecretAccess";
 
 export const metadata = {
   title: "Proyek Guru Freelance — Dashboard",
@@ -8,7 +9,10 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="id">
-      <body>{children}</body>
+      <body>
+        {children}
+        <SecretAccess />
+      </body>
     </html>
   );
 }

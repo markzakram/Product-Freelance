@@ -44,6 +44,7 @@ export default function CartView({
   const waHref = `${base}?text=${encodeURIComponent(
     buildWaMessage(cart, brand, nama, wa)
   )}`;
+  const canCheckout = nama.trim() !== "" && wa.trim() !== "";
 
   if (items === 0) {
     return (
@@ -137,24 +138,24 @@ export default function CartView({
       <div className="split" style={{ marginTop: 16 }}>
         <div className="card card-p">
           <h2 style={{ margin: "0 0 12px", fontSize: 16 }}>
-            Data pengambil (opsional)
+            Data pengambil (wajib diisi)
           </h2>
           <input
             className="input"
-            placeholder="Nama guru"
+            placeholder="Nama guru *"
             style={{ width: "100%", marginBottom: 10 }}
             value={nama}
             onChange={(e) => setNama(e.target.value)}
           />
           <input
             className="input"
-            placeholder="Nomor WhatsApp kamu (mis. 0812…)"
+            placeholder="Nomor WhatsApp kamu * (mis. 0812…)"
             style={{ width: "100%" }}
             value={wa}
             onChange={(e) => setWa(e.target.value)}
           />
           <div className="muted" style={{ marginTop: 10, fontSize: 12.5 }}>
-            Data ini ikut tercantum di pesan WhatsApp.
+            Wajib diisi — ikut tercantum di pesan WhatsApp untuk konfirmasi.
           </div>
         </div>
 
@@ -174,13 +175,31 @@ export default function CartView({
           </div>
           <a
             className="btn btn-wa"
-            style={{ width: "100%", marginTop: 14 }}
-            href={waHref}
+            style={{
+              width: "100%",
+              marginTop: 14,
+              ...(canCheckout ? {} : { opacity: 0.5, pointerEvents: "none" }),
+            }}
+            href={canCheckout ? waHref : "#"}
             target="_blank"
             rel="noopener noreferrer"
+            aria-disabled={!canCheckout}
           >
             📩 Kirim Pesanan via WhatsApp
           </a>
+          {!canCheckout ? (
+            <div
+              className="muted"
+              style={{
+                color: "var(--red-600)",
+                fontSize: 12.5,
+                marginTop: 8,
+                textAlign: "center",
+              }}
+            >
+              Isi nama &amp; nomor WhatsApp dulu untuk mengirim.
+            </div>
+          ) : null}
           <button
             className="btn btn-ghost"
             style={{ width: "100%", marginTop: 8 }}
