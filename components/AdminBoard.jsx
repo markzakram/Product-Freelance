@@ -5,8 +5,13 @@
 //
 //  Semua perubahan ditulis balik ke Google Sheets (spreadsheet tetap jadi
 //  sumber kebenaran). Kolom turunan — Sisa, Fee, Bulan — dihitung oleh formula
-//  di sheet, jadi di sini sifatnya baca-saja dan ditandai ikon kunci; menimpanya
-//  dengan angka statis akan merusak formula sheet.
+//  di sheet, jadi di sini sifatnya baca-saja; menimpanya dengan angka statis
+//  akan merusak formula sheet.
+//
+//  Tabel sengaja dibuat FIXED (tanpa geser horizontal): kolom memakai lebar
+//  persen + teks membungkus, dan kolom yang bisa diturunkan digabung
+//  (Bulan menyatu ke Tanggal, ID Guru ke Guru, PIC Soal+Video jadi satu).
+//  Edit/tambah dilakukan lewat popup, bukan input di dalam baris.
 // ============================================================================
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -16,17 +21,9 @@ import PrintArea from "./Receipts";
 const STATUS_KNOWN = ["Running Soal", "QC Soal", "Revisi Soal", "Approved", "Running Video"];
 const SEMUA = "Semua";
 const POLL_MS = 45000;
+const LOGIN_URL = "/admin/login?next=%2Fadmin";
 
-const F0 = {
-  q: "",
-  from: "",
-  to: "",
-  platform: SEMUA,
-  guru: SEMUA,
-  subtes: SEMUA,
-  status: SEMUA,
-  pic: SEMUA,
-};
+const F0 = { q: "", from: "", to: "", platform: SEMUA, guru: SEMUA, subtes: SEMUA, status: SEMUA, pic: SEMUA };
 
 const tglID = (iso) => {
   const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -34,13 +31,31 @@ const tglID = (iso) => {
 };
 const uniq = (arr) => Array.from(new Set(arr.filter(Boolean))).sort((a, b) => a.localeCompare(b));
 
-async function mutate(payload) {
+// Cookie sesi = hash dari INTERNAL_PASSWORD. Kalau password diganti atau cookie
+// kedaluwarsa (12 jam), tab yang masih terbuka akan dapat 401 — itu bukan error
+// data, jadi ditangani khusus: polling dihentikan dan user diminta login ulang.
+class SesiBerakhir extends Error {
+  constructor() {
+    super("Sesi berakhir");
+    this.expired = true;
+  }
+}
+
+async function apiGet() {
+  const res = await fetch("/api/admin/board", { cache: "no-store" });
+  if (res.status === 401) throw new SesiBerakhir();
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+async function apiPost(payload) {
   const res = await fetch("/api/admin/board", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
     cache: "no-store",
   });
+  if (res.status === 401) throw new SesiBerakhir();
   const j = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(j.error || `Gagal menyimpan (HTTP ${res.status})`);
   return j;
@@ -76,38 +91,48 @@ function Bars({ data, fmt = numberID, color }) {
   );
 }
 
+const Cols = ({ widths }) => (
+  <colgroup>
+    {widths.map((w, i) => (
+      <col key={i} style={{ width: w + "%" }} />
+    ))}
+  </colgroup>
+);
+
 // ============================================================================
 export default function AdminBoard({ initial, brand = "Cerebrum" }) {
   const [board, setBoard] = useState(initial);
   const [tab, setTab] = useState("ringkasan");
   const [f, setF] = useState(F0);
   const [err, setErr] = useState("");
+  const [expired, setExpired] = useState(false);
   const [busy, setBusy] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncedAt, setSyncedAt] = useState(null);
-  const [print, setPrint] = useState(null); // { groups, mode }
+  const [print, setPrint] = useState(null);
 
   const { projects = [], assignments = [], teachers = [], source, canWrite } = board;
   const readOnly = !canWrite;
 
-  // --- realtime: tarik ulang dari sheet ------------------------------------
   const refresh = useCallback(async () => {
     setSyncing(true);
     try {
-      const res = await fetch("/api/admin/board", { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const j = await res.json();
+      const j = await apiGet();
       setBoard(j);
       setSyncedAt(new Date());
       setErr("");
     } catch (e) {
-      setErr("Gagal menyegarkan data: " + e.message);
+      if (e.expired) setExpired(true);
+      else setErr("Gagal menyegarkan data: " + e.message);
     } finally {
       setSyncing(false);
     }
   }, []);
 
+  // Sekali sesi habis, berhenti polling — kalau tidak, banner error akan
+  // muncul berulang tiap 45 detik tanpa pernah bisa berhasil.
   useEffect(() => {
+    if (expired) return undefined;
     const id = setInterval(refresh, POLL_MS);
     const onFocus = () => refresh();
     window.addEventListener("focus", onFocus);
@@ -115,18 +140,19 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
       clearInterval(id);
       window.removeEventListener("focus", onFocus);
     };
-  }, [refresh]);
+  }, [refresh, expired]);
 
   const run = useCallback(
     async (payload) => {
       setBusy(true);
       setErr("");
       try {
-        await mutate(payload);
+        await apiPost(payload);
         await refresh();
         return true;
       } catch (e) {
-        setErr(e.message);
+        if (e.expired) setExpired(true);
+        else setErr(e.message);
         return false;
       } finally {
         setBusy(false);
@@ -135,7 +161,6 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
     [refresh]
   );
 
-  // --- indeks bantu ---------------------------------------------------------
   const projById = useMemo(() => new Map(projects.map((p) => [p.id, p])), [projects]);
   const teacherById = useMemo(() => new Map(teachers.map((t) => [String(t.idGuru), t])), [teachers]);
   const teacherByName = useMemo(() => {
@@ -158,7 +183,6 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
     [teacherById, teacherByName, teachers]
   );
 
-  // --- opsi filter ----------------------------------------------------------
   const opts = useMemo(
     () => ({
       platform: uniq(projects.map((p) => p.platform)),
@@ -170,7 +194,6 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
     [projects, assignments]
   );
 
-  // --- terapkan filter ke log ----------------------------------------------
   const rows = useMemo(() => {
     const q = f.q.trim().toLowerCase();
     return assignments.filter((a) => {
@@ -189,18 +212,13 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
 
   const filterAktif = JSON.stringify(f) !== JSON.stringify(F0);
 
-  // --- angka ringkasan ------------------------------------------------------
   const stat = useMemo(() => {
     const kebutuhan = projects.reduce((a, p) => a + p.kebutuhan, 0);
     const sisa = projects.reduce((a, p) => a + p.sisa, 0);
     const diambil = kebutuhan - sisa;
-    // Anggaran total = harga x kebutuhan untuk SELURUH katalog.
     const anggaran = projects.reduce((a, p) => a + p.harga * p.kebutuhan, 0);
-    // Yang masih perlu disiapkan = harga x sisa (stok negatif tidak dihitung).
     const anggaranSisa = projects.reduce((a, p) => a + p.harga * Math.max(0, p.sisa), 0);
-    // Kewajiban ke guru = SUM kolom Fee tabel hijau (sudah fix dari sheet).
     const feeTotal = assignments.reduce((a, x) => a + x.fee, 0);
-    const feeFilter = rows.reduce((a, x) => a + x.fee, 0);
     const byStatus = {};
     assignments.forEach((a) => {
       const k = a.status || "(kosong)";
@@ -211,8 +229,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
     });
     const byGuru = {};
     assignments.forEach((a) => {
-      if (!a.guru) return;
-      byGuru[a.guru] = (byGuru[a.guru] || 0) + a.fee;
+      if (a.guru) byGuru[a.guru] = (byGuru[a.guru] || 0) + a.fee;
     });
     const byPlat = {};
     projects.forEach((p) => {
@@ -228,7 +245,6 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
       anggaran,
       anggaranSisa,
       feeTotal,
-      feeFilter,
       byStatus,
       byGuru,
       byPlat,
@@ -237,9 +253,8 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
       habis: projects.filter((p) => p.sisa <= 0).length,
       negatif: projects.filter((p) => p.sisa < 0).length,
     };
-  }, [projects, assignments, rows]);
+  }, [projects, assignments]);
 
-  // --- pengelompokan untuk kwitansi ----------------------------------------
   const groups = useMemo(() => {
     const m = new Map();
     rows.forEach((a) => {
@@ -258,7 +273,6 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
   const doPrint = useCallback((gs, mode) => {
     if (!gs.length) return;
     setPrint({ groups: gs, mode });
-    // biarkan React merender area cetak dulu, baru panggil dialog print
     setTimeout(() => {
       window.print();
       setPrint(null);
@@ -266,6 +280,8 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
   }, []);
 
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
+
+  if (expired) return <SessionExpired />;
 
   return (
     <>
@@ -327,17 +343,29 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
           platformOf={platformOf}
         />
       )}
-
       {tab === "katalog" && <KatalogTable projects={projects} run={run} busy={busy} readOnly={readOnly} />}
-
-      {tab === "bayar" && (
-        <Bayar groups={groups} stat={stat} periode={periode} doPrint={doPrint} rows={rows} />
-      )}
-
+      {tab === "bayar" && <Bayar groups={groups} periode={periode} doPrint={doPrint} rows={rows} />}
       {tab === "guru" && <GuruTable teachers={teachers} assignments={assignments} />}
 
       {print ? <PrintArea groups={print.groups} mode={print.mode} brand={brand} periode={periode} /> : null}
     </>
+  );
+}
+
+/* ========================= SESI BERAKHIR ================================== */
+function SessionExpired() {
+  return (
+    <div className="card card-p expired">
+      <div className="expired-ico">🔒</div>
+      <h2>Sesi kamu sudah berakhir</h2>
+      <p className="muted">
+        Ini terjadi kalau password internal baru saja diganti, atau sesi sudah lewat 12 jam. Datanya aman — cukup
+        login ulang untuk melanjutkan.
+      </p>
+      <a className="btn btn-blue" href={LOGIN_URL}>
+        Login ulang
+      </a>
+    </div>
   );
 }
 
@@ -479,43 +507,176 @@ function Filters({ f, set, opts, reset, aktif, n }) {
   );
 }
 
-/* ========================= LOG PENGAMBILAN (CRUD) ========================= */
-const BLANK_A = {
-  tanggal: "",
-  idProject: "",
-  guru: "",
-  idGuru: "",
-  subtes: "",
-  jumlah: "",
-  status: "",
-  picSoal: "",
-  picVideo: "",
-};
+/* =========================== POPUP EDIT/TAMBAH ============================ */
+function Modal({ title, children, onCancel, onSave, busy, saveLabel = "Simpan" }) {
+  useEffect(() => {
+    const onKey = (e) => e.key === "Escape" && !busy && onCancel();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel, busy]);
+
+  return (
+    <div className="overlay" onClick={() => !busy && onCancel()}>
+      <div className="modal wide" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <h2>{title}</h2>
+          <button className="icon-x" onClick={onCancel} disabled={busy} aria-label="Tutup">
+            ✕
+          </button>
+        </div>
+        <div className="modal-body">{children}</div>
+        <div className="modal-foot">
+          <button className="btn btn-ghost" onClick={onCancel} disabled={busy}>
+            Batal
+          </button>
+          <button className="btn btn-blue" onClick={onSave} disabled={busy}>
+            {busy ? "Menyimpan…" : saveLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const Field = ({ label, children, hint, wide }) => (
+  <label className={"ffield" + (wide ? " wide" : "")}>
+    <span>{label}</span>
+    {children}
+    {hint ? <small>{hint}</small> : null}
+  </label>
+);
+
+function AssignmentModal({ mode, draft, onDraft, projects, teachers, opts, onSave, onCancel, busy }) {
+  const proj = projects.find((p) => p.id === draft.idProject);
+  const fee = (proj?.harga || 0) * (parseInt(draft.jumlah, 10) || 0);
+  const bulan = /^(\d{4})-(\d{2})/.exec(draft.tanggal || "");
+
+  return (
+    <Modal
+      title={mode === "create" ? "＋ Tambah Baris Log" : "✎ Edit Baris Log"}
+      onCancel={onCancel}
+      onSave={onSave}
+      busy={busy}
+    >
+      <div className="form-grid">
+        <Field label="Tanggal">
+          <input className="input" type="date" value={draft.tanggal} onChange={(e) => onDraft("tanggal", e.target.value)} />
+        </Field>
+        <Field label="ID Project" hint={proj ? `Harga ${rupiah(proj.harga)} · sisa ${numberID(proj.sisa)}` : null}>
+          <select className="select" value={draft.idProject} onChange={(e) => onDraft("idProject", e.target.value)}>
+            <option value="">— pilih proyek —</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.id} · {p.subtes}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Guru" hint="Pilih dari daftar agar ID Guru terisi otomatis">
+          <input className="input" list="guru-list" value={draft.guru} onChange={(e) => onDraft("guru", e.target.value)} placeholder="Nama guru" />
+          <datalist id="guru-list">
+            {teachers.map((t) => (
+              <option key={t.idGuru} value={t.nama} />
+            ))}
+          </datalist>
+        </Field>
+        <Field label="ID Guru">
+          <input className="input" value={draft.idGuru} onChange={(e) => onDraft("idGuru", e.target.value)} />
+        </Field>
+        <Field label="Subtes" wide>
+          <input className="input" value={draft.subtes} onChange={(e) => onDraft("subtes", e.target.value)} />
+        </Field>
+        <Field label="Jumlah soal">
+          <input className="input" type="number" min={0} value={draft.jumlah} onChange={(e) => onDraft("jumlah", e.target.value)} />
+        </Field>
+        <Field label="Status">
+          <select className="select" value={draft.status} onChange={(e) => onDraft("status", e.target.value)}>
+            <option value="">—</option>
+            {opts.status.map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="PIC QC Soal">
+          <input className="input" value={draft.picSoal} onChange={(e) => onDraft("picSoal", e.target.value)} />
+        </Field>
+        <Field label="PIC QC Video">
+          <input className="input" value={draft.picVideo} onChange={(e) => onDraft("picVideo", e.target.value)} />
+        </Field>
+      </div>
+
+      <div className="derived-box">
+        <b>🔒 Dihitung otomatis oleh spreadsheet</b>
+        <div>
+          <span>Fee</span>
+          <b>{rupiah(fee)}</b>
+          <small>Jumlah × Harga proyek</small>
+        </div>
+        <div>
+          <span>Bulan</span>
+          <b>{bulan ? `${bulan[1]}-${bulan[2]}` : "—"}</b>
+          <small>diambil dari Tanggal</small>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function ProjectModal({ mode, draft, onDraft, onSave, onCancel, busy }) {
+  const total = (parseInt(draft.harga, 10) || 0) * (parseInt(draft.kebutuhan, 10) || 0);
+  return (
+    <Modal
+      title={mode === "create" ? "＋ Tambah Proyek" : "✎ Edit Proyek"}
+      onCancel={onCancel}
+      onSave={onSave}
+      busy={busy}
+    >
+      <div className="form-grid">
+        <Field label="ID Project">
+          <input className="input" value={draft.id} onChange={(e) => onDraft("id", e.target.value)} placeholder="ASN-xx" />
+        </Field>
+        <Field label="Platform">
+          <input className="input" value={draft.platform} onChange={(e) => onDraft("platform", e.target.value)} />
+        </Field>
+        <Field label="Subtes" wide>
+          <input className="input" value={draft.subtes} onChange={(e) => onDraft("subtes", e.target.value)} />
+        </Field>
+        <Field label="Output">
+          <input className="input" value={draft.output} onChange={(e) => onDraft("output", e.target.value)} />
+        </Field>
+        <Field label="Harga per soal">
+          <input className="input" type="number" min={0} value={draft.harga} onChange={(e) => onDraft("harga", e.target.value)} />
+        </Field>
+        <Field label="Kebutuhan">
+          <input className="input" type="number" min={0} value={draft.kebutuhan} onChange={(e) => onDraft("kebutuhan", e.target.value)} />
+        </Field>
+      </div>
+      <div className="derived-box">
+        <b>🔒 Dihitung otomatis oleh spreadsheet</b>
+        <div>
+          <span>Sisa</span>
+          <b>otomatis</b>
+          <small>Kebutuhan − yang sudah diambil</small>
+        </div>
+        <div>
+          <span>Nilai proyek</span>
+          <b>{rupiah(total)}</b>
+          <small>Harga × Kebutuhan</small>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/* ========================= LOG PENGAMBILAN =============================== */
+const BLANK_A = { tanggal: "", idProject: "", guru: "", idGuru: "", subtes: "", jumlah: "", status: "", picSoal: "", picVideo: "" };
 
 function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, platformOf }) {
-  const [editRow, setEditRow] = useState(null);
+  const [edit, setEdit] = useState(null); // { mode, row }
   const [draft, setDraft] = useState(BLANK_A);
-  const [adding, setAdding] = useState(false);
   const [confirm, setConfirm] = useState(null);
 
-  const startEdit = (a) => {
-    setAdding(false);
-    setEditRow(a.row);
-    setDraft({
-      tanggal: a.tanggal,
-      idProject: a.idProject,
-      guru: a.guru,
-      idGuru: a.idGuru,
-      subtes: a.subtes,
-      jumlah: a.jumlah || "",
-      status: a.status,
-      picSoal: a.picSoal,
-      picVideo: a.picVideo,
-    });
-  };
-
-  // Pilih proyek -> subtes ikut terisi; pilih guru -> ID Guru ikut terisi.
-  const onDraft = (k, v) => {
+  const onDraft = (k, v) =>
     setDraft((d) => {
       const nd = { ...d, [k]: v };
       if (k === "idProject") {
@@ -523,102 +684,20 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, p
         if (p) nd.subtes = p.subtes;
       }
       if (k === "guru") {
-        const t = teachers.find((x) => x.nama === v || x.nama.toLowerCase().startsWith(v.toLowerCase()));
+        const t = teachers.find((x) => x.nama === v);
         if (t) nd.idGuru = t.idGuru;
       }
       return nd;
     });
-  };
 
   const save = async () => {
     const ok = await run(
-      adding
+      edit.mode === "create"
         ? { table: "assignments", action: "create", data: draft }
-        : { table: "assignments", action: "update", row: editRow, data: draft }
+        : { table: "assignments", action: "update", row: edit.row, data: draft }
     );
-    if (ok) {
-      setEditRow(null);
-      setAdding(false);
-      setDraft(BLANK_A);
-    }
+    if (ok) setEdit(null);
   };
-
-  const del = async (a) => {
-    const ok = await run({ table: "assignments", action: "delete", row: a.row });
-    if (ok) setConfirm(null);
-  };
-
-  const hargaDraft = projects.find((p) => p.id === draft.idProject)?.harga || 0;
-  const feePreview = hargaDraft * (parseInt(draft.jumlah, 10) || 0);
-
-  // Sel-sel form dipakai ulang oleh baris "tambah" dan baris "edit".
-  const formCells = (
-    <>
-      <td>
-        <input className="input xs" type="date" value={draft.tanggal} onChange={(e) => onDraft("tanggal", e.target.value)} />
-      </td>
-      <td>
-        <select className="select xs" value={draft.idProject} onChange={(e) => onDraft("idProject", e.target.value)}>
-          <option value="">— pilih —</option>
-          {projects.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.id} · {p.subtes.slice(0, 34)}
-            </option>
-          ))}
-        </select>
-      </td>
-      <td>
-        <input className="input xs" list="guru-list" value={draft.guru} onChange={(e) => onDraft("guru", e.target.value)} placeholder="Nama guru" />
-        <datalist id="guru-list">
-          {teachers.map((t) => (
-            <option key={t.idGuru} value={t.nama} />
-          ))}
-        </datalist>
-      </td>
-      <td>
-        <input className="input xs w60" value={draft.idGuru} onChange={(e) => onDraft("idGuru", e.target.value)} />
-      </td>
-      <td>
-        <input className="input xs" value={draft.subtes} onChange={(e) => onDraft("subtes", e.target.value)} />
-      </td>
-      <td className="num">
-        <input className="input xs w70" type="number" min={0} value={draft.jumlah} onChange={(e) => onDraft("jumlah", e.target.value)} />
-      </td>
-      <td className="num derived" title="Dihitung formula sheet: Jumlah × Harga">
-        🔒 {rupiah(feePreview)}
-      </td>
-      <td>
-        <select className="select xs" value={draft.status} onChange={(e) => onDraft("status", e.target.value)}>
-          <option value="">—</option>
-          {opts.status.map((s) => (
-            <option key={s}>{s}</option>
-          ))}
-        </select>
-      </td>
-      <td>
-        <input className="input xs w70" value={draft.picSoal} onChange={(e) => onDraft("picSoal", e.target.value)} />
-      </td>
-      <td>
-        <input className="input xs w70" value={draft.picVideo} onChange={(e) => onDraft("picVideo", e.target.value)} />
-      </td>
-      <td className="derived">🔒 auto</td>
-      <td className="act">
-        <button className="btn btn-blue xs" onClick={save} disabled={busy}>
-          {busy ? "…" : "Simpan"}
-        </button>
-        <button
-          className="btn btn-ghost xs"
-          onClick={() => {
-            setEditRow(null);
-            setAdding(false);
-          }}
-          disabled={busy}
-        >
-          Batal
-        </button>
-      </td>
-    </>
-  );
 
   return (
     <>
@@ -626,15 +705,14 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, p
         <h2>Log Pengambilan Soal</h2>
         <div className="head-actions">
           <span className="muted">
-            Fee tampil: <b>{rupiah(rows.reduce((a, x) => a + x.fee, 0))}</b> · dari total {rupiah(stat.feeTotal)}
+            Fee tampil: <b>{rupiah(rows.reduce((a, x) => a + x.fee, 0))}</b> · total {rupiah(stat.feeTotal)}
           </span>
           <button
             className="btn btn-blue sm"
             disabled={readOnly || busy}
             onClick={() => {
-              setEditRow(null);
-              setAdding(true);
               setDraft(BLANK_A);
+              setEdit({ mode: "create" });
             }}
           >
             ＋ Tambah Baris
@@ -642,68 +720,92 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, p
         </div>
       </div>
 
-      <div className="table-wrap">
+      <div className="table-wrap fixed">
         <table className="grid-table">
+          <Cols widths={[9, 12, 14, 24, 6, 11, 11, 8, 5]} />
           <thead>
             <tr>
               <th>Tanggal</th>
               <th>ID Project</th>
               <th>Guru</th>
-              <th>ID Guru</th>
               <th>Subtes</th>
-              <th className="num">Jumlah</th>
+              <th className="num">Jml</th>
               <th className="num">Fee 🔒</th>
               <th>Status</th>
-              <th>PIC Soal</th>
-              <th>PIC Video</th>
-              <th>Bulan 🔒</th>
-              <th className="act">Aksi</th>
+              <th>PIC QC</th>
+              <th className="act" />
             </tr>
           </thead>
           <tbody>
-            {adding ? <tr className="edit-row">{formCells}</tr> : null}
-            {rows.length === 0 && !adding ? (
+            {rows.length === 0 ? (
               <tr>
-                <td colSpan={12} className="empty">
+                <td colSpan={9} className="empty">
                   Tidak ada baris yang cocok dengan filter.
                 </td>
               </tr>
             ) : null}
-            {rows.map((a) =>
-              editRow === a.row ? (
-                <tr className="edit-row" key={a.row}>
-                  {formCells}
-                </tr>
-              ) : (
-                <tr key={a.row}>
-                  <td>{tglID(a.tanggal) || "—"}</td>
-                  <td>
-                    <span className="mono">{a.idProject || "—"}</span>
-                    {platformOf(a) ? <div className="muted xs2">{platformOf(a)}</div> : null}
-                  </td>
-                  <td>{a.guru || "—"}</td>
-                  <td className="mono">{a.idGuru || "—"}</td>
-                  <td className="wrap">{a.subtes || "—"}</td>
-                  <td className="num">{a.jumlah ? numberID(a.jumlah) : "—"}</td>
-                  <td className="num derived">{a.fee ? rupiah(a.fee) : "—"}</td>
-                  <td>{statusPill(a.status)}</td>
-                  <td>{a.picSoal || "—"}</td>
-                  <td>{a.picVideo || "—"}</td>
-                  <td className="derived">{a.bulan || "—"}</td>
-                  <td className="act">
-                    <button className="btn btn-ghost xs" onClick={() => startEdit(a)} disabled={readOnly || busy}>
-                      Edit
-                    </button>
-                    <button className="btn btn-red xs" onClick={() => setConfirm(a)} disabled={readOnly || busy}>
-                      Hapus
-                    </button>
-                  </td>
-                </tr>
-              )
-            )}
+            {rows.map((a) => (
+              <tr key={a.row}>
+                <td>
+                  {tglID(a.tanggal) || "—"}
+                  {a.bulan ? <div className="muted xs2">{a.bulan}</div> : null}
+                </td>
+                <td>
+                  <span className="mono">{a.idProject || "—"}</span>
+                  {platformOf(a) ? <div className="muted xs2">{platformOf(a)}</div> : null}
+                </td>
+                <td>
+                  {a.guru || "—"}
+                  {a.idGuru ? <div className="muted xs2">ID {a.idGuru}</div> : null}
+                </td>
+                <td className="wrap">{a.subtes || "—"}</td>
+                <td className="num">{a.jumlah ? numberID(a.jumlah) : "—"}</td>
+                <td className="num derived">{a.fee ? rupiah(a.fee) : "—"}</td>
+                <td>{statusPill(a.status)}</td>
+                <td className="xs2">
+                  {a.picSoal ? <div>📝 {a.picSoal}</div> : null}
+                  {a.picVideo ? <div>🎬 {a.picVideo}</div> : null}
+                  {!a.picSoal && !a.picVideo ? "—" : null}
+                </td>
+                <td className="act">
+                  <RowMenu
+                    disabled={readOnly || busy}
+                    onEdit={() => {
+                      setDraft({
+                        tanggal: a.tanggal,
+                        idProject: a.idProject,
+                        guru: a.guru,
+                        idGuru: a.idGuru,
+                        subtes: a.subtes,
+                        jumlah: a.jumlah || "",
+                        status: a.status,
+                        picSoal: a.picSoal,
+                        picVideo: a.picVideo,
+                      });
+                      setEdit({ mode: "edit", row: a.row });
+                    }}
+                    onDelete={() => setConfirm(a)}
+                  />
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
+
+      {edit ? (
+        <AssignmentModal
+          mode={edit.mode}
+          draft={draft}
+          onDraft={onDraft}
+          projects={projects}
+          teachers={teachers}
+          opts={opts}
+          onSave={save}
+          onCancel={() => setEdit(null)}
+          busy={busy}
+        />
+      ) : null}
 
       {confirm ? (
         <ConfirmDelete
@@ -712,7 +814,10 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, p
             confirm.jumlah || 0
           } soal · ${rupiah(confirm.fee)}`}
           onCancel={() => setConfirm(null)}
-          onOk={() => del(confirm)}
+          onOk={async () => {
+            const ok = await run({ table: "assignments", action: "delete", row: confirm.row });
+            if (ok) setConfirm(null);
+          }}
           busy={busy}
         />
       ) : null}
@@ -720,13 +825,12 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, p
   );
 }
 
-/* =========================== KATALOG (CRUD) =============================== */
+/* ============================== KATALOG ================================== */
 const BLANK_P = { id: "", platform: "", subtes: "", output: "", harga: "", kebutuhan: "" };
 
 function KatalogTable({ projects, run, busy, readOnly }) {
-  const [editRow, setEditRow] = useState(null);
+  const [edit, setEdit] = useState(null);
   const [draft, setDraft] = useState(BLANK_P);
-  const [adding, setAdding] = useState(false);
   const [confirm, setConfirm] = useState(null);
   const [q, setQ] = useState("");
 
@@ -735,59 +839,16 @@ function KatalogTable({ projects, run, busy, readOnly }) {
     return s ? projects.filter((p) => `${p.id} ${p.platform} ${p.subtes} ${p.output}`.toLowerCase().includes(s)) : projects;
   }, [projects, q]);
 
+  const onDraft = (k, v) => setDraft((d) => ({ ...d, [k]: v }));
+
   const save = async () => {
     const ok = await run(
-      adding ? { table: "projects", action: "create", data: draft } : { table: "projects", action: "update", row: editRow, data: draft }
+      edit.mode === "create"
+        ? { table: "projects", action: "create", data: draft }
+        : { table: "projects", action: "update", row: edit.row, data: draft }
     );
-    if (ok) {
-      setEditRow(null);
-      setAdding(false);
-      setDraft(BLANK_P);
-    }
+    if (ok) setEdit(null);
   };
-
-  const d = (k) => (e) => setDraft((p) => ({ ...p, [k]: e.target.value }));
-
-  const formCells = (
-    <>
-      <td>
-        <input className="input xs w90" value={draft.id} onChange={d("id")} placeholder="ASN-xx" />
-      </td>
-      <td>
-        <input className="input xs w90" value={draft.platform} onChange={d("platform")} />
-      </td>
-      <td>
-        <input className="input xs" value={draft.subtes} onChange={d("subtes")} />
-      </td>
-      <td>
-        <input className="input xs" value={draft.output} onChange={d("output")} />
-      </td>
-      <td className="num">
-        <input className="input xs w90" type="number" min={0} value={draft.harga} onChange={d("harga")} />
-      </td>
-      <td className="num">
-        <input className="input xs w70" type="number" min={0} value={draft.kebutuhan} onChange={d("kebutuhan")} />
-      </td>
-      <td className="num derived" title="Dihitung formula sheet: Kebutuhan − jumlah yang sudah diambil">
-        🔒 auto
-      </td>
-      <td className="act">
-        <button className="btn btn-blue xs" onClick={save} disabled={busy}>
-          {busy ? "…" : "Simpan"}
-        </button>
-        <button
-          className="btn btn-ghost xs"
-          onClick={() => {
-            setEditRow(null);
-            setAdding(false);
-          }}
-          disabled={busy}
-        >
-          Batal
-        </button>
-      </td>
-    </>
-  );
 
   return (
     <>
@@ -799,9 +860,8 @@ function KatalogTable({ projects, run, busy, readOnly }) {
             className="btn btn-blue sm"
             disabled={readOnly || busy}
             onClick={() => {
-              setEditRow(null);
-              setAdding(true);
               setDraft(BLANK_P);
+              setEdit({ mode: "create" });
             }}
           >
             ＋ Tambah Proyek
@@ -809,8 +869,9 @@ function KatalogTable({ projects, run, busy, readOnly }) {
         </div>
       </div>
 
-      <div className="table-wrap">
+      <div className="table-wrap fixed">
         <table className="grid-table">
+          <Cols widths={[12, 11, 29, 14, 10, 9, 8, 7]} />
           <thead>
             <tr>
               <th>ID Project</th>
@@ -820,54 +881,45 @@ function KatalogTable({ projects, run, busy, readOnly }) {
               <th className="num">Harga</th>
               <th className="num">Kebutuhan</th>
               <th className="num">Sisa 🔒</th>
-              <th className="act">Aksi</th>
+              <th className="act" />
             </tr>
           </thead>
           <tbody>
-            {adding ? <tr className="edit-row">{formCells}</tr> : null}
-            {list.map((p) =>
-              editRow === p.row ? (
-                <tr className="edit-row" key={p.row}>
-                  {formCells}
-                </tr>
-              ) : (
-                <tr key={p.row} className={p.sisa <= 0 ? "row-dim" : ""}>
-                  <td className="mono">{p.id}</td>
-                  <td>{p.platform || "—"}</td>
-                  <td className="wrap">{p.subtes}</td>
-                  <td>{p.output || "—"}</td>
-                  <td className="num">{rupiah(p.harga)}</td>
-                  <td className="num">{numberID(p.kebutuhan)}</td>
-                  <td className={"num derived" + (p.sisa < 0 ? " neg" : "")}>{numberID(p.sisa)}</td>
-                  <td className="act">
-                    <button
-                      className="btn btn-ghost xs"
-                      disabled={readOnly || busy}
-                      onClick={() => {
-                        setAdding(false);
-                        setEditRow(p.row);
-                        setDraft({
-                          id: p.id,
-                          platform: p.platform,
-                          subtes: p.subtes,
-                          output: p.output,
-                          harga: p.harga,
-                          kebutuhan: p.kebutuhan,
-                        });
-                      }}
-                    >
-                      Edit
-                    </button>
-                    <button className="btn btn-red xs" onClick={() => setConfirm(p)} disabled={readOnly || busy}>
-                      Hapus
-                    </button>
-                  </td>
-                </tr>
-              )
-            )}
+            {list.map((p) => (
+              <tr key={p.row} className={p.sisa <= 0 ? "row-dim" : ""}>
+                <td className="mono">{p.id}</td>
+                <td className="wrap">{p.platform || "—"}</td>
+                <td className="wrap">{p.subtes}</td>
+                <td className="wrap">{p.output || "—"}</td>
+                <td className="num">{rupiah(p.harga)}</td>
+                <td className="num">{numberID(p.kebutuhan)}</td>
+                <td className={"num derived" + (p.sisa < 0 ? " neg" : "")}>{numberID(p.sisa)}</td>
+                <td className="act">
+                  <RowMenu
+                    disabled={readOnly || busy}
+                    onEdit={() => {
+                      setDraft({
+                        id: p.id,
+                        platform: p.platform,
+                        subtes: p.subtes,
+                        output: p.output,
+                        harga: p.harga,
+                        kebutuhan: p.kebutuhan,
+                      });
+                      setEdit({ mode: "edit", row: p.row });
+                    }}
+                    onDelete={() => setConfirm(p)}
+                  />
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
+
+      {edit ? (
+        <ProjectModal mode={edit.mode} draft={draft} onDraft={onDraft} onSave={save} onCancel={() => setEdit(null)} busy={busy} />
+      ) : null}
 
       {confirm ? (
         <ConfirmDelete
@@ -887,7 +939,7 @@ function KatalogTable({ projects, run, busy, readOnly }) {
 }
 
 /* ====================== PEMBAYARAN & KWITANSI ============================= */
-function Bayar({ groups, stat, periode, doPrint, rows }) {
+function Bayar({ groups, periode, doPrint, rows }) {
   const total = groups.reduce((a, g) => a + g.total, 0);
   const tanpaRek = groups.filter((g) => !g.teacher?.rekening);
 
@@ -936,8 +988,9 @@ function Bayar({ groups, stat, periode, doPrint, rows }) {
         </div>
       </div>
 
-      <div className="table-wrap">
+      <div className="table-wrap fixed">
         <table className="grid-table">
+          <Cols widths={[26, 16, 18, 7, 8, 14, 11]} />
           <thead>
             <tr>
               <th>Guru</th>
@@ -959,12 +1012,12 @@ function Bayar({ groups, stat, periode, doPrint, rows }) {
             ) : null}
             {groups.map((g) => (
               <tr key={g.guru}>
-                <td>
+                <td className="wrap">
                   <b>{g.teacher?.nama || g.guru}</b>
                   {g.teacher?.nama && g.teacher.nama !== g.guru ? <div className="muted xs2">di log: {g.guru}</div> : null}
                 </td>
-                <td className="mono">{g.teacher?.rekening || <span className="neg">— belum ada —</span>}</td>
-                <td>{g.teacher?.pemilikRekening || "—"}</td>
+                <td className="mono wrap">{g.teacher?.rekening || <span className="neg">— belum ada —</span>}</td>
+                <td className="wrap">{g.teacher?.pemilikRekening || "—"}</td>
                 <td className="num">{numberID(g.items.length)}</td>
                 <td className="num">{numberID(g.soal)}</td>
                 <td className="num">
@@ -1004,8 +1057,7 @@ function GuruTable({ teachers, assignments }) {
     const m = new Map();
     assignments.forEach((a) => {
       const k = String(a.idGuru || "");
-      if (!k) return;
-      m.set(k, (m.get(k) || 0) + a.fee);
+      if (k) m.set(k, (m.get(k) || 0) + a.fee);
     });
     return m;
   }, [assignments]);
@@ -1023,8 +1075,9 @@ function GuruTable({ teachers, assignments }) {
           <input className="input sm" placeholder="Cari nama, ID, rekening…" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
       </div>
-      <div className="table-wrap">
+      <div className="table-wrap fixed">
         <table className="grid-table">
+          <Cols widths={[6, 27, 11, 16, 17, 12, 11]} />
           <thead>
             <tr>
               <th>ID</th>
@@ -1040,10 +1093,10 @@ function GuruTable({ teachers, assignments }) {
             {list.map((t) => (
               <tr key={t.idGuru + t.nama}>
                 <td className="mono">{t.idGuru}</td>
-                <td>{t.nama}</td>
-                <td>{t.status || "—"}</td>
-                <td className="mono">{t.rekening || <span className="neg">— belum ada —</span>}</td>
-                <td>{t.pemilikRekening || "—"}</td>
+                <td className="wrap">{t.nama}</td>
+                <td className="wrap">{t.status || "—"}</td>
+                <td className="mono wrap">{t.rekening || <span className="neg">— belum ada —</span>}</td>
+                <td className="wrap">{t.pemilikRekening || "—"}</td>
                 <td className="mono">{t.wa || "—"}</td>
                 <td className="num">{feeByGuru.get(String(t.idGuru)) ? rupiah(feeByGuru.get(String(t.idGuru))) : "—"}</td>
               </tr>
@@ -1055,10 +1108,24 @@ function GuruTable({ teachers, assignments }) {
   );
 }
 
+/* ============================== AKSI BARIS =============================== */
+function RowMenu({ onEdit, onDelete, disabled }) {
+  return (
+    <div className="rowmenu">
+      <button className="ibtn" onClick={onEdit} disabled={disabled} title="Edit">
+        ✎
+      </button>
+      <button className="ibtn danger" onClick={onDelete} disabled={disabled} title="Hapus">
+        🗑
+      </button>
+    </div>
+  );
+}
+
 /* ============================ KONFIRMASI ================================== */
 function ConfirmDelete({ title, detail, warn, onCancel, onOk, busy }) {
   return (
-    <div className="overlay" onClick={onCancel}>
+    <div className="overlay" onClick={() => !busy && onCancel()}>
       <div className="modal sm" onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <h2>🗑 {title}</h2>
@@ -1066,8 +1133,8 @@ function ConfirmDelete({ title, detail, warn, onCancel, onOk, busy }) {
         <div className="modal-body">
           <p className="modal-sub">{detail}</p>
           <p className="modal-sub">
-            Baris akan dihapus dari spreadsheet dan baris di bawahnya digeser naik. Tindakan ini tidak bisa
-            dibatalkan dari sini.
+            Baris akan dihapus dari spreadsheet dan baris di bawahnya digeser naik. Tindakan ini tidak bisa dibatalkan
+            dari sini.
           </p>
           {warn ? <p className="modal-sub warn-text">⚠ {warn}</p> : null}
           <button className="btn btn-red" style={{ width: "100%" }} onClick={onOk} disabled={busy}>

@@ -171,7 +171,6 @@ export default function OpenBoard({
   }, [projects, q, sort]);
 
   const totalSisa = filtered.reduce((s, p) => s + p.sisa, 0);
-  const potensiFee = filtered.reduce((s, p) => s + p.sisa * p.harga, 0);
 
   return (
     <>
@@ -223,11 +222,6 @@ export default function OpenBoard({
                 <div className="label">Total Soal Tersedia</div>
                 <div className="value navy">{numberID(totalSisa)}</div>
                 <div className="sub">sisa yang belum diambil</div>
-              </div>
-              <div className="card stat">
-                <div className="label">Potensi Fee</div>
-                <div className="value green">{rupiah(potensiFee)}</div>
-                <div className="sub">bila semua stok diambil</div>
               </div>
             </div>
 
