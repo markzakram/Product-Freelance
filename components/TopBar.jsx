@@ -25,7 +25,14 @@ export default function TopBar({ active, variant = "public" }) {
                 Dashboard
               </Link>
               <Link href="/open">Open Freelance</Link>
-              <Link href="/api/logout">Keluar</Link>
+              {/* Logout lewat form POST, bukan <Link>. Sebagai <Link>, Next.js
+                  mem-prefetch-nya di production begitu tombol terlihat/di-hover
+                  dan user jadi ter-logout sendiri tanpa mengklik. */}
+              <form method="POST" action="/api/logout" className="nav-form">
+                <button type="submit" className="navlink">
+                  Keluar
+                </button>
+              </form>
             </>
           )}
         </nav>
