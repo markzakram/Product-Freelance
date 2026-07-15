@@ -6,11 +6,14 @@ import { rupiah, numberID } from "@/lib/format";
 const FORM_URL =
   "https://docs.google.com/forms/d/e/1FAIpQLSdESBDdyAEaQfk7WllFk57qVb5_Kslm1zoi04wwL3OOLN1BJg/viewform";
 
+// Catatan: ID Project sengaja tetap ikut di pesan WhatsApp (walau tidak
+// ditampilkan di katalog). Ada beberapa submateri dengan NAMA SAMA pada proyek
+// berbeda, jadi tanpa ID admin tidak bisa memastikan baris mana yang dicatat.
 function buildWaMessage(cart, brand, nama, wa) {
   const lines = cart
     .map(
       (it, i) =>
-        `${i + 1}. ${it.id} — ${it.subtes} (${it.platform})\n   ${numberID(
+        `${i + 1}. ${it.subtes} [${it.id}]\n   ${numberID(
           it.qty
         )} soal x ${rupiah(it.harga)} = ${rupiah(it.qty * it.harga)}`
     )
@@ -70,7 +73,6 @@ export default function CartView({
           <thead>
             <tr>
               <th>Submateri</th>
-              <th>Platform</th>
               <th className="num">Harga/soal</th>
               <th style={{ textAlign: "center" }}>Jumlah</th>
               <th className="num">Subtotal</th>
@@ -83,10 +85,9 @@ export default function CartView({
                 <td>
                   <b>{it.subtes}</b>
                   <div className="muted" style={{ fontSize: 12 }}>
-                    {it.id} · {it.output}
+                    {it.output}
                   </div>
                 </td>
-                <td>{it.platform}</td>
                 <td className="num">{rupiah(it.harga)}</td>
                 <td>
                   <div

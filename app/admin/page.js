@@ -1,22 +1,19 @@
 import TopBar from "@/components/TopBar";
 import DataBanner from "@/components/DataBanner";
-import AdminDashboard from "@/components/AdminDashboard";
-import { getMaster, getFeeRecaps, getTeachers } from "@/lib/sheets";
+import AdminBoard from "@/components/AdminBoard";
+import { getBoard } from "@/lib/juli";
+import { canWrite } from "@/lib/gauth";
 import { passwordConfigured } from "@/lib/auth";
 
-export const revalidate = 300;
+// Selalu dibaca ulang dari spreadsheet — tanpa cache — supaya angka di admin
+// persis sama dengan isi sheet saat halaman dibuka.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 export const metadata = { title: "Dashboard Internal" };
 
 export default async function AdminPage() {
-  const [master, recaps, teachers] = await Promise.all([
-    getMaster(),
-    getFeeRecaps(),
-    getTeachers(),
-  ]);
-  const source =
-    master.source === "live" || recaps.source === "live" || teachers.source === "live"
-      ? "live"
-      : "sample";
+  const board = await getBoard();
+  const brand = process.env.NEXT_PUBLIC_BRAND || "Cerebrum";
 
   return (
     <>
@@ -28,12 +25,10 @@ export default async function AdminPage() {
             <b>&nbsp;INTERNAL_PASSWORD</b>&nbsp;di Environment Variables.
           </div>
         ) : null}
-        <DataBanner source={source} />
-        <AdminDashboard
-          projects={master.projects}
-          feeLog={master.feeLog}
-          recaps={recaps.rows}
-          teachers={teachers.rows}
+        <DataBanner source={board.source} />
+        <AdminBoard
+          initial={{ ...board, canWrite: board.source === "live" && canWrite() }}
+          brand={brand}
         />
       </div>
       <div className="footer">© {new Date().getFullYear()} · Dashboard Internal</div>

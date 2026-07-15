@@ -233,3 +233,88 @@ td.wrap{white-space:normal;max-width:340px;color:var(--text-muted)}
 .entry h3{margin:0;font-size:17px}
 .entry p{margin:0;color:var(--text-muted);font-size:13.5px;flex:1}
 .entry .go{margin-top:8px;font-weight:700;font-size:14px;color:var(--accent-strong)}
+
+/* ==========================================================================
+   ADMIN — kendali penuh (CRUD, filter, kwitansi)
+   ========================================================================== */
+.admin-bar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.admin-bar .tabs{flex:1;margin-bottom:14px;border-bottom:none}
+.sync{display:flex;align-items:center;gap:10px;padding-top:6px}
+.btn.sm{padding:8px 13px;font-size:12.5px;border-radius:10px}
+.btn.xs{padding:5px 10px;font-size:11.5px;border-radius:8px;font-weight:700}
+.btn-red{background:var(--bad-weak);color:var(--bad);border:1px solid color-mix(in srgb,var(--bad) 28%,transparent)}
+.btn-red:hover{background:var(--bad);color:#fff}
+.input.sm,.select.sm{padding:8px 12px;font-size:13px;min-width:200px}
+.head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.stat.hi{border-color:var(--accent-weak-bd);background:linear-gradient(180deg,var(--accent-weak),transparent 60%)}
+.stat .value.red{color:var(--bad)}
+.banner.err{background:var(--bad-weak);color:var(--bad);border-color:color-mix(in srgb,var(--bad) 30%,transparent)}
+.banner.err .btn-link{width:auto;margin:0 0 0 auto;color:inherit;text-decoration:underline}
+.warn-text{color:var(--warn) !important}
+
+/* filter bar */
+.filters{padding:14px 16px;margin-bottom:16px}
+.fl-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.fl-row+.fl-row{margin-top:10px}
+.fl{display:flex;flex-direction:column;gap:4px}
+.fl.grow{flex:1;min-width:220px}
+.fl>span{font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em}
+.fl .input,.fl .select{padding:8px 11px;font-size:13px;min-width:0}
+.fl.fl-end{flex-direction:row;align-items:center;gap:10px;margin-left:auto;padding-bottom:2px}
+
+/* editable grid */
+.grid-table th{position:sticky;top:0;z-index:2}
+.grid-table td{vertical-align:middle}
+.grid-table td.act,.grid-table th.act{text-align:right;white-space:nowrap}
+.grid-table td.act{display:table-cell}
+.act .btn+.btn{margin-left:6px}
+.mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+.xs2{font-size:11px;margin-top:2px}
+.derived{color:var(--text-muted);background:color-mix(in srgb,var(--surface-inset) 60%,transparent)}
+.derived.neg,.neg{color:var(--bad);font-weight:700}
+.row-dim td{opacity:.62}
+.edit-row td{background:var(--accent-weak) !important;vertical-align:middle}
+.input.xs,.select.xs{padding:6px 9px;font-size:12.5px;border-radius:8px;min-width:0;width:100%}
+.w60{width:60px !important}.w70{width:70px !important}.w90{width:96px !important}
+.pill.rev{background:var(--bad-weak);color:var(--bad)}
+.modal.sm{max-width:430px}
+.proj.habis{opacity:.55;filter:saturate(.5)}
+
+/* ==========================================================================
+   KWITANSI — hanya muncul saat mencetak
+   ========================================================================== */
+.print-only{display:none}
+@media print{
+  @page{size:A4;margin:14mm}
+  body{background:#fff !important;background-image:none !important}
+  /* sembunyikan seluruh UI, tampilkan hanya area cetak */
+  body *{visibility:hidden !important}
+  .print-only,.print-only *{visibility:visible !important}
+  .print-only{display:block !important;position:absolute;left:0;top:0;width:100%}
+  .receipt{page-break-after:always;color:#000;font-size:11pt}
+  .receipt:last-child{page-break-after:auto}
+}
+.receipt{padding:8mm 0;color:#000}
+.rc-head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:14px}
+.rc-brand{font-size:16pt;font-weight:800;letter-spacing:-.02em}
+.rc-title{font-size:11pt;margin-top:2px}
+.rc-meta{text-align:right;font-size:9pt}
+.rc-meta div{margin-bottom:2px}
+.rc-meta span{color:#555;margin-right:6px}
+.rc-to{display:flex;gap:24px;margin-bottom:14px}
+.rc-to-col{flex:1;border:1px solid #999;border-radius:4px;padding:8px 10px}
+.rc-to-col>span{display:block;font-size:8.5pt;color:#555;text-transform:uppercase;letter-spacing:.05em}
+.rc-to-col>b{font-size:11.5pt}
+.rc-rek{font-size:14pt;letter-spacing:.06em}
+.rc-sub{font-size:9pt;color:#444}
+.rc-warn{color:#b00}
+.rc-note{font-size:9pt;margin-top:10px}
+.rc-table{width:100%;border-collapse:collapse;font-size:9.5pt}
+.rc-table th,.rc-table td{border:1px solid #999;padding:5px 7px;text-align:left;background:none;text-transform:none;letter-spacing:0;color:#000;position:static}
+.rc-table th{background:#eee !important;font-size:8.5pt;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.rc-table .num{text-align:right}
+.rc-table tfoot td{background:#f5f5f5 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.rc-sign{display:flex;justify-content:space-between;margin-top:26px;gap:40px}
+.rc-sign>div{flex:1;font-size:9.5pt}
+.rc-sign span{color:#555}
+.rc-line{border-bottom:1px solid #000;margin:38px 0 4px}

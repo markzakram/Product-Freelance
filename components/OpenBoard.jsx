@@ -5,27 +5,23 @@ import DataBanner from "@/components/DataBanner";
 import GuideModal from "@/components/GuideModal";
 import CartView from "@/components/CartView";
 
-function tagClass(platform) {
-  const p = (platform || "").toLowerCase();
-  if (p.includes("asn")) return "asn";
-  if (p.includes("bappenas")) return "bappenas";
-  return "other";
-}
-
 function clamp(n, min, max) {
   if (Number.isNaN(n)) return min;
   return Math.max(min, Math.min(max, n));
 }
 
 // ---- one catalog card with its own quantity row + live fee ----------------
+// "Stok soal" = kolom Sisa di spreadsheet (Kebutuhan - yang sudah diambil),
+// bukan Kebutuhan. Kalau Sisa <= 0 kartu ini tidak bisa dipesan sama sekali.
 function ProjectCard({ p, inCartQty, onAdd }) {
   const [qty, setQty] = useState(0);
+  const habis = (p.sisa || 0) <= 0;
   const setSafe = (v) => setQty(clamp(parseInt(v, 10), 0, p.sisa || 0));
   const inCart = inCartQty > 0;
-  const canAdd = qty > 0;
+  const canAdd = qty > 0 && !habis;
 
   return (
-    <div className="card proj">
+    <div className={"card proj" + (habis ? " habis" : "")}>
       <h3>{p.subtes}</h3>
       <div className="out">{p.output}</div>
       <div className="proj-meta">
@@ -44,7 +40,7 @@ function ProjectCard({ p, inCartQty, onAdd }) {
         <button
           className="qbtn"
           onClick={() => setSafe(qty - 1)}
-          disabled={qty <= 0}
+          disabled={habis || qty <= 0}
           aria-label="Kurangi"
         >
           −
@@ -57,12 +53,13 @@ function ProjectCard({ p, inCartQty, onAdd }) {
           value={qty}
           onChange={(e) => setSafe(e.target.value)}
           onFocus={(e) => e.target.select()}
+          disabled={habis}
           aria-label="Jumlah soal"
         />
         <button
           className="qbtn"
           onClick={() => setSafe(qty + 1)}
-          disabled={qty >= p.sisa}
+          disabled={habis || qty >= p.sisa}
           aria-label="Tambah"
         >
           +
@@ -70,7 +67,7 @@ function ProjectCard({ p, inCartQty, onAdd }) {
         <button
           className="qbtn qmax"
           onClick={() => setSafe(p.sisa)}
-          disabled={qty >= p.sisa}
+          disabled={habis || qty >= p.sisa}
           title="Ambil semua stok (maks)"
         >
           Max
@@ -85,7 +82,9 @@ function ProjectCard({ p, inCartQty, onAdd }) {
         onClick={() => onAdd(p, qty)}
         disabled={!canAdd}
       >
-        {inCart
+        {habis
+          ? "Stok habis"
+          : inCart
           ? `✓ Di keranjang (${numberID(inCartQty)})`
           : "＋ Masukkan ke Keranjang"}
       </button>
@@ -101,7 +100,6 @@ export default function OpenBoard({
   brand = "Cerebrum",
 }) {
   const [q, setQ] = useState("");
-  const [plat, setPlat] = useState("Semua");
   const [sort, setSort] = useState("sisa");
 
   const [cart, setCart] = useState([]);
@@ -115,7 +113,7 @@ export default function OpenBoard({
 
   // Adding sets the cart quantity to the card's chosen amount (replace).
   const addToCart = (p, qty) => {
-    if (qty <= 0) return;
+    if (qty <= 0 || (p.sisa || 0) <= 0) return;
     setCart((prev) => {
       const nq = clamp(qty, 1, p.sisa);
       const found = prev.find((it) => it.id === p.id);
@@ -126,7 +124,6 @@ export default function OpenBoard({
         ...prev,
         {
           id: p.id,
-          platform: p.platform,
           subtes: p.subtes,
           output: p.output,
           harga: p.harga,
@@ -158,18 +155,12 @@ export default function OpenBoard({
 
   const feeCart = cart.reduce((s, it) => s + it.qty * it.harga, 0);
 
-  const platforms = useMemo(() => {
-    const s = new Set(projects.map((p) => p.platform).filter(Boolean));
-    return ["Semua", ...Array.from(s)];
-  }, [projects]);
-
   const filtered = useMemo(() => {
+    // Hanya yang stoknya masih ada. Pengaman lapis kedua: halaman sudah
+    // menyaring sisa > 0, tapi katalog tidak boleh pernah menawarkan stok habis.
     let list = projects.filter((p) => {
-      const okPlat = plat === "Semua" || p.platform === plat;
-      const okQ =
-        !q ||
-        `${p.subtes} ${p.id} ${p.output}`.toLowerCase().includes(q.toLowerCase());
-      return okPlat && okQ;
+      if ((p.sisa || 0) <= 0) return false;
+      return !q || `${p.subtes} ${p.output}`.toLowerCase().includes(q.toLowerCase());
     });
     list = [...list].sort((a, b) => {
       if (sort === "sisa") return b.sisa - a.sisa;
@@ -177,9 +168,10 @@ export default function OpenBoard({
       return a.subtes.localeCompare(b.subtes);
     });
     return list;
-  }, [projects, q, plat, sort]);
+  }, [projects, q, sort]);
 
   const totalSisa = filtered.reduce((s, p) => s + p.sisa, 0);
+  const potensiFee = filtered.reduce((s, p) => s + p.sisa * p.harga, 0);
 
   return (
     <>
@@ -230,19 +222,19 @@ export default function OpenBoard({
               <div className="card stat">
                 <div className="label">Total Soal Tersedia</div>
                 <div className="value navy">{numberID(totalSisa)}</div>
-                <div className="sub">stok kebutuhan</div>
+                <div className="sub">sisa yang belum diambil</div>
               </div>
               <div className="card stat">
-                <div className="label">Platform</div>
-                <div className="value navy">{platforms.length - 1}</div>
-                <div className="sub">jenis program</div>
+                <div className="label">Potensi Fee</div>
+                <div className="value green">{rupiah(potensiFee)}</div>
+                <div className="sub">bila semua stok diambil</div>
               </div>
             </div>
 
             <div className="controls">
               <input
                 className="input"
-                placeholder="Cari subtes, ID, atau output…"
+                placeholder="Cari submateri atau output…"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
               />
@@ -269,21 +261,9 @@ export default function OpenBoard({
               </button>
             </div>
 
-            <div className="chips" style={{ marginBottom: 18 }}>
-              {platforms.map((p) => (
-                <button
-                  key={p}
-                  className={"chip" + (plat === p ? " active" : "")}
-                  onClick={() => setPlat(p)}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-
             {filtered.length === 0 ? (
               <div className="card empty">
-                Tidak ada proyek yang cocok dengan filter.
+                Tidak ada proyek yang cocok dengan pencarian.
               </div>
             ) : (
               <div className="grid proj-grid">
