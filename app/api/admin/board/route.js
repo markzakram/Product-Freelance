@@ -13,15 +13,18 @@ import {
   updateProject,
   deleteProject,
 } from "@/lib/juli";
-import { canWrite } from "@/lib/gauth";
+import { canWrite, credsDiagnosis } from "@/lib/gauth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function GET() {
   const board = await getBoard();
+  // Kalau jatuh ke data contoh, sertakan alasan pastinya untuk ditampilkan di
+  // banner admin — supaya masalah konfigurasi Vercel langsung kelihatan.
+  const diag = board.source === "sample" ? await credsDiagnosis() : null;
   return NextResponse.json(
-    { ...board, canWrite: board.source === "live" && canWrite(), at: Date.now() },
+    { ...board, canWrite: board.source === "live" && canWrite(), diag, at: Date.now() },
     { headers: { "Cache-Control": "no-store" } }
   );
 }

@@ -111,7 +111,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
   const [syncedAt, setSyncedAt] = useState(null);
   const [print, setPrint] = useState(null);
 
-  const { projects = [], assignments = [], teachers = [], source, canWrite } = board;
+  const { projects = [], assignments = [], teachers = [], source, canWrite, diag } = board;
   const readOnly = !canWrite;
 
   const refresh = useCallback(async () => {
@@ -310,9 +310,16 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
       {readOnly ? (
         <div className="banner sample">
           <span>🔒</span>
-          {source === "sample"
-            ? "Menampilkan data contoh — kredensial Google Sheets belum diset, jadi perubahan tidak bisa disimpan."
-            : "Mode baca-saja — butuh GOOGLE_SERVICE_ACCOUNT_JSON dengan akses Editor agar bisa menyimpan."}
+          <div>
+            {source === "sample"
+              ? "Menampilkan data contoh — perubahan tidak bisa disimpan ke spreadsheet."
+              : "Mode baca-saja — butuh GOOGLE_SERVICE_ACCOUNT_JSON dengan akses Editor agar bisa menyimpan."}
+            {diag && !diag.ok ? (
+              <div className="banner-detail">
+                <b>Penyebab:</b> {diag.msg}
+              </div>
+            ) : null}
+          </div>
         </div>
       ) : null}
       {err ? (

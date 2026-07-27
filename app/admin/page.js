@@ -2,7 +2,7 @@ import TopBar from "@/components/TopBar";
 import DataBanner from "@/components/DataBanner";
 import AdminBoard from "@/components/AdminBoard";
 import { getBoard } from "@/lib/juli";
-import { canWrite } from "@/lib/gauth";
+import { canWrite, credsDiagnosis } from "@/lib/gauth";
 import { passwordConfigured } from "@/lib/auth";
 
 // Selalu dibaca ulang dari spreadsheet — tanpa cache — supaya angka di admin
@@ -13,6 +13,7 @@ export const metadata = { title: "Dashboard Internal" };
 
 export default async function AdminPage() {
   const board = await getBoard();
+  const diag = board.source === "sample" ? await credsDiagnosis() : null;
   const brand = process.env.NEXT_PUBLIC_BRAND || "Cerebrum";
 
   return (
@@ -27,7 +28,7 @@ export default async function AdminPage() {
         ) : null}
         <DataBanner source={board.source} />
         <AdminBoard
-          initial={{ ...board, canWrite: board.source === "live" && canWrite() }}
+          initial={{ ...board, canWrite: board.source === "live" && canWrite(), diag }}
           brand={brand}
         />
       </div>
