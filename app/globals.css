@@ -347,6 +347,13 @@ td.wrap{white-space:normal;max-width:340px;color:var(--text-muted)}
 .modal.sm{max-width:430px}
 .proj.habis{opacity:.55;filter:saturate(.5)}
 
+/* Input di dalam sel tabel. WAJIB min-width:0 — tanpa ini .input mewarisi
+   min-width:240px dan meluber keluar kolomnya. */
+.input.xs,.select.xs{padding:6px 9px;font-size:12.5px;border-radius:8px;min-width:0;width:100%;flex:none}
+.grid-table td .input,.grid-table td .select{min-width:0;width:100%;flex:none}
+/* angka diketik rata kanan supaya sejajar dengan kolom Anggaran */
+.grid-table td.num .input{text-align:right}
+
 /* tombol aksi per baris (ikon, hemat lebar) */
 .rowmenu{display:flex;gap:4px;justify-content:flex-end}
 .ibtn{width:28px;height:28px;border:1px solid var(--border);background:var(--surface);border-radius:8px;color:var(--text-muted);font-size:13px;cursor:pointer;line-height:1;padding:0;transition:.12s}

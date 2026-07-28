@@ -20,6 +20,7 @@ import PrintArea from "./Receipts";
 import MasterPanel from "./MasterPanel";
 import NewMonthPanel from "./NewMonthPanel";
 import AnalyticsPanel from "./AnalyticsPanel";
+import GuruPanel from "./GuruPanel";
 
 const STATUS_KNOWN = ["Running Soal", "QC Soal", "Revisi Soal", "Approved", "Running Video"];
 const SEMUA = "Semua";
@@ -125,6 +126,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
   // data tambahan: katalog master & seluruh bulan (untuk Master/Proyek Baru/Analisis)
   const [master, setMaster] = useState({ rows: [] });
   const [allMonths, setAllMonths] = useState({ months: [], catalog: [], log: [] });
+  const [guru, setGuru] = useState({ rows: [] });
   const [extraLoaded, setExtraLoaded] = useState(false);
 
   const { projects = [], assignments = [], teachers = [], source, canWrite, diag } = board;
@@ -151,13 +153,15 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
   // setiap ada perubahan — supaya polling 45 detik tetap ringan.
   const refreshExtra = useCallback(async () => {
     try {
-      const [m, mo] = await Promise.all([
+      const [m, mo, gu] = await Promise.all([
         fetch("/api/admin/master", { cache: "no-store" }),
         fetch("/api/admin/months", { cache: "no-store" }),
+        fetch("/api/admin/teachers", { cache: "no-store" }),
       ]);
-      if (m.status === 401 || mo.status === 401) return setExpired(true);
+      if (m.status === 401 || mo.status === 401 || gu.status === 401) return setExpired(true);
       if (m.ok) setMaster(await m.json());
       if (mo.ok) setAllMonths(await mo.json());
+      if (gu.ok) setGuru(await gu.json());
       setExtraLoaded(true);
     } catch (e) {
       setErr("Gagal memuat master/analisis: " + e.message);
@@ -316,6 +320,26 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
 
   const periode = f.from || f.to ? `${f.from ? tglID(f.from) : "awal"} — ${f.to ? tglID(f.to) : "kini"}` : "Semua periode";
 
+  // Fee per guru dari SELURUH bulan (untuk halaman Database Guru).
+  // Sheet Juni tidak punya kolom ID Guru, jadi baris tanpa ID dicocokkan lewat
+  // nama: log memakai nama pendek ("Ariq") sedangkan master memakai nama
+  // lengkap bergelar, karena itu dipakai pencocokan awalan.
+  const feeSemuaBulan = useMemo(() => {
+    const m = new Map();
+    const daftar = guru.rows || [];
+    const tambah = (k, v) => k && m.set(k, (m.get(k) || 0) + v);
+    (allMonths.log || []).forEach((l) => {
+      if (l.idGuru) return tambah(String(l.idGuru), l.fee);
+      const n = (l.guru || "").toLowerCase();
+      if (!n) return;
+      const t =
+        daftar.find((x) => x.nama.toLowerCase() === n) ||
+        daftar.find((x) => x.nama.toLowerCase().startsWith(n));
+      if (t) tambah(String(t.idGuru), l.fee);
+    });
+    return m;
+  }, [allMonths, guru]);
+
   const doPrint = useCallback((gs, mode) => {
     if (!gs.length) return;
     setPrint({ groups: gs, mode });
@@ -456,7 +480,21 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
           <div className="empty">Memuat analisis…</div>
         ))}
       {tab === "bayar" && <Bayar groups={groups} periode={periode} doPrint={doPrint} rows={rows} />}
-      {tab === "guru" && <GuruTable teachers={teachers} assignments={assignments} />}
+
+      {tab === "guru" &&
+        (extraLoaded ? (
+          <GuruPanel
+            rows={guru.rows || []}
+            feeByGuru={feeSemuaBulan}
+            readOnly={readOnly || !guru.canWrite}
+            busy={busy}
+            setBusy={setBusy}
+            setErr={setErr}
+            onChanged={refreshExtra}
+          />
+        ) : (
+          <div className="empty">Memuat data guru…</div>
+        ))}
         </div>
       </div>
 
@@ -1048,7 +1086,7 @@ function KatalogTable({ projects, run, busy, readOnly }) {
           <Cols widths={[12, 11, 29, 14, 10, 9, 8, 7]} />
           <thead>
             <tr>
-              <th>ID Project</th>
+              <th>Kode Baris</th>
               <th>Platform</th>
               <th>Subtes</th>
               <th>Output</th>
@@ -1061,7 +1099,11 @@ function KatalogTable({ projects, run, busy, readOnly }) {
           <tbody>
             {list.map((p) => (
               <tr key={p.row} className={p.sisa <= 0 ? "row-dim" : ""}>
-                <td className="mono">{p.id}</td>
+                <td className="mono">
+                  {p.id}
+                  {/* tautan ke katalog permanen supaya kaitannya terlihat */}
+                  {p.idSubtes ? <div className="muted xs2">{p.idSubtes}</div> : null}
+                </td>
                 <td className="wrap">{p.platform || "—"}</td>
                 <td className="wrap">{p.subtes}</td>
                 <td className="wrap">{p.output || "—"}</td>
@@ -1218,64 +1260,6 @@ function Bayar({ groups, periode, doPrint, rows }) {
               </tr>
             </tfoot>
           ) : null}
-        </table>
-      </div>
-    </>
-  );
-}
-
-/* ============================ DATABASE GURU =============================== */
-function GuruTable({ teachers, assignments }) {
-  const [q, setQ] = useState("");
-  const feeByGuru = useMemo(() => {
-    const m = new Map();
-    assignments.forEach((a) => {
-      const k = String(a.idGuru || "");
-      if (k) m.set(k, (m.get(k) || 0) + a.fee);
-    });
-    return m;
-  }, [assignments]);
-
-  const list = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    return s ? teachers.filter((t) => `${t.idGuru} ${t.nama} ${t.rekening} ${t.status}`.toLowerCase().includes(s)) : teachers;
-  }, [teachers, q]);
-
-  return (
-    <>
-      <div className="section-head" style={{ marginTop: 18 }}>
-        
-        <div className="head-actions">
-          <input className="input sm" placeholder="Cari nama, ID, rekening…" value={q} onChange={(e) => setQ(e.target.value)} />
-        </div>
-      </div>
-      <div className="table-wrap fixed">
-        <table className="grid-table">
-          <Cols widths={[6, 27, 11, 16, 17, 12, 11]} />
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nama Lengkap</th>
-              <th>Status</th>
-              <th>Nomor Rekening</th>
-              <th>a.n.</th>
-              <th>WhatsApp</th>
-              <th className="num">Fee Tercatat</th>
-            </tr>
-          </thead>
-          <tbody>
-            {list.map((t) => (
-              <tr key={t.idGuru + t.nama}>
-                <td className="mono">{t.idGuru}</td>
-                <td className="wrap">{t.nama}</td>
-                <td className="wrap">{t.status || "—"}</td>
-                <td className="mono wrap">{t.rekening || <span className="neg">— belum ada —</span>}</td>
-                <td className="wrap">{t.pemilikRekening || "—"}</td>
-                <td className="mono">{t.wa || "—"}</td>
-                <td className="num">{feeByGuru.get(String(t.idGuru)) ? rupiah(feeByGuru.get(String(t.idGuru))) : "—"}</td>
-              </tr>
-            ))}
-          </tbody>
         </table>
       </div>
     </>
