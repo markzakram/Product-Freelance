@@ -17,6 +17,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { rupiah, numberID } from "@/lib/format";
 import PrintArea from "./Receipts";
+import MasterPanel from "./MasterPanel";
+import NewMonthPanel from "./NewMonthPanel";
+import AnalyticsPanel from "./AnalyticsPanel";
 
 const STATUS_KNOWN = ["Running Soal", "QC Soal", "Revisi Soal", "Approved", "Running Video"];
 const SEMUA = "Semua";
@@ -110,6 +113,10 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
   const [syncing, setSyncing] = useState(false);
   const [syncedAt, setSyncedAt] = useState(null);
   const [print, setPrint] = useState(null);
+  // data tambahan: katalog master & seluruh bulan (untuk Master/Proyek Baru/Analisis)
+  const [master, setMaster] = useState({ rows: [] });
+  const [allMonths, setAllMonths] = useState({ months: [], catalog: [], log: [] });
+  const [extraLoaded, setExtraLoaded] = useState(false);
 
   const { projects = [], assignments = [], teachers = [], source, canWrite, diag } = board;
   const readOnly = !canWrite;
@@ -131,6 +138,27 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
 
   // Sekali sesi habis, berhenti polling — kalau tidak, banner error akan
   // muncul berulang tiap 45 detik tanpa pernah bisa berhasil.
+  // Master & data lintas bulan ditarik terpisah, hanya sekali di awal dan
+  // setiap ada perubahan — supaya polling 45 detik tetap ringan.
+  const refreshExtra = useCallback(async () => {
+    try {
+      const [m, mo] = await Promise.all([
+        fetch("/api/admin/master", { cache: "no-store" }),
+        fetch("/api/admin/months", { cache: "no-store" }),
+      ]);
+      if (m.status === 401 || mo.status === 401) return setExpired(true);
+      if (m.ok) setMaster(await m.json());
+      if (mo.ok) setAllMonths(await mo.json());
+      setExtraLoaded(true);
+    } catch (e) {
+      setErr("Gagal memuat master/analisis: " + e.message);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!expired) refreshExtra();
+  }, [refreshExtra, expired]);
+
   useEffect(() => {
     if (expired) return undefined;
     const id = setInterval(refresh, POLL_MS);
@@ -289,8 +317,11 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
         <div className="tabs">
           {[
             ["ringkasan", "Ringkasan"],
+            ["analisis", "📊 Analisis"],
             ["log", `Log Pengambilan (${assignments.length})`],
-            ["katalog", `Katalog Proyek (${projects.length})`],
+            ["katalog", `Katalog Bulan Ini (${projects.length})`],
+            ["master", `Master Subtes (${master.rows?.length || 0})`],
+            ["baru", "＋ Proyek Bulan Baru"],
             ["bayar", "Pembayaran & Kwitansi"],
             ["guru", `Database Guru (${teachers.length})`],
           ].map(([k, label]) => (
@@ -351,6 +382,42 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
         />
       )}
       {tab === "katalog" && <KatalogTable projects={projects} run={run} busy={busy} readOnly={readOnly} />}
+
+      {tab === "master" &&
+        (extraLoaded ? (
+          <MasterPanel
+            rows={master.rows || []}
+            readOnly={readOnly || !master.canWrite}
+            busy={busy}
+            setBusy={setBusy}
+            setErr={setErr}
+            onChanged={refreshExtra}
+          />
+        ) : (
+          <div className="empty">Memuat master…</div>
+        ))}
+
+      {tab === "baru" &&
+        (extraLoaded ? (
+          <NewMonthPanel
+            master={master.rows || []}
+            months={allMonths.months || []}
+            readOnly={readOnly || !allMonths.canWrite}
+            busy={busy}
+            setBusy={setBusy}
+            setErr={setErr}
+            onDone={async () => { await refreshExtra(); await refresh(); }}
+          />
+        ) : (
+          <div className="empty">Memuat data bulan…</div>
+        ))}
+
+      {tab === "analisis" &&
+        (extraLoaded ? (
+          <AnalyticsPanel data={allMonths} master={master.rows || []} />
+        ) : (
+          <div className="empty">Memuat analisis…</div>
+        ))}
       {tab === "bayar" && <Bayar groups={groups} periode={periode} doPrint={doPrint} rows={rows} />}
       {tab === "guru" && <GuruTable teachers={teachers} assignments={assignments} />}
 
