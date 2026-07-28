@@ -113,6 +113,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
   const [syncing, setSyncing] = useState(false);
   const [syncedAt, setSyncedAt] = useState(null);
   const [print, setPrint] = useState(null);
+  const [navOpen, setNavOpen] = useState(false); // sidebar di layar sempit
   // data tambahan: katalog master & seluruh bulan (untuk Master/Proyek Baru/Analisis)
   const [master, setMaster] = useState({ rows: [] });
   const [allMonths, setAllMonths] = useState({ months: [], catalog: [], log: [] });
@@ -313,30 +314,34 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
 
   return (
     <>
-      <div className="admin-bar">
-        <div className="tabs">
-          {[
-            ["ringkasan", "Ringkasan"],
-            ["analisis", "📊 Analisis"],
-            ["log", `Log Pengambilan (${assignments.length})`],
-            ["katalog", `Katalog Bulan Ini (${projects.length})`],
-            ["master", `Master Subtes (${master.rows?.length || 0})`],
-            ["baru", "＋ Proyek Bulan Baru"],
-            ["bayar", "Pembayaran & Kwitansi"],
-            ["guru", `Database Guru (${teachers.length})`],
-          ].map(([k, label]) => (
-            <div key={k} className={"tab" + (tab === k ? " active" : "")} onClick={() => setTab(k)}>
-              {label}
+      <div className="admin-shell">
+        <SideNav
+          tab={tab}
+          setTab={setTab}
+          counts={{
+            log: assignments.length,
+            katalog: projects.length,
+            master: master.rows?.length || 0,
+            guru: teachers.length,
+          }}
+          open={navOpen}
+          setOpen={setNavOpen}
+        />
+
+        <div className="admin-main">
+          <div className="page-head">
+            <button className="navburger" onClick={() => setNavOpen(true)} aria-label="Buka menu">☰</button>
+            <div>
+              <div className="page-crumb">{PAGE[tab]?.group}</div>
+              <h1 className="page-title">{PAGE[tab]?.title}</h1>
             </div>
-          ))}
-        </div>
-        <div className="sync">
-          {syncedAt ? <span className="muted">Sinkron {syncedAt.toLocaleTimeString("id-ID")}</span> : null}
-          <button className="btn btn-ghost sm" onClick={refresh} disabled={syncing}>
-            {syncing ? "⏳ Menyegarkan…" : "⟳ Segarkan"}
-          </button>
-        </div>
-      </div>
+            <div className="page-sync">
+              {syncedAt ? <span className="muted">Sinkron {syncedAt.toLocaleTimeString("id-ID")}</span> : null}
+              <button className="btn btn-ghost sm" onClick={refresh} disabled={syncing}>
+                {syncing ? "⏳ Menyegarkan…" : "⟳ Segarkan"}
+              </button>
+            </div>
+          </div>
 
       {readOnly ? (
         <div className="banner sample">
@@ -420,8 +425,71 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
         ))}
       {tab === "bayar" && <Bayar groups={groups} periode={periode} doPrint={doPrint} rows={rows} />}
       {tab === "guru" && <GuruTable teachers={teachers} assignments={assignments} />}
+        </div>
+      </div>
 
       {print ? <PrintArea groups={print.groups} mode={print.mode} brand={brand} periode={periode} /> : null}
+    </>
+  );
+}
+
+/* ============================ NAVIGASI SAMPING ============================ */
+// Menu dikelompokkan supaya admin tidak dihadapkan 8 tab sekaligus.
+const NAV = [
+  { grup: "Operasional", ikon: "📋", item: [
+    ["ringkasan", "Ringkasan", "Angka utama bulan berjalan"],
+    ["katalog", "Katalog Bulan Ini", "Anggaran soal bulan berjalan", "katalog"],
+    ["log", "Log Pengambilan", "Siapa mengerjakan apa", "log"],
+  ]},
+  { grup: "Perencanaan", ikon: "🗂", item: [
+    ["master", "Master Subtes", "Katalog permanen semua subtes", "master"],
+    ["baru", "Proyek Bulan Baru", "Susun anggaran bulan depan"],
+  ]},
+  { grup: "Keuangan", ikon: "💰", item: [
+    ["bayar", "Pembayaran & Kwitansi", "Rekap fee & cetak kwitansi"],
+  ]},
+  { grup: "Analisis & Data", ikon: "📊", item: [
+    ["analisis", "Analisis Lintas Bulan", "Tren, produktivitas, anggaran"],
+    ["guru", "Database Guru", "Data & rekening guru", "guru"],
+  ]},
+];
+
+// Peta untuk judul halaman di kanan atas.
+const PAGE = {};
+NAV.forEach((g) => g.item.forEach(([k, title]) => (PAGE[k] = { title, group: g.grup })));
+
+function SideNav({ tab, setTab, counts, open, setOpen }) {
+  return (
+    <>
+      {open ? <div className="nav-scrim" onClick={() => setOpen(false)} /> : null}
+      <nav className={"admin-side" + (open ? " open" : "")}>
+        <div className="side-top">
+          <span className="side-title">Menu Admin</span>
+          <button className="icon-x side-close" onClick={() => setOpen(false)} aria-label="Tutup menu">✕</button>
+        </div>
+
+        <div className="side-scroll">
+          {NAV.map((g) => (
+            <div className="side-group" key={g.grup}>
+              <div className="side-label"><span>{g.ikon}</span>{g.grup}</div>
+              {g.item.map(([k, label, desc, countKey]) => (
+                <button
+                  key={k}
+                  className={"side-item" + (tab === k ? " active" : "")}
+                  onClick={() => { setTab(k); setOpen(false); }}
+                >
+                  <span className="si-main">
+                    <span className="si-label">{label}</span>
+                    {countKey && counts[countKey] != null ? <span className="si-count">{numberID(counts[countKey])}</span> : null}
+                  </span>
+                  <span className="si-desc">{desc}</span>
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+
+      </nav>
     </>
   );
 }
@@ -776,7 +844,7 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, p
   return (
     <>
       <div className="section-head" style={{ marginTop: 18 }}>
-        <h2>Log Pengambilan Soal</h2>
+        
         <div className="head-actions">
           <span className="muted">
             Fee tampil: <b>{rupiah(rows.reduce((a, x) => a + x.fee, 0))}</b> · total {rupiah(stat.feeTotal)}
@@ -927,7 +995,7 @@ function KatalogTable({ projects, run, busy, readOnly }) {
   return (
     <>
       <div className="section-head" style={{ marginTop: 18 }}>
-        <h2>Katalog Proyek</h2>
+        
         <div className="head-actions">
           <input className="input sm" placeholder="Cari ID, platform, subtes…" value={q} onChange={(e) => setQ(e.target.value)} />
           <button
@@ -1144,7 +1212,7 @@ function GuruTable({ teachers, assignments }) {
   return (
     <>
       <div className="section-head" style={{ marginTop: 18 }}>
-        <h2>Database Guru Freelance</h2>
+        
         <div className="head-actions">
           <input className="input sm" placeholder="Cari nama, ID, rekening…" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>

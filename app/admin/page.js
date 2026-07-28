@@ -19,7 +19,7 @@ export default async function AdminPage() {
   return (
     <>
       <TopBar active="admin" variant="admin" />
-      <div className="container section">
+      <div className="container admin-wide section">
         {!passwordConfigured() ? (
           <div className="banner sample" style={{ marginBottom: 12 }}>
             <span>⚠</span> Area internal belum dilindungi password. Set

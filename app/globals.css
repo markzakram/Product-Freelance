@@ -64,6 +64,17 @@ a{color:inherit;text-decoration:none}
 .nav .navlink{background:none;border:none;cursor:pointer;font-family:inherit;line-height:1.55}
 .theme-toggle{width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:16px;cursor:pointer;display:grid;place-items:center;line-height:1}
 .theme-toggle:hover{border-color:var(--border-strong);background:var(--surface-inset)}
+/* Di layar sempit, brand + 3 menu tidak muat dan mendorong seluruh halaman
+   melebar. Kecilkan dan biarkan nama brand terpotong rapi. */
+@media(max-width:640px){
+  .topbar-inner{height:auto;min-height:58px;padding:9px 0;gap:8px}
+  .brand{font-size:13.5px;gap:8px;min-width:0}
+  .brand>span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brand-badge{width:28px;height:28px;font-size:13px;flex:none}
+  .nav{gap:1px;flex:none}
+  .nav a,.nav .navlink{padding:7px 9px;font-size:12.5px}
+  .theme-toggle{width:32px;height:32px;font-size:14px}
+}
 
 /* hero */
 .hero{position:relative;padding:52px 0 30px;overflow:hidden}
@@ -78,12 +89,20 @@ a{color:inherit;text-decoration:none}
 .section-head h2{font-size:19px;margin:0;letter-spacing:-.02em}
 .muted{color:var(--text-muted);font-size:13px}
 .grid{display:grid;gap:16px}
-.stat-grid{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.stat-grid{grid-template-columns:repeat(auto-fit,minmax(212px,1fr))}
+/* Item grid default punya min-width:auto sehingga angka panjang seperti
+   "Rp61.737.000" tidak bisa menyusut dan mendorong seluruh grid melebihi layar. */
+.stat-grid>*{min-width:0}
+/* Label & sub boleh dipenggal, tapi ANGKA jangan — "Rp61.737.000" tidak boleh
+   patah jadi "Rp61.737.0 / 00". Biar grid yang mengurangi jumlah kolom. */
+.stat .sub,.stat .label{overflow-wrap:anywhere}
+.stat .value{overflow-wrap:normal;word-break:keep-all}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm)}
 .card-p{padding:20px}
-.stat{padding:20px 22px}
+.stat{padding:20px 18px}
 .stat .label{font-size:12px;color:var(--text-faint);font-weight:700;text-transform:uppercase;letter-spacing:.08em}
-.stat .value{font-size:30px;font-weight:800;margin-top:8px;letter-spacing:-.03em;line-height:1}
+.stat .value{font-size:25px;font-weight:800;margin-top:8px;letter-spacing:-.03em;line-height:1.1}
+@media(min-width:1200px){.stat .value{font-size:26px}}
 .stat .sub{font-size:12.5px;color:var(--text-muted);margin-top:6px}
 .stat .value.blue{color:var(--accent)}.stat .value.green{color:var(--good)}
 .stat .value.amber{color:var(--warn)}.stat .value.navy{color:var(--text)}
@@ -241,15 +260,51 @@ td.wrap{white-space:normal;max-width:340px;color:var(--text-muted)}
 /* ==========================================================================
    ADMIN — kendali penuh (CRUD, filter, kwitansi)
    ========================================================================== */
-.admin-bar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.admin-bar .tabs{flex:1;margin-bottom:14px;border-bottom:none}
-.sync{display:flex;align-items:center;gap:10px;padding-top:6px}
+/* ---- kerangka: sidebar + konten ---------------------------------------- */
+.admin-wide{max-width:1500px}
+.admin-shell{display:grid;grid-template-columns:246px minmax(0,1fr);gap:22px;align-items:start}
+.admin-main{min-width:0}                     /* wajib: cegah grid melar & tabel meluber */
+@media(max-width:960px){.admin-shell{grid-template-columns:minmax(0,1fr)}}
+
+.admin-side{position:sticky;top:82px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);display:flex;flex-direction:column;max-height:calc(100vh - 104px);overflow:hidden}
+.side-top{display:none;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)}
+.side-title{font-weight:800;font-size:14px;letter-spacing:-.01em}
+.side-scroll{overflow-y:auto;padding:10px}
+.side-group+.side-group{margin-top:6px;padding-top:10px;border-top:1px solid var(--border)}
+.side-label{display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:800;color:var(--text-faint);text-transform:uppercase;letter-spacing:.09em;padding:6px 10px 7px}
+.side-label span{font-size:12px}
+.side-item{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;padding:9px 11px;border:1px solid transparent;border-radius:11px;background:none;cursor:pointer;font-family:inherit;color:var(--text);transition:.13s}
+.side-item:hover{background:var(--surface-inset)}
+.side-item.active{background:var(--accent-weak);border-color:var(--accent-weak-bd)}
+.si-main{display:flex;align-items:center;gap:8px}
+.si-label{font-size:13.5px;font-weight:650;letter-spacing:-.01em}
+.side-item.active .si-label{color:var(--accent-strong);font-weight:750}
+.si-count{margin-left:auto;font-size:11px;font-weight:700;color:var(--text-muted);background:var(--surface-inset);border:1px solid var(--border);border-radius:999px;padding:1px 8px;font-variant-numeric:tabular-nums}
+.side-item.active .si-count{background:var(--surface);border-color:var(--accent-weak-bd);color:var(--accent-strong)}
+.si-desc{font-size:11.5px;color:var(--text-faint);line-height:1.35}
+
+/* judul halaman di area konten */
+.page-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.page-crumb{font-size:11px;font-weight:800;color:var(--text-faint);text-transform:uppercase;letter-spacing:.08em}
+.page-title{margin:2px 0 0;font-size:21px;letter-spacing:-.02em;line-height:1.15}
+.page-sync{margin-left:auto;display:flex;align-items:center;gap:10px}
+.navburger{display:none;width:38px;height:38px;flex:none;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:16px;cursor:pointer;line-height:1}
+.nav-scrim{display:none}
+
+@media(max-width:960px){
+  .admin-side{position:fixed;top:0;left:0;bottom:0;width:280px;max-height:none;border-radius:0;z-index:70;transform:translateX(-102%);transition:transform .22s ease}
+  .admin-side.open{transform:none;box-shadow:var(--shadow-lg)}
+  .side-top{display:flex}
+  .navburger{display:grid;place-items:center}
+  .nav-scrim{display:block;position:fixed;inset:0;background:rgba(8,13,24,.45);z-index:69}
+  .page-sync .muted{display:none}
+}
 .btn.sm{padding:8px 13px;font-size:12.5px;border-radius:10px}
 .btn.xs{padding:5px 10px;font-size:11.5px;border-radius:8px;font-weight:700}
 .btn-red{background:var(--bad-weak);color:var(--bad);border:1px solid color-mix(in srgb,var(--bad) 28%,transparent)}
 .btn-red:hover{background:var(--bad);color:#fff}
 .input.sm,.select.sm{padding:8px 12px;font-size:13px;min-width:200px}
-.head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto}
 .stat.hi{border-color:var(--accent-weak-bd);background:linear-gradient(180deg,var(--accent-weak),transparent 60%)}
 .stat .value.red{color:var(--bad)}
 .banner.err{background:var(--bad-weak);color:var(--bad);border-color:color-mix(in srgb,var(--bad) 30%,transparent)}
@@ -270,6 +325,12 @@ td.wrap{white-space:normal;max-width:340px;color:var(--text-muted)}
    Lebar kolom diatur lewat <colgroup> persen; teks membungkus, tidak dipaksa
    satu baris seperti tabel biasa. */
 .table-wrap.fixed{overflow-x:visible}
+/* Di ponsel, memaksa 8 kolom muat justru bikin tak terbaca — di sini saja
+   tabel boleh digeser, dengan lebar minimum agar kolom tetap terbaca. */
+@media(max-width:700px){
+  .table-wrap.fixed{overflow-x:auto}
+  .table-wrap.fixed .grid-table{min-width:680px}
+}
 .grid-table{table-layout:fixed;width:100%}
 .grid-table th,.grid-table td{white-space:normal;overflow-wrap:anywhere;padding:10px 12px;vertical-align:top}
 .grid-table th{position:sticky;top:0;z-index:2;font-size:10.5px;letter-spacing:.04em}

@@ -126,7 +126,7 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
       ) : null}
 
       <div className="section-head" style={{ marginTop: 18 }}>
-        <h2>Master Subtes</h2>
+        
         <div className="head-actions">
           <input className="input sm" placeholder="Cari subtes, ID, ID lama…" value={q} onChange={(e) => setQ(e.target.value)} />
           <select className="select sm" value={kat} onChange={(e) => setKat(e.target.value)}>
