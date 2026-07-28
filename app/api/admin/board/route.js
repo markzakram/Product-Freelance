@@ -1,6 +1,9 @@
 // ============================================================================
 //  API dashboard admin — baca realtime + tulis balik ke Google Sheets.
 //  Dilindungi middleware (cookie internal) — lihat middleware.js.
+//
+//  Semua operasi menerima parameter `bulan` supaya admin bisa mengelola bulan
+//  mana pun dari dashboard, bukan hanya bulan terbaru.
 // ============================================================================
 
 import { NextResponse } from "next/server";
@@ -18,10 +21,9 @@ import { canWrite, credsDiagnosis } from "@/lib/gauth";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function GET() {
-  const board = await getBoard();
-  // Kalau jatuh ke data contoh, sertakan alasan pastinya untuk ditampilkan di
-  // banner admin — supaya masalah konfigurasi Vercel langsung kelihatan.
+export async function GET(req) {
+  const bulan = req.nextUrl.searchParams.get("bulan") || "";
+  const board = await getBoard(bulan);
   const diag = board.source === "sample" ? await credsDiagnosis() : null;
   return NextResponse.json(
     { ...board, canWrite: board.source === "live" && canWrite(), diag, at: Date.now() },
@@ -30,21 +32,18 @@ export async function GET() {
 }
 
 const HANDLERS = {
-  "assignments:create": (b) => createAssignment(b.data || {}),
-  "assignments:update": (b) => updateAssignment(b.row, b.data || {}),
-  "assignments:delete": (b) => deleteAssignment(b.row),
-  "projects:create": (b) => createProject(b.data || {}),
-  "projects:update": (b) => updateProject(b.row, b.data || {}),
-  "projects:delete": (b) => deleteProject(b.row),
+  "assignments:create": (b) => createAssignment(b.data || {}, b.bulan),
+  "assignments:update": (b) => updateAssignment(b.row, b.data || {}, b.bulan),
+  "assignments:delete": (b) => deleteAssignment(b.row, b.bulan),
+  "projects:create": (b) => createProject(b.data || {}, b.bulan),
+  "projects:update": (b) => updateProject(b.row, b.data || {}, b.bulan),
+  "projects:delete": (b) => deleteProject(b.row, b.bulan),
 };
 
 export async function POST(req) {
   if (!canWrite()) {
     return NextResponse.json(
-      {
-        error:
-          "Mode baca-saja: menyimpan butuh GOOGLE_SERVICE_ACCOUNT_JSON dengan akses Editor ke spreadsheet.",
-      },
+      { error: "Mode baca-saja: menyimpan butuh GOOGLE_SERVICE_ACCOUNT_JSON dengan akses Editor." },
       { status: 403 }
     );
   }

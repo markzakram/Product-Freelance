@@ -14,7 +14,7 @@
 //  Edit/tambah dilakukan lewat popup, bukan input di dalam baris.
 // ============================================================================
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { rupiah, numberID } from "@/lib/format";
 import PrintArea from "./Receipts";
 import MasterPanel from "./MasterPanel";
@@ -27,6 +27,11 @@ const POLL_MS = 45000;
 const LOGIN_URL = "/admin/login?next=%2Fadmin";
 
 const F0 = { q: "", from: "", to: "", platform: SEMUA, guru: SEMUA, subtes: SEMUA, status: SEMUA, pic: SEMUA };
+
+// Halaman yang isinya terikat satu bulan -> perlu pemilih bulan.
+// (Master, Proyek Baru, dan Analisis tidak: master bersifat lintas bulan dan
+// Analisis punya filter bulannya sendiri.)
+const PERBULAN = new Set(["ringkasan", "katalog", "log", "bayar"]);
 
 const tglID = (iso) => {
   const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -44,8 +49,9 @@ class SesiBerakhir extends Error {
   }
 }
 
-async function apiGet() {
-  const res = await fetch("/api/admin/board", { cache: "no-store" });
+async function apiGet(bulan) {
+  const qs = bulan ? "?bulan=" + encodeURIComponent(bulan) : "";
+  const res = await fetch("/api/admin/board" + qs, { cache: "no-store" });
   if (res.status === 401) throw new SesiBerakhir();
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
@@ -114,6 +120,8 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
   const [syncedAt, setSyncedAt] = useState(null);
   const [print, setPrint] = useState(null);
   const [navOpen, setNavOpen] = useState(false); // sidebar di layar sempit
+  // Bulan yang sedang dikelola. Kosong = bulan terbaru (ditentukan server).
+  const [bulanAktif, setBulanAktif] = useState("");
   // data tambahan: katalog master & seluruh bulan (untuk Master/Proyek Baru/Analisis)
   const [master, setMaster] = useState({ rows: [] });
   const [allMonths, setAllMonths] = useState({ months: [], catalog: [], log: [] });
@@ -125,7 +133,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
   const refresh = useCallback(async () => {
     setSyncing(true);
     try {
-      const j = await apiGet();
+      const j = await apiGet(bulanAktif);
       setBoard(j);
       setSyncedAt(new Date());
       setErr("");
@@ -135,7 +143,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
     } finally {
       setSyncing(false);
     }
-  }, []);
+  }, [bulanAktif]);
 
   // Sekali sesi habis, berhenti polling — kalau tidak, banner error akan
   // muncul berulang tiap 45 detik tanpa pernah bisa berhasil.
@@ -160,6 +168,13 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
     if (!expired) refreshExtra();
   }, [refreshExtra, expired]);
 
+  // Ganti bulan -> muat ulang papan untuk bulan itu.
+  const pertama = useRef(true);
+  useEffect(() => {
+    if (pertama.current) { pertama.current = false; return; }
+    refresh();
+  }, [bulanAktif]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (expired) return undefined;
     const id = setInterval(refresh, POLL_MS);
@@ -176,7 +191,9 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
       setBusy(true);
       setErr("");
       try {
-        await apiPost(payload);
+        // sertakan bulan aktif supaya tulisan mendarat di sheet yang dibuka,
+        // bukan selalu di bulan terbaru
+        await apiPost({ bulan: board.tab || bulanAktif, ...payload });
         await refresh();
         return true;
       } catch (e) {
@@ -187,7 +204,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
         setBusy(false);
       }
     },
-    [refresh]
+    [refresh, board.tab, bulanAktif]
   );
 
   const projById = useMemo(() => new Map(projects.map((p) => [p.id, p])), [projects]);
@@ -336,6 +353,21 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
               <h1 className="page-title">{PAGE[tab]?.title}</h1>
             </div>
             <div className="page-sync">
+              {PERBULAN.has(tab) && (board.months || []).length ? (
+                <label className="bulan-pick">
+                  <span>Bulan</span>
+                  <select
+                    className="select sm"
+                    value={bulanAktif || board.tab || ""}
+                    onChange={(e) => setBulanAktif(e.target.value)}
+                    disabled={syncing || busy}
+                  >
+                    {(board.months || []).map((m) => (
+                      <option key={m.tab} value={m.tab}>{m.bulan}</option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
               {syncedAt ? <span className="muted">Sinkron {syncedAt.toLocaleTimeString("id-ID")}</span> : null}
               <button className="btn btn-ghost sm" onClick={refresh} disabled={syncing}>
                 {syncing ? "⏳ Menyegarkan…" : "⟳ Segarkan"}
