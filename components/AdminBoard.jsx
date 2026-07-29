@@ -442,7 +442,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
           platformOf={platformOf}
         />
       )}
-      {tab === "katalog" && <KatalogTable projects={projects} run={run} busy={busy} readOnly={readOnly} />}
+      {tab === "katalog" && <KatalogTable projects={projects} run={run} busy={busy} readOnly={readOnly} master={master.rows || []} />}
 
       {tab === "master" &&
         (extraLoaded ? (
@@ -834,48 +834,104 @@ function AssignmentModal({ mode, draft, onDraft, projects, teachers, opts, onSav
   );
 }
 
-function ProjectModal({ mode, draft, onDraft, onSave, onCancel, busy }) {
+const OUTPUTS = ["Lengkap", "Video Pembahasan", "Soal & Pembahasan", "Liveclass"];
+const hargaMaster = (m, output) =>
+  ({ "Lengkap": m?.hargaLengkap, "Video Pembahasan": m?.hargaVideo, "Soal & Pembahasan": m?.hargaSoal, "Liveclass": m?.hargaLive }[output]) || "";
+
+// Sama seperti di "Proyek Bulan Baru": subtes selalu dipilih dari Master_Project
+// supaya tautan ID Subtes terisi dan harga/platform ikut terbawa.
+function ProjectModal({ mode, draft, onDraft, onPilih, onSave, onCancel, busy, master }) {
+  const [cari, setCari] = useState("");
   const total = (parseInt(draft.harga, 10) || 0) * (parseInt(draft.kebutuhan, 10) || 0);
+  const terpilih = master.find((m) => m.id === draft.idSubtes);
+
+  const hasil = useMemo(() => {
+    const s = cari.trim().toLowerCase();
+    if (!s) return [];
+    return master
+      .filter((m) => (m.status || "Aktif") !== "Arsip")
+      .filter((m) => `${m.id} ${m.subtes} ${m.kategori}`.toLowerCase().includes(s))
+      .slice(0, 8);
+  }, [master, cari]);
+
   return (
     <Modal
-      title={mode === "create" ? "＋ Tambah Proyek" : "✎ Edit Proyek"}
+      title={mode === "create" ? "＋ Tambah Proyek ke Bulan Ini" : "✎ Edit Proyek"}
       onCancel={onCancel}
       onSave={onSave}
       busy={busy}
     >
-      <div className="form-grid">
-        <Field label="ID Project">
-          <input className="input" value={draft.id} onChange={(e) => onDraft("id", e.target.value)} placeholder="ASN-xx" />
-        </Field>
-        <Field label="Platform">
-          <input className="input" value={draft.platform} onChange={(e) => onDraft("platform", e.target.value)} />
-        </Field>
-        <Field label="Subtes" wide>
-          <input className="input" value={draft.subtes} onChange={(e) => onDraft("subtes", e.target.value)} />
-        </Field>
-        <Field label="Output">
-          <input className="input" value={draft.output} onChange={(e) => onDraft("output", e.target.value)} />
-        </Field>
-        <Field label="Harga per soal">
-          <input className="input" type="number" min={0} value={draft.harga} onChange={(e) => onDraft("harga", e.target.value)} />
-        </Field>
-        <Field label="Kebutuhan">
-          <input className="input" type="number" min={0} value={draft.kebutuhan} onChange={(e) => onDraft("kebutuhan", e.target.value)} />
-        </Field>
-      </div>
-      <div className="derived-box">
-        <b>🔒 Dihitung otomatis oleh spreadsheet</b>
-        <div>
-          <span>Sisa</span>
-          <b>otomatis</b>
-          <small>Kebutuhan − yang sudah diambil</small>
-        </div>
-        <div>
-          <span>Nilai proyek</span>
-          <b>{rupiah(total)}</b>
-          <small>Harga × Kebutuhan</small>
-        </div>
-      </div>
+      {!draft.idSubtes ? (
+        <>
+          <Field label="Cari subtes di Master" wide hint="Ketik nama subtes atau ID. Belum ada? Tambahkan dulu di menu Master Subtes.">
+            <input className="input" value={cari} onChange={(e) => setCari(e.target.value)} placeholder="mis. Figural Analogi / SUB-001" autoFocus />
+          </Field>
+          {hasil.length ? (
+            <div className="picker">
+              {hasil.map((m) => (
+                <button key={m.id} className="pick" onClick={() => { onPilih(m); setCari(""); }}>
+                  <b>{m.subtes}</b>
+                  <span className="muted xs2">{m.id} · {m.kategori || "tanpa kategori"}</span>
+                </button>
+              ))}
+            </div>
+          ) : cari.trim() ? (
+            <div className="muted" style={{ marginTop: 10 }}>Tidak ada yang cocok di master.</div>
+          ) : null}
+        </>
+      ) : (
+        <>
+          <div className="picked">
+            <div>
+              <b>{terpilih?.subtes || draft.subtes}</b>
+              <div className="muted xs2">{draft.idSubtes}{terpilih?.kategori ? " · " + terpilih.kategori : ""}</div>
+            </div>
+            {mode === "create" ? (
+              <button className="btn btn-ghost xs" onClick={() => onPilih(null)}>Ganti subtes</button>
+            ) : null}
+          </div>
+
+          <div className="form-grid" style={{ marginTop: 14 }}>
+            <Field label="Platform">
+              <input className="input" value={draft.platform} onChange={(e) => onDraft("platform", e.target.value)} />
+            </Field>
+            <Field label="Output">
+              <select className="select" value={draft.output} onChange={(e) => onDraft("output", e.target.value)}>
+                <option value="">— pilih —</option>
+                {OUTPUTS.map((o) => <option key={o}>{o}</option>)}
+              </select>
+            </Field>
+            <Field
+              label="Harga per soal"
+              hint={terpilih && hargaMaster(terpilih, draft.output) ? "Terisi dari master, boleh diubah untuk bulan ini" : "Master belum punya harga untuk output ini — isi manual"}
+            >
+              <input className="input" type="number" min={0} value={draft.harga} onChange={(e) => onDraft("harga", e.target.value)} />
+            </Field>
+            <Field label="Kebutuhan (jumlah soal)">
+              <input className="input" type="number" min={0} value={draft.kebutuhan} onChange={(e) => onDraft("kebutuhan", e.target.value)} />
+            </Field>
+          </div>
+
+          <div className="derived-box">
+            <b>🔒 Dibuat / dihitung otomatis</b>
+            <div>
+              <span>Kode</span>
+              <b>{draft.id || "otomatis"}</b>
+              <small>nomor urut bulan ini</small>
+            </div>
+            <div>
+              <span>Sisa</span>
+              <b>otomatis</b>
+              <small>Kebutuhan − yang sudah diambil</small>
+            </div>
+            <div>
+              <span>Anggaran</span>
+              <b>{rupiah(total)}</b>
+              <small>Harga × Kebutuhan</small>
+            </div>
+          </div>
+        </>
+      )}
     </Modal>
   );
 }
@@ -1038,9 +1094,9 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, p
 }
 
 /* ============================== KATALOG ================================== */
-const BLANK_P = { id: "", platform: "", subtes: "", output: "", harga: "", kebutuhan: "" };
+const BLANK_P = { id: "", idSubtes: "", platform: "", subtes: "", output: "", harga: "", kebutuhan: "" };
 
-function KatalogTable({ projects, run, busy, readOnly }) {
+function KatalogTable({ projects, run, busy, readOnly, master }) {
   const [edit, setEdit] = useState(null);
   const [draft, setDraft] = useState(BLANK_P);
   const [confirm, setConfirm] = useState(null);
@@ -1051,7 +1107,31 @@ function KatalogTable({ projects, run, busy, readOnly }) {
     return s ? projects.filter((p) => `${p.id} ${p.platform} ${p.subtes} ${p.output}`.toLowerCase().includes(s)) : projects;
   }, [projects, q]);
 
-  const onDraft = (k, v) => setDraft((d) => ({ ...d, [k]: v }));
+  // Ganti output -> harga ikut default master (kalau ada), tapi tetap bisa diubah.
+  const onDraft = (k, v) =>
+    setDraft((d) => {
+      const nd = { ...d, [k]: v };
+      if (k === "output") {
+        const m = master.find((x) => x.id === d.idSubtes);
+        const h = hargaMaster(m, v);
+        if (h) nd.harga = h;
+      }
+      return nd;
+    });
+
+  // Pilih subtes dari master -> subtes/platform/output/harga ikut terbawa.
+  const onPilih = (m) => {
+    if (!m) return setDraft((d) => ({ ...d, idSubtes: "", subtes: "" }));
+    const output = (m.output || "").split(",")[0].trim() || "Lengkap";
+    setDraft((d) => ({
+      ...d,
+      idSubtes: m.id,
+      subtes: m.subtes,
+      platform: d.platform || m.platform || "",
+      output,
+      harga: hargaMaster(m, output) || d.harga || "",
+    }));
+  };
 
   const save = async () => {
     const ok = await run(
@@ -1116,6 +1196,7 @@ function KatalogTable({ projects, run, busy, readOnly }) {
                     onEdit={() => {
                       setDraft({
                         id: p.id,
+                        idSubtes: p.idSubtes,
                         platform: p.platform,
                         subtes: p.subtes,
                         output: p.output,
@@ -1134,7 +1215,16 @@ function KatalogTable({ projects, run, busy, readOnly }) {
       </div>
 
       {edit ? (
-        <ProjectModal mode={edit.mode} draft={draft} onDraft={onDraft} onSave={save} onCancel={() => setEdit(null)} busy={busy} />
+        <ProjectModal
+          mode={edit.mode}
+          draft={draft}
+          onDraft={onDraft}
+          onPilih={onPilih}
+          onSave={save}
+          onCancel={() => setEdit(null)}
+          busy={busy}
+          master={master}
+        />
       ) : null}
 
       {confirm ? (

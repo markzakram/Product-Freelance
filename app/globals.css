@@ -383,6 +383,12 @@ td.wrap{white-space:normal;max-width:340px;color:var(--text-muted)}
 .pick:hover{border-color:var(--accent);background:var(--accent-weak)}
 .pick b{font-weight:700}
 
+/* subtes yang sudah dipilih di popup tambah proyek */
+.picked{display:flex;align-items:center;gap:12px;padding:11px 14px;border:1px solid var(--accent-weak-bd);background:var(--accent-weak);border-radius:12px}
+.picked>div{min-width:0}
+.picked b{font-size:14.5px}
+.picked .btn{margin-left:auto;flex:none}
+
 /* daftar duplikat di popup master */
 .dup-list{margin:6px 0;padding-left:18px}
 .dup-list li{margin:2px 0;font-weight:500}
