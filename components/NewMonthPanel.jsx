@@ -7,13 +7,15 @@
 // ============================================================================
 
 import { useMemo, useState } from "react";
-import { rupiah, numberID } from "@/lib/format";
+import { rupiah, numberID, parseHarga, formatHarga } from "@/lib/format";
 
 const BULAN = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 const OUTPUTS = ["Lengkap", "Video Pembahasan", "Soal & Pembahasan", "Liveclass"];
 
-const hargaDefault = (m, output) =>
-  ({ "Lengkap": m.hargaLengkap, "Video Pembahasan": m.hargaVideo, "Soal & Pembahasan": m.hargaSoal, "Liveclass": m.hargaLive }[output]) || "";
+const hargaRaw = (m, output) =>
+  ({ "Lengkap": m?.hargaLengkap, "Video Pembahasan": m?.hargaVideo, "Soal & Pembahasan": m?.hargaSoal, "Liveclass": m?.hargaLive }[output]) || "";
+// Rentang tentatif -> ambil batas bawah sebagai isian awal.
+const hargaDefault = (m, output) => { const h = parseHarga(hargaRaw(m, output)); return h.ada ? h.min : ""; };
 
 async function api(payload) {
   const res = await fetch("/api/admin/months", {

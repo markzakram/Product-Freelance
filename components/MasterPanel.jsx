@@ -8,7 +8,19 @@
 // ============================================================================
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { rupiah, numberID } from "@/lib/format";
+import { rupiah, numberID, formatHarga, parseHarga } from "@/lib/format";
+
+// Harga boleh diisi angka pasti ("13000") atau rentang tentatif ("10000-13000").
+const HINT_HARGA = "Angka pasti, atau rentang bila masih tentatif — mis. 10000-13000";
+const HargaSel = ({ v }) => {
+  const h = parseHarga(v);
+  if (!h.ada) return <span className="muted">—</span>;
+  return h.tentatif ? (
+    <span className="tentatif" title="Harga masih tentatif">{formatHarga(v, { pendek: true })}</span>
+  ) : (
+    <>{rupiah(h.min)}</>
+  );
+};
 
 const BLANK = {
   subtes: "", kategori: "", platform: "", output: "",
@@ -38,6 +50,7 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
   const [edit, setEdit] = useState(null); // { mode:'create'|'edit', row? }
   const [draft, setDraft] = useState(BLANK);
   const [dup, setDup] = useState(null);
+  const [arsip, setArsip] = useState(null); // subtes yang menunggu konfirmasi
 
   const kategoriList = useMemo(
     () => Array.from(new Set(rows.map((r) => r.kategori).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
@@ -174,8 +187,8 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
                 <td className="wrap">{r.kategori || <span className="neg">— belum ada —</span>}</td>
                 <td>{r.status}</td>
                 <td className="wrap">{r.platform || "—"}</td>
-                <td className="num">{r.hargaLengkap ? rupiah(r.hargaLengkap) : "—"}</td>
-                <td className="num">{r.hargaVideo ? rupiah(r.hargaVideo) : "—"}</td>
+                <td className="num"><HargaSel v={r.hargaLengkap} /></td>
+                <td className="num"><HargaSel v={r.hargaVideo} /></td>
                 <td className="act">
                   <div className="rowmenu">
                     <button
@@ -195,12 +208,8 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
                     <button
                       className="ibtn danger"
                       disabled={readOnly || busy}
-                      title={r.status === "Arsip" ? "Aktifkan" : "Arsipkan"}
-                      onClick={async () => {
-                        setBusy(true);
-                        try { await api({ action: "archive", row: r.row, status: r.status === "Arsip" ? "Aktif" : "Arsip" }); await onChanged(); }
-                        catch (e) { setErr(e.message); } finally { setBusy(false); }
-                      }}
+                      title={r.status === "Arsip" ? "Aktifkan kembali" : "Arsipkan"}
+                      onClick={() => setArsip(r)}
                     >{r.status === "Arsip" ? "↩" : "🗄"}</button>
                   </div>
                 </td>
@@ -209,6 +218,65 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
           </tbody>
         </table>
       </div>
+
+      {arsip ? (
+        <div className="overlay" onClick={() => !busy && setArsip(null)}>
+          <div className="modal sm" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <h2>{arsip.status === "Arsip" ? "↩ Aktifkan kembali subtes ini?" : "🗄 Arsipkan subtes ini?"}</h2>
+            </div>
+            <div className="modal-body">
+              <p className="modal-sub">
+                <b>{arsip.id}</b> — {arsip.subtes}
+                {arsip.kategori ? <span className="muted"> · {arsip.kategori}</span> : null}
+              </p>
+              {arsip.status === "Arsip" ? (
+                <p className="modal-sub">Subtes akan muncul lagi di daftar pilihan saat menyusun proyek bulanan.</p>
+              ) : (
+                <>
+                  <p className="modal-sub">
+                    Subtes <b>tidak dihapus</b> — hanya disembunyikan dari daftar pilihan saat menyusun proyek baru.
+                    ID <b>{arsip.id}</b> tetap dipakai, jadi data bulan-bulan lalu yang memakainya tetap utuh dan
+                    tetap terhitung di halaman Analisis.
+                  </p>
+                  {parseHarga(arsip.hargaLengkap).tentatif ||
+                  parseHarga(arsip.hargaVideo).tentatif ||
+                  parseHarga(arsip.hargaSoal).tentatif ||
+                  parseHarga(arsip.hargaLive).tentatif ? (
+                    <p className="modal-sub warn-text">
+                      ⚠ Subtes ini punya harga yang masih <b>tentatif</b>. Pastikan harganya sudah disepakati sebelum
+                      diarsipkan.
+                    </p>
+                  ) : null}
+                </>
+              )}
+              <button
+                className={"btn " + (arsip.status === "Arsip" ? "btn-blue" : "btn-red")}
+                style={{ width: "100%" }}
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  setErr("");
+                  try {
+                    await api({ action: "archive", row: arsip.row, status: arsip.status === "Arsip" ? "Aktif" : "Arsip" });
+                    setArsip(null);
+                    await onChanged();
+                  } catch (e) {
+                    setErr(e.message);
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                {busy ? "Menyimpan…" : arsip.status === "Arsip" ? "Ya, aktifkan" : "Ya, arsipkan"}
+              </button>
+              <button className="btn btn-ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setArsip(null)} disabled={busy}>
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {edit ? (
         <div className="overlay" onClick={() => !busy && setEdit(null)}>
@@ -250,10 +318,22 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
                   <span>Output yang tersedia</span>
                   <input className="input" value={draft.output} onChange={d("output")} placeholder="Lengkap, Video Pembahasan" />
                 </label>
-                <label className="ffield"><span>Harga Lengkap</span><input className="input" type="number" min={0} value={draft.hargaLengkap} onChange={d("hargaLengkap")} /></label>
-                <label className="ffield"><span>Harga Video Pembahasan</span><input className="input" type="number" min={0} value={draft.hargaVideo} onChange={d("hargaVideo")} /></label>
-                <label className="ffield"><span>Harga Soal & Pembahasan</span><input className="input" type="number" min={0} value={draft.hargaSoal} onChange={d("hargaSoal")} /></label>
-                <label className="ffield"><span>Harga Liveclass</span><input className="input" type="number" min={0} value={draft.hargaLive} onChange={d("hargaLive")} /></label>
+                {[
+                  ["hargaLengkap", "Harga Lengkap"],
+                  ["hargaVideo", "Harga Video Pembahasan"],
+                  ["hargaSoal", "Harga Soal & Pembahasan"],
+                  ["hargaLive", "Harga Liveclass"],
+                ].map(([k, label]) => {
+                  const h = parseHarga(draft[k]);
+                  return (
+                    <label className="ffield" key={k}>
+                      <span>{label}</span>
+                      {/* type="text", bukan number — agar "10000-13000" bisa diketik */}
+                      <input className="input" value={draft[k]} onChange={d(k)} placeholder="mis. 13000 atau 10000-13000" />
+                      <small>{h.tentatif ? `Tentatif: ${formatHarga(draft[k])}` : HINT_HARGA}</small>
+                    </label>
+                  );
+                })}
                 <label className="ffield wide"><span>Catatan</span><input className="input" value={draft.catatan} onChange={d("catatan")} /></label>
               </div>
             </div>

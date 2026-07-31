@@ -15,7 +15,7 @@
 // ============================================================================
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { rupiah, numberID } from "@/lib/format";
+import { rupiah, numberID, parseHarga, formatHarga } from "@/lib/format";
 import PrintArea from "./Receipts";
 import MasterPanel from "./MasterPanel";
 import NewMonthPanel from "./NewMonthPanel";
@@ -850,8 +850,11 @@ function AssignmentModal({ mode, draft, onDraft, projects, teachers, opts, onSav
 }
 
 const OUTPUTS = ["Lengkap", "Video Pembahasan", "Soal & Pembahasan", "Liveclass"];
-const hargaMaster = (m, output) =>
+const hargaRawMaster = (m, output) =>
   ({ "Lengkap": m?.hargaLengkap, "Video Pembahasan": m?.hargaVideo, "Soal & Pembahasan": m?.hargaSoal, "Liveclass": m?.hargaLive }[output]) || "";
+// Harga di master bisa rentang tentatif -> form diisi batas BAWAH, rentangnya
+// ditampilkan sebagai petunjuk supaya admin sadar harganya belum pasti.
+const hargaMaster = (m, output) => { const h = parseHarga(hargaRawMaster(m, output)); return h.ada ? h.min : ""; };
 
 // Sama seperti di "Proyek Bulan Baru": subtes selalu dipilih dari Master_Project
 // supaya tautan ID Subtes terisi dan harga/platform ikut terbawa.
@@ -918,7 +921,13 @@ function ProjectModal({ mode, draft, onDraft, onPilih, onSave, onCancel, busy, m
             </Field>
             <Field
               label="Harga per soal"
-              hint={terpilih && hargaMaster(terpilih, draft.output) ? "Terisi dari master, boleh diubah untuk bulan ini" : "Master belum punya harga untuk output ini — isi manual"}
+              hint={
+                parseHarga(hargaRawMaster(terpilih, draft.output)).tentatif
+                  ? `⚠ Master menandai harga ini TENTATIF: ${formatHarga(hargaRawMaster(terpilih, draft.output))} — pastikan angkanya sudah disepakati`
+                  : hargaMaster(terpilih, draft.output)
+                  ? "Terisi dari master, boleh diubah untuk bulan ini"
+                  : "Master belum punya harga untuk output ini — isi manual"
+              }
             >
               <input className="input" type="number" min={0} value={draft.harga} onChange={(e) => onDraft("harga", e.target.value)} />
             </Field>
