@@ -129,8 +129,11 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
   const [guru, setGuru] = useState({ rows: [] });
   const [extraLoaded, setExtraLoaded] = useState(false);
 
-  const { projects = [], assignments = [], teachers = [], source, canWrite, diag } = board;
+  const { projects = [], assignments = [], teachers = [], source, canWrite, diag, sheetWritable, serviceAccount } = board;
   const readOnly = !canWrite;
+  // Kredensial ada & data terbaca, tapi spreadsheet hanya dibagikan sebagai
+  // Viewer -> kasus khusus yang perlu instruksi, bukan sekadar "baca-saja".
+  const kurangIzin = source === "live" && sheetWritable === false;
 
   const refresh = useCallback(async () => {
     setSyncing(true);
@@ -399,7 +402,19 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
             </div>
           </div>
 
-      {readOnly ? (
+      {kurangIzin ? (
+        <div className="banner err">
+          <span>🔒</span>
+          <div>
+            <b>Belum punya izin menulis ke spreadsheet.</b> Data terbaca, tapi setiap penyimpanan akan ditolak Google.
+            <div className="banner-detail">
+              Perbaiki sekali saja: buka spreadsheet di Google Sheets → tombol <b>Bagikan</b> → tambahkan{" "}
+              <b>{serviceAccount || "service account"}</b> dengan akses <b>Editor</b> (sekarang masih Pembaca), lalu
+              tekan Segarkan di sini. Data yang sudah ada tidak terpengaruh.
+            </div>
+          </div>
+        </div>
+      ) : readOnly ? (
         <div className="banner sample">
           <span>🔒</span>
           <div>

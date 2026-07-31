@@ -16,7 +16,7 @@ import {
   updateProject,
   deleteProject,
 } from "@/lib/juli";
-import { canWrite, credsDiagnosis } from "@/lib/gauth";
+import { canWrite, credsDiagnosis, probeWriteAccess, getCreds } from "@/lib/gauth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -25,8 +25,21 @@ export async function GET(req) {
   const bulan = req.nextUrl.searchParams.get("bulan") || "";
   const board = await getBoard(bulan);
   const diag = board.source === "sample" ? await credsDiagnosis() : null;
+
+  // Kredensial bisa saja ada tapi spreadsheet hanya dibagikan sebagai Viewer.
+  // Diperiksa di muka supaya admin diberi tahu sebelum mengisi form panjang.
+  let sheetWritable = true;
+  if (board.source === "live" && canWrite()) sheetWritable = await probeWriteAccess();
+
   return NextResponse.json(
-    { ...board, canWrite: board.source === "live" && canWrite(), diag, at: Date.now() },
+    {
+      ...board,
+      canWrite: board.source === "live" && canWrite() && sheetWritable,
+      sheetWritable,
+      serviceAccount: getCreds()?.client_email || "",
+      diag,
+      at: Date.now(),
+    },
     { headers: { "Cache-Control": "no-store" } }
   );
 }
