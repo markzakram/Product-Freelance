@@ -630,6 +630,13 @@ function Ringkasan({ stat, projects }) {
           <div className="sub">{stat.negatif ? `${stat.negatif} proyek kelebihan ambil` : "belum diambil"}</div>
         </div>
         <div className="card stat">
+          <div className="label">Tampil di /open</div>
+          <div className={"value " + (projects.length - stat.habis > 0 ? "green" : "amber")}>
+            {numberID(projects.length - stat.habis)}
+          </div>
+          <div className="sub">bisa diambil guru · {stat.habis} stok habis</div>
+        </div>
+        <div className="card stat">
           <div className="label">Guru Aktif</div>
           <div className="value blue">{numberID(stat.guruAktif)}</div>
           <div className="sub">punya baris di log</div>
@@ -1097,6 +1104,13 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, p
                 <td>
                   <span className="mono">{a.idProject || "—"}</span>
                   {platformOf(a) ? <div className="muted xs2">{platformOf(a)}</div> : null}
+                  {/* Kode yang tidak ada di katalog -> Fee tidak bisa dihitung.
+                      Biasanya karena baris katalognya dihapus belakangan. */}
+                  {a.idProject && !projects.some((p) => p.id === a.idProject) ? (
+                    <div className="neg xs2" title="Baris katalog dengan kode ini sudah tidak ada, jadi Fee-nya tidak bisa dihitung">
+                      ⚠ proyek tak ditemukan
+                    </div>
+                  ) : null}
                 </td>
                 <td>
                   {a.guru || "—"}
@@ -1275,7 +1289,12 @@ function KatalogTable({ projects, run, busy, readOnly, master }) {
                 <td className="wrap">{p.output || "—"}</td>
                 <td className="num">{rupiah(p.harga)}</td>
                 <td className="num">{numberID(p.kebutuhan)}</td>
-                <td className={"num derived" + (p.sisa < 0 ? " neg" : "")}>{numberID(p.sisa)}</td>
+                <td className={"num derived" + (p.sisa < 0 ? " neg" : "")}>
+                  {numberID(p.sisa)}
+                  {/* Halaman guru hanya menampilkan yang sisanya > 0. Ditandai di
+                      sini supaya admin tidak bingung kenapa proyeknya tak muncul. */}
+                  {p.sisa <= 0 ? <div className="muted xs2">stok habis · tak tampil di /open</div> : null}
+                </td>
                 <td className="act">
                   <RowMenu
                     disabled={readOnly || busy}
