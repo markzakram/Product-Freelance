@@ -15,7 +15,7 @@
 // ============================================================================
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { rupiah, numberID, parseNum, parseHarga, formatHarga, cekHargaBulanan } from "@/lib/format";
+import { rupiah, numberID, norm, parseNum, parseHarga, formatHarga, cekHargaBulanan } from "@/lib/format";
 import PrintArea from "./Receipts";
 import MasterPanel from "./MasterPanel";
 import NewMonthPanel from "./NewMonthPanel";
@@ -813,15 +813,32 @@ function AssignmentModal({ mode, draft, onDraft, projects, teachers, opts, onSav
         <Field label="Tanggal">
           <input className="input" type="date" value={draft.tanggal} onChange={(e) => onDraft("tanggal", e.target.value)} />
         </Field>
-        <Field label="ID Project" hint={proj ? `Harga ${rupiah(proj.harga)} · sisa ${numberID(proj.sisa)}` : null}>
-          <select className="select" value={draft.idProject} onChange={(e) => onDraft("idProject", e.target.value)}>
-            <option value="">— pilih proyek —</option>
+        <Field
+          label="ID Project"
+          hint={
+            proj
+              ? `${proj.subtes} · ${proj.output || "—"} · harga ${rupiah(proj.harga)} · sisa ${numberID(proj.sisa)}`
+              : norm(draft.idProject)
+              ? "⚠ Kode ini tidak ada di katalog bulan ini — Fee tidak akan terhitung sampai proyeknya dibuat."
+              : "Ketik kode atau nama subtes; daftar menyaring sendiri sesuai ketikan."
+          }
+        >
+          {/* Sama seperti kolom Guru: bisa diketik bebas sekaligus memberi
+              saran. Daftar dropdown biasa tidak praktis untuk 90+ proyek. */}
+          <input
+            className={"input" + (norm(draft.idProject) && !proj ? " input-err" : "")}
+            list="proyek-list"
+            value={draft.idProject}
+            onChange={(e) => onDraft("idProject", e.target.value)}
+            placeholder="mis. P08-14 atau Komparasi…"
+          />
+          <datalist id="proyek-list">
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.id} · {p.subtes}
+                {p.subtes} · {p.output || "—"} · sisa {numberID(p.sisa)}
               </option>
             ))}
-          </select>
+          </datalist>
         </Field>
         <Field label="Guru" hint="Pilih dari daftar agar ID Guru terisi otomatis">
           <input className="input" list="guru-list" value={draft.guru} onChange={(e) => onDraft("guru", e.target.value)} placeholder="Nama guru" />
