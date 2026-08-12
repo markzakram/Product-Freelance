@@ -15,7 +15,7 @@
 // ============================================================================
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { rupiah, numberID, parseHarga, formatHarga } from "@/lib/format";
+import { rupiah, numberID, parseHarga, formatHarga, cekHargaBulanan } from "@/lib/format";
 import PrintArea from "./Receipts";
 import MasterPanel from "./MasterPanel";
 import NewMonthPanel from "./NewMonthPanel";
@@ -735,7 +735,7 @@ function Filters({ f, set, opts, reset, aktif, n }) {
 }
 
 /* =========================== POPUP EDIT/TAMBAH ============================ */
-function Modal({ title, children, onCancel, onSave, busy, saveLabel = "Simpan" }) {
+function Modal({ title, children, onCancel, onSave, busy, saveLabel = "Simpan", bisaSimpan = true }) {
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && !busy && onCancel();
     window.addEventListener("keydown", onKey);
@@ -756,7 +756,7 @@ function Modal({ title, children, onCancel, onSave, busy, saveLabel = "Simpan" }
           <button className="btn btn-ghost" onClick={onCancel} disabled={busy}>
             Batal
           </button>
-          <button className="btn btn-blue" onClick={onSave} disabled={busy}>
+          <button className="btn btn-blue" onClick={onSave} disabled={busy || !bisaSimpan}>
             {busy ? "Menyimpan…" : saveLabel}
           </button>
         </div>
@@ -860,8 +860,18 @@ const hargaMaster = (m, output) => { const h = parseHarga(hargaRawMaster(m, outp
 // supaya tautan ID Subtes terisi dan harga/platform ikut terbawa.
 function ProjectModal({ mode, draft, onDraft, onPilih, onSave, onCancel, busy, master }) {
   const [cari, setCari] = useState("");
-  const total = (parseInt(draft.harga, 10) || 0) * (parseInt(draft.kebutuhan, 10) || 0);
   const terpilih = master.find((m) => m.id === draft.idSubtes);
+  const cekHarga = cekHargaBulanan(draft.harga);
+  const rentangMaster = parseHarga(hargaRawMaster(terpilih, draft.output));
+  const total = (cekHarga.ok ? cekHarga.nilai : 0) * (parseInt(draft.kebutuhan, 10) || 0);
+  const petunjukHarga = !cekHarga.ok && !cekHarga.kosong
+    ? cekHarga.pesan
+    : rentangMaster.tentatif
+    ? `Master menandai harga ini TENTATIF: ${formatHarga(hargaRawMaster(terpilih, draft.output))} — pilih satu angka untuk bulan ini`
+    : rentangMaster.ada
+    ? "Terisi dari master, boleh diubah untuk bulan ini"
+    : "Master belum punya harga untuk output ini — isi manual";
+  const bolehSimpan = cekHarga.ok && Boolean(draft.idSubtes);
 
   const hasil = useMemo(() => {
     const s = cari.trim().toLowerCase();
@@ -878,6 +888,7 @@ function ProjectModal({ mode, draft, onDraft, onPilih, onSave, onCancel, busy, m
       onCancel={onCancel}
       onSave={onSave}
       busy={busy}
+      bisaSimpan={bolehSimpan}
     >
       {!draft.idSubtes ? (
         <>
@@ -919,17 +930,28 @@ function ProjectModal({ mode, draft, onDraft, onPilih, onSave, onCancel, busy, m
                 {OUTPUTS.map((o) => <option key={o}>{o}</option>)}
               </select>
             </Field>
-            <Field
-              label="Harga per soal"
-              hint={
-                parseHarga(hargaRawMaster(terpilih, draft.output)).tentatif
-                  ? `⚠ Master menandai harga ini TENTATIF: ${formatHarga(hargaRawMaster(terpilih, draft.output))} — pastikan angkanya sudah disepakati`
-                  : hargaMaster(terpilih, draft.output)
-                  ? "Terisi dari master, boleh diubah untuk bulan ini"
-                  : "Master belum punya harga untuk output ini — isi manual"
-              }
-            >
-              <input className="input" type="number" min={0} value={draft.harga} onChange={(e) => onDraft("harga", e.target.value)} />
+            <Field label="Harga per soal" hint={petunjukHarga}>
+              {/* type="text", bukan number: kalau admin mengetik rentang di
+                  input number, browser mengembalikan "" dan nilainya hilang
+                  diam-diam. Dengan teks, kita bisa memberi tahu masalahnya. */}
+              <input
+                className={"input" + (cekHarga.ok || cekHarga.kosong ? "" : " input-err")}
+                value={draft.harga}
+                onChange={(e) => onDraft("harga", e.target.value)}
+                placeholder="mis. 7000"
+                inputMode="numeric"
+              />
+              {rentangMaster.tentatif ? (
+                <div className="quickpick">
+                  <span className="muted xs2">Pakai cepat:</span>
+                  <button className="btn btn-ghost xs" onClick={() => onDraft("harga", String(rentangMaster.min))}>
+                    {rupiah(rentangMaster.min)}
+                  </button>
+                  <button className="btn btn-ghost xs" onClick={() => onDraft("harga", String(rentangMaster.max))}>
+                    {rupiah(rentangMaster.max)}
+                  </button>
+                </div>
+              ) : null}
             </Field>
             <Field label="Kebutuhan (jumlah soal)">
               <input className="input" type="number" min={0} value={draft.kebutuhan} onChange={(e) => onDraft("kebutuhan", e.target.value)} />

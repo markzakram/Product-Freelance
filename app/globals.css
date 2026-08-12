@@ -343,6 +343,9 @@ td.wrap{white-space:normal;max-width:340px;color:var(--text-muted)}
 .derived{color:var(--text-muted);background:color-mix(in srgb,var(--surface-inset) 60%,transparent)}
 .derived.neg,.neg{color:var(--bad);font-weight:700}
 /* harga yang masih tentatif (rentang) */
+.input-err{border-color:var(--bad) !important;background:var(--bad-weak)}
+.input-err:focus{box-shadow:0 0 0 4px color-mix(in srgb,var(--bad) 18%,transparent) !important}
+.quickpick{display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap}
 .tentatif{color:var(--warn);font-weight:700;border-bottom:1px dashed color-mix(in srgb,var(--warn) 55%,transparent);cursor:help}
 .row-dim td{opacity:.62}
 .pill.rev{background:var(--bad-weak);color:var(--bad)}

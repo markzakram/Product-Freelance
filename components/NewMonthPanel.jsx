@@ -7,7 +7,7 @@
 // ============================================================================
 
 import { useMemo, useState } from "react";
-import { rupiah, numberID, parseHarga, formatHarga } from "@/lib/format";
+import { rupiah, numberID, parseHarga, formatHarga, cekHargaBulanan } from "@/lib/format";
 
 const BULAN = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 const OUTPUTS = ["Lengkap", "Video Pembahasan", "Soal & Pembahasan", "Liveclass"];
@@ -68,8 +68,10 @@ export default function NewMonthPanel({ master, months, readOnly, busy, setBusy,
   const hapus = (i) => setLines((p) => p.filter((_, idx) => idx !== i));
 
   const totalSoal = lines.reduce((a, l) => a + (parseInt(l.kebutuhan, 10) || 0), 0);
-  const totalRp = lines.reduce((a, l) => a + (parseInt(l.kebutuhan, 10) || 0) * (parseInt(l.harga, 10) || 0), 0);
-  const belumLengkap = lines.filter((l) => !l.kebutuhan || !l.harga).length;
+  const hargaOk = (l) => cekHargaBulanan(l.harga);
+  const totalRp = lines.reduce((a, l) => { const c = hargaOk(l); return a + (parseInt(l.kebutuhan, 10) || 0) * (c.ok ? c.nilai : 0); }, 0);
+  const belumLengkap = lines.filter((l) => !l.kebutuhan || !hargaOk(l).ok).length;
+  const hargaSalah = lines.filter((l) => String(l.harga).trim() && !hargaOk(l).ok);
 
   const simpan = async () => {
     setBusy(true);
@@ -149,7 +151,9 @@ export default function NewMonthPanel({ master, months, readOnly, busy, setBusy,
         </div>
       </div>
 
-      {belumLengkap > 0 ? (
+      {hargaSalah.length ? (
+        <div className="banner err"><span>⚠</span> {hargaSalah.length} baris harganya belum berupa satu angka. Harga di baris bulanan dipakai menghitung Fee, jadi rentang seperti "5000-7000" hanya boleh di Master Subtes — pilih satu angka di sini.</div>
+      ) : belumLengkap > 0 ? (
         <div className="banner sample"><span>✏</span> {belumLengkap} baris belum diisi harga atau kebutuhannya.</div>
       ) : null}
 
@@ -178,7 +182,10 @@ export default function NewMonthPanel({ master, months, readOnly, busy, setBusy,
                     {OUTPUTS.map((o) => <option key={o}>{o}</option>)}
                   </select>
                 </td>
-                <td className="num"><input className="input xs" type="number" min={0} value={l.harga} onChange={(e) => ubah(i, "harga", e.target.value)} /></td>
+                <td className="num">
+                  {/* teks, bukan number: input number membuang ketikan rentang jadi "" */}
+                  <input className={"input xs" + (cekHargaBulanan(l.harga).ok || !String(l.harga).trim() ? "" : " input-err")} inputMode="numeric" value={l.harga} onChange={(e) => ubah(i, "harga", e.target.value)} title={cekHargaBulanan(l.harga).ok ? "" : cekHargaBulanan(l.harga).pesan} />
+                </td>
                 <td className="num"><input className="input xs" type="number" min={0} value={l.kebutuhan} onChange={(e) => ubah(i, "kebutuhan", e.target.value)} /></td>
                 <td className="num">{rupiah((parseInt(l.kebutuhan, 10) || 0) * (parseInt(l.harga, 10) || 0))}</td>
                 <td className="act">
