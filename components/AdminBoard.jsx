@@ -15,7 +15,7 @@
 // ============================================================================
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { rupiah, numberID, parseHarga, formatHarga, cekHargaBulanan } from "@/lib/format";
+import { rupiah, numberID, parseNum, parseHarga, formatHarga, cekHargaBulanan } from "@/lib/format";
 import PrintArea from "./Receipts";
 import MasterPanel from "./MasterPanel";
 import NewMonthPanel from "./NewMonthPanel";
@@ -845,13 +845,30 @@ function AssignmentModal({ mode, draft, onDraft, projects, teachers, opts, onSav
           hint={
             adaTarifTelat
               ? "Guru yang lewat deadline dibayar dengan tarif terlambat."
-              : "Master belum punya tarif terlambat untuk subtes ini — atur di Master Subtes, mis. 5000-7000."
+              : proj
+              ? "Master belum punya tarif terlambat untuk subtes ini. Isi angka bila tarifnya berbeda dari harga proyek, atau kosongkan untuk memakai harga proyek."
+              : "Proyek dengan kode ini sudah tidak ada di katalog, jadi harga normalnya tak bisa dibaca — isi tarifnya manual agar Fee tetap terhitung."
           }
         >
-          <select className="select" value={mode2} onChange={(e) => pilihTarif(e.target.value)} disabled={!adaTarifTelat}>
-            <option value="normal">Normal — {rupiah(tarifNormal)}</option>
-            {adaTarifTelat ? <option value="telat">Terlambat — {rupiah(tarifTelat)}</option> : null}
-          </select>
+          {adaTarifTelat ? (
+            <select className="select" value={mode2} onChange={(e) => pilihTarif(e.target.value)}>
+              <option value="normal">Normal — {rupiah(tarifNormal)}</option>
+              <option value="telat">Terlambat — {rupiah(tarifTelat)}</option>
+            </select>
+          ) : (
+            // Tanpa dua tarif di master (atau proyeknya sudah dihapus), dropdown
+            // tidak berguna — beri isian angka supaya Fee tetap bisa dibetulkan.
+            <input
+              className="input"
+              inputMode="numeric"
+              value={draft.tarif || ""}
+              onChange={(e) => {
+                onDraft("tarif", e.target.value);
+                onDraft("ketTarif", e.target.value ? draft.ketTarif || "Tarif khusus" : "");
+              }}
+              placeholder={proj ? `kosong = pakai ${rupiah(tarifNormal)}` : "mis. 5000"}
+            />
+          )}
         </Field>
         <Field label="Status">
           <select className="select" value={draft.status} onChange={(e) => onDraft("status", e.target.value)}>
