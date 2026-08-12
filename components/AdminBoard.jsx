@@ -455,6 +455,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
           busy={busy}
           readOnly={readOnly}
           platformOf={platformOf}
+          master={master.rows || []}
         />
       )}
       {tab === "katalog" && <KatalogTable projects={projects} run={run} busy={busy} readOnly={readOnly} master={master.rows || []} />}
@@ -773,10 +774,26 @@ const Field = ({ label, children, hint, wide }) => (
   </label>
 );
 
-function AssignmentModal({ mode, draft, onDraft, projects, teachers, opts, onSave, onCancel, busy }) {
+function AssignmentModal({ mode, draft, onDraft, projects, teachers, opts, onSave, onCancel, busy, master }) {
   const proj = projects.find((p) => p.id === draft.idProject);
-  const fee = (proj?.harga || 0) * (parseInt(draft.jumlah, 10) || 0);
   const bulan = /^(\d{4})-(\d{2})/.exec(draft.tanggal || "");
+
+  // Dua tarif diambil dari master: batas ATAS = normal, batas BAWAH = terlambat.
+  const m = master.find((x) => x.id === proj?.idSubtes);
+  const rentang = parseHarga(hargaRawMaster(m, proj?.output));
+  const tarifNormal = proj?.harga || rentang.max || 0;
+  const tarifTelat = rentang.tentatif ? rentang.min : 0;
+  const adaTarifTelat = tarifTelat > 0 && tarifTelat !== tarifNormal;
+
+  // Kolom Tarif kosong = pakai harga katalog (normal).
+  const mode2 = parseNum(draft.tarif) > 0 ? "telat" : "normal";
+  const tarifDipakai = mode2 === "telat" ? parseNum(draft.tarif) : tarifNormal;
+  const fee = tarifDipakai * (parseInt(draft.jumlah, 10) || 0);
+
+  const pilihTarif = (v) => {
+    if (v === "normal") { onDraft("tarif", ""); onDraft("ketTarif", ""); }
+    else { onDraft("tarif", String(tarifTelat)); onDraft("ketTarif", "Terlambat"); }
+  };
 
   return (
     <Modal
@@ -816,6 +833,19 @@ function AssignmentModal({ mode, draft, onDraft, projects, teachers, opts, onSav
         <Field label="Jumlah soal">
           <input className="input" type="number" min={0} value={draft.jumlah} onChange={(e) => onDraft("jumlah", e.target.value)} />
         </Field>
+        <Field
+          label="Tarif per soal"
+          hint={
+            adaTarifTelat
+              ? "Guru yang lewat deadline dibayar dengan tarif terlambat."
+              : "Master belum punya tarif terlambat untuk subtes ini — atur di Master Subtes, mis. 5000-7000."
+          }
+        >
+          <select className="select" value={mode2} onChange={(e) => pilihTarif(e.target.value)} disabled={!adaTarifTelat}>
+            <option value="normal">Normal — {rupiah(tarifNormal)}</option>
+            {adaTarifTelat ? <option value="telat">Terlambat — {rupiah(tarifTelat)}</option> : null}
+          </select>
+        </Field>
         <Field label="Status">
           <select className="select" value={draft.status} onChange={(e) => onDraft("status", e.target.value)}>
             <option value="">—</option>
@@ -837,7 +867,7 @@ function AssignmentModal({ mode, draft, onDraft, projects, teachers, opts, onSav
         <div>
           <span>Fee</span>
           <b>{rupiah(fee)}</b>
-          <small>Jumlah × Harga proyek</small>
+          <small>Jumlah × {rupiah(tarifDipakai)}{mode2 === "telat" ? " (tarif terlambat)" : ""}</small>
         </div>
         <div>
           <span>Bulan</span>
@@ -983,9 +1013,9 @@ function ProjectModal({ mode, draft, onDraft, onPilih, onSave, onCancel, busy, m
 }
 
 /* ========================= LOG PENGAMBILAN =============================== */
-const BLANK_A = { tanggal: "", idProject: "", guru: "", idGuru: "", subtes: "", jumlah: "", status: "", picSoal: "", picVideo: "" };
+const BLANK_A = { tanggal: "", idProject: "", guru: "", idGuru: "", subtes: "", jumlah: "", status: "", picSoal: "", picVideo: "", tarif: "", ketTarif: "" };
 
-function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, platformOf }) {
+function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, platformOf, master }) {
   const [edit, setEdit] = useState(null); // { mode, row }
   const [draft, setDraft] = useState(BLANK_A);
   const [confirm, setConfirm] = useState(null);
@@ -1074,7 +1104,14 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, p
                 </td>
                 <td className="wrap">{a.subtes || "—"}</td>
                 <td className="num">{a.jumlah ? numberID(a.jumlah) : "—"}</td>
-                <td className="num derived">{a.fee ? rupiah(a.fee) : "—"}</td>
+                <td className="num derived">
+                  {a.fee ? rupiah(a.fee) : "—"}
+                  {a.tarif ? (
+                    <div className="tentatif xs2" title={`Tarif khusus ${rupiah(a.tarif)}/soal — ${a.ketTarif || "di luar tarif normal"}`}>
+                      {a.ketTarif || "tarif khusus"}
+                    </div>
+                  ) : null}
+                </td>
                 <td>{statusPill(a.status)}</td>
                 <td className="xs2">
                   {a.picSoal ? <div>📝 {a.picSoal}</div> : null}
@@ -1095,6 +1132,8 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, p
                         status: a.status,
                         picSoal: a.picSoal,
                         picVideo: a.picVideo,
+                        tarif: a.tarif || "",
+                        ketTarif: a.ketTarif || "",
                       });
                       setEdit({ mode: "edit", row: a.row });
                     }}
@@ -1118,6 +1157,7 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, p
           onSave={save}
           onCancel={() => setEdit(null)}
           busy={busy}
+          master={master}
         />
       ) : null}
 

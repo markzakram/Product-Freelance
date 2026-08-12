@@ -10,13 +10,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { rupiah, numberID, formatHarga, parseHarga } from "@/lib/format";
 
-// Harga boleh diisi angka pasti ("13000") atau rentang tentatif ("10000-13000").
-const HINT_HARGA = "Angka pasti, atau rentang bila masih tentatif — mis. 10000-13000";
+// Harga boleh satu angka ("13000") atau DUA TARIF "telat-normal" ("5000-7000"):
+// angka kecil = tarif untuk guru yang lewat deadline, angka besar = tarif normal.
+const HINT_HARGA = "Satu angka, atau dua tarif telat-normal — mis. 5000-7000 (telat Rp5.000, normal Rp7.000)";
 const HargaSel = ({ v }) => {
   const h = parseHarga(v);
   if (!h.ada) return <span className="muted">—</span>;
   return h.tentatif ? (
-    <span className="tentatif" title="Harga masih tentatif">{formatHarga(v, { pendek: true })}</span>
+    <span className="tentatif" title={`Terlambat ${rupiah(h.min)} / Normal ${rupiah(h.max)}`}>{formatHarga(v, { pendek: true })}</span>
   ) : (
     <>{rupiah(h.min)}</>
   );
@@ -244,8 +245,8 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
                   parseHarga(arsip.hargaSoal).tentatif ||
                   parseHarga(arsip.hargaLive).tentatif ? (
                     <p className="modal-sub warn-text">
-                      ⚠ Subtes ini punya harga yang masih <b>tentatif</b>. Pastikan harganya sudah disepakati sebelum
-                      diarsipkan.
+                      ⚠ Subtes ini memakai <b>dua tarif</b> (normal &amp; terlambat). Baris log yang sudah memakai tarif
+                      terlambat tetap tersimpan apa adanya.
                     </p>
                   ) : null}
                 </>
@@ -330,7 +331,7 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
                       <span>{label}</span>
                       {/* type="text", bukan number — agar "10000-13000" bisa diketik */}
                       <input className="input" value={draft[k]} onChange={d(k)} placeholder="mis. 13000 atau 10000-13000" />
-                      <small>{h.tentatif ? `Tentatif: ${formatHarga(draft[k])}` : HINT_HARGA}</small>
+                      <small>{h.tentatif ? `Terlambat ${rupiah(h.min)} · Normal ${rupiah(h.max)}` : HINT_HARGA}</small>
                     </label>
                   );
                 })}
