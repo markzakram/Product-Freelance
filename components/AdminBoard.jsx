@@ -243,8 +243,19 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
       subtes: uniq(assignments.map((a) => a.subtes)),
       status: uniq([...assignments.map((a) => a.status), ...STATUS_KNOWN]),
       pic: uniq([...assignments.map((a) => a.picSoal), ...assignments.map((a) => a.picVideo)]),
+      // Untuk saran saat mengisi: PIC yang sama dipakai lintas bulan, jadi
+      // ambil dari seluruh bulan — kalau hanya bulan berjalan, PIC yang belum
+      // kebagian tugas bulan ini tidak akan pernah muncul sebagai pilihan.
+      // (opts.pic tetap sebatas bulan berjalan supaya filter tidak menawarkan
+      // nama yang pasti menghasilkan tabel kosong.)
+      picSemua: uniq([
+        ...assignments.map((a) => a.picSoal),
+        ...assignments.map((a) => a.picVideo),
+        ...(allMonths.log || []).map((a) => a.picSoal),
+        ...(allMonths.log || []).map((a) => a.picVideo),
+      ]),
     }),
-    [projects, assignments]
+    [projects, assignments, allMonths]
   );
 
   const rows = useMemo(() => {
@@ -520,22 +531,24 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
 }
 
 /* ============================ NAVIGASI SAMPING ============================ */
-// Menu dikelompokkan supaya admin tidak dihadapkan 8 tab sekaligus.
+// Menu disusun mengikuti urutan kerja sebenarnya, bukan dikelompokkan per
+// jenis: subtes didaftarkan di master dulu, baru dianggarkan jadi katalog
+// bulan itu, baru dicatat siapa yang mengambil, baru dibayar. Nomor langkah
+// ditaruh terpisah dari judul supaya header halaman tetap bersih.
+// [kunci, judul, keterangan, kunciHitung, nomorLangkah]
 const NAV = [
-  { grup: "Operasional", ikon: "📋", item: [
+  { grup: "Alur Kerja", ikon: "🧭", item: [
+    ["master", "Master Subtes", "Daftar permanen semua subtes", "master", 1],
+    ["baru", "Proyek Bulan Baru", "Susun anggaran sebulan sekaligus", null, 2],
+    ["katalog", "Katalog Bulan Ini", "Anggaran soal bulan berjalan", "katalog", 3],
+    ["log", "Log Pengambilan", "Siapa mengerjakan apa", "log", 4],
+    ["bayar", "Pembayaran & Kwitansi", "Rekap fee & cetak kwitansi", null, 5],
+  ]},
+  { grup: "Pantauan", ikon: "📊", item: [
     ["ringkasan", "Ringkasan", "Angka utama bulan berjalan"],
-    ["katalog", "Katalog Bulan Ini", "Anggaran soal bulan berjalan", "katalog"],
-    ["log", "Log Pengambilan", "Siapa mengerjakan apa", "log"],
-  ]},
-  { grup: "Perencanaan", ikon: "🗂", item: [
-    ["master", "Master Subtes", "Katalog permanen semua subtes", "master"],
-    ["baru", "Proyek Bulan Baru", "Susun anggaran bulan depan"],
-  ]},
-  { grup: "Keuangan", ikon: "💰", item: [
-    ["bayar", "Pembayaran & Kwitansi", "Rekap fee & cetak kwitansi"],
-  ]},
-  { grup: "Analisis & Data", ikon: "📊", item: [
     ["analisis", "Analisis Lintas Bulan", "Tren, produktivitas, anggaran"],
+  ]},
+  { grup: "Data Pendukung", ikon: "🗂", item: [
     ["guru", "Database Guru", "Data & rekening guru", "guru"],
   ]},
 ];
@@ -558,13 +571,14 @@ function SideNav({ tab, setTab, counts, open, setOpen }) {
           {NAV.map((g) => (
             <div className="side-group" key={g.grup}>
               <div className="side-label"><span>{g.ikon}</span>{g.grup}</div>
-              {g.item.map(([k, label, desc, countKey]) => (
+              {g.item.map(([k, label, desc, countKey, langkah]) => (
                 <button
                   key={k}
                   className={"side-item" + (tab === k ? " active" : "")}
                   onClick={() => { setTab(k); setOpen(false); }}
                 >
                   <span className="si-main">
+                    {langkah ? <span className="si-step">{langkah}</span> : null}
                     <span className="si-label">{label}</span>
                     {countKey && counts[countKey] != null ? <span className="si-count">{numberID(counts[countKey])}</span> : null}
                   </span>
@@ -783,6 +797,7 @@ const Field = ({ label, children, hint, wide }) => (
 
 function AssignmentModal({ mode, draft, onDraft, projects, teachers, opts, onSave, onCancel, busy, master }) {
   const proj = projects.find((p) => p.id === draft.idProject);
+  const picList = opts.picSemua || opts.pic || [];
   const bulan = /^(\d{4})-(\d{2})/.exec(draft.tanggal || "");
 
   // Dua tarif diambil dari master: batas ATAS = normal, batas BAWAH = terlambat.
@@ -895,12 +910,19 @@ function AssignmentModal({ mode, draft, onDraft, projects, teachers, opts, onSav
             ))}
           </select>
         </Field>
-        <Field label="PIC QC Soal">
-          <input className="input" value={draft.picSoal} onChange={(e) => onDraft("picSoal", e.target.value)} />
+        {/* Sama seperti ID Project & Guru: ketik untuk menyaring, tapi nama
+            baru tetap boleh diketik bebas tanpa harus didaftarkan dulu. */}
+        <Field label="PIC QC Soal" hint={picList.length ? "Ketik untuk menyaring; nama baru boleh langsung diketik." : null}>
+          <input className="input" list="pic-list" value={draft.picSoal} onChange={(e) => onDraft("picSoal", e.target.value)} placeholder="mis. Uma" />
         </Field>
-        <Field label="PIC QC Video">
-          <input className="input" value={draft.picVideo} onChange={(e) => onDraft("picVideo", e.target.value)} />
+        <Field label="PIC QC Video" hint={picList.length ? "Daftar sama dengan PIC QC Soal." : null}>
+          <input className="input" list="pic-list" value={draft.picVideo} onChange={(e) => onDraft("picVideo", e.target.value)} placeholder="mis. Bilar" />
         </Field>
+        <datalist id="pic-list">
+          {picList.map((p) => (
+            <option key={p} value={p} />
+          ))}
+        </datalist>
       </div>
 
       <div className="derived-box">

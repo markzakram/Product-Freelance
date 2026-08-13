@@ -28,6 +28,21 @@ const BLANK = {
   hargaLengkap: "", hargaVideo: "", hargaSoal: "", hargaLive: "", catatan: "",
 };
 
+// Empat tipe baku — sama persis dengan empat kolom harga di bawahnya.
+const OUTPUT_BAKU = ["Lengkap", "Video Pembahasan", "Soal & Pembahasan", "Liveclass"];
+
+// "Output yang tersedia" berisi beberapa nilai dipisah koma, sedangkan memilih
+// item datalist selalu MENGGANTI seluruh isi kotak. Jadi tiap saran ditulis
+// utuh: bagian yang sudah diketik + satu tipe berikutnya. Efeknya memilih saran
+// terasa seperti menambah satu token, dan mengetik "vid" tetap menyaring.
+function saranOutput(nilai, semua) {
+  const potong = String(nilai || "").split(",");
+  const sudah = potong.slice(0, -1).map((s) => s.trim()).filter(Boolean);
+  const awalan = sudah.length ? sudah.join(", ") + ", " : "";
+  const dipakai = new Set(sudah.map((s) => s.toLowerCase()));
+  return semua.filter((t) => !dipakai.has(t.toLowerCase())).map((t) => awalan + t);
+}
+
 async function api(payload) {
   const res = await fetch("/api/admin/master", {
     method: "POST",
@@ -58,6 +73,19 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
     [rows]
   );
   const perluKategori = useMemo(() => rows.filter((r) => !r.kategori && r.status !== "Arsip"), [rows]);
+
+  // Tipe baku dulu, lalu tipe lain yang sudah pernah dipakai admin.
+  const outputList = useMemo(() => {
+    const set = new Set(OUTPUT_BAKU);
+    rows.forEach((r) =>
+      String(r.output || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .forEach((s) => set.add(s))
+    );
+    return Array.from(set);
+  }, [rows]);
 
   const list = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -317,7 +345,11 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
                 </label>
                 <label className="ffield wide">
                   <span>Output yang tersedia</span>
-                  <input className="input" value={draft.output} onChange={d("output")} placeholder="Lengkap, Video Pembahasan" />
+                  <input className="input" list="output-list" value={draft.output} onChange={d("output")} placeholder="Lengkap, Video Pembahasan" />
+                  <datalist id="output-list">
+                    {saranOutput(draft.output, outputList).map((o) => <option key={o} value={o} />)}
+                  </datalist>
+                  <small>Boleh lebih dari satu, dipisah koma. Ketik untuk menyaring — memilih saran menambah satu tipe.</small>
                 </label>
                 {[
                   ["hargaLengkap", "Harga Lengkap"],
