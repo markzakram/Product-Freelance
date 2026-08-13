@@ -54,6 +54,7 @@ async function api(payload) {
   if (!res.ok) {
     const err = new Error(j.error || `Gagal (HTTP ${res.status})`);
     err.duplicate = j.duplicate;
+    err.dipakai = j.dipakai;
     throw err;
   }
   return j;
@@ -67,6 +68,8 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
   const [draft, setDraft] = useState(BLANK);
   const [dup, setDup] = useState(null);
   const [arsip, setArsip] = useState(null); // subtes yang menunggu konfirmasi
+  // Hapus permanen: { row, ketik, cek:'memuat'|'siap', dipakai:[] }
+  const [hapus, setHapus] = useState(null);
 
   const kategoriList = useMemo(
     () => Array.from(new Set(rows.map((r) => r.kategori).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
@@ -127,6 +130,34 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
     },
     [edit, draft, onChanged, setBusy, setErr]
   );
+
+  // Buka popup hapus, lalu tanya server di mana subtes ini masih dipakai.
+  // Pemeriksaannya dilakukan lebih dulu supaya admin melihat dampaknya sebelum
+  // menekan apa pun — bukan baru diberi tahu setelah gagal.
+  const bukaHapus = useCallback(async (r) => {
+    setHapus({ row: r, ketik: "", cek: "memuat", dipakai: [] });
+    try {
+      const j = await api({ action: "usage", id: r.id });
+      setHapus((h) => (h && h.row.id === r.id ? { ...h, cek: "siap", dipakai: j.dipakai || [] } : h));
+    } catch (e) {
+      setHapus((h) => (h && h.row.id === r.id ? { ...h, cek: "gagal", pesan: e.message } : h));
+    }
+  }, []);
+
+  const jalankanHapus = useCallback(async () => {
+    setBusy(true);
+    setErr("");
+    try {
+      await api({ action: "delete", row: hapus.row.row, id: hapus.row.id });
+      setHapus(null);
+      await onChanged();
+    } catch (e) {
+      if (e.dipakai) setHapus((h) => (h ? { ...h, cek: "siap", dipakai: e.dipakai } : h));
+      setErr(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }, [hapus, onChanged, setBusy, setErr]);
 
   return (
     <>
@@ -194,7 +225,9 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
       <div className="table-wrap fixed">
         <table className="grid-table">
           <colgroup>
-            {[9, 30, 14, 8, 11, 9, 9, 10].map((w, i) => <col key={i} style={{ width: w + "%" }} />)}
+            {/* kolom aksi dilebarkan: baris Arsip punya tiga tombol (edit,
+                aktifkan, hapus) = 92px, tidak muat di 10% pada layar sempit */}
+            {[9, 28, 13, 8, 11, 9, 9, 13].map((w, i) => <col key={i} style={{ width: w + "%" }} />)}
           </colgroup>
           <thead>
             <tr>
@@ -240,6 +273,16 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
                       title={r.status === "Arsip" ? "Aktifkan kembali" : "Arsipkan"}
                       onClick={() => setArsip(r)}
                     >{r.status === "Arsip" ? "↩" : "🗄"}</button>
+                    {/* Hapus permanen hanya untuk yang sudah diarsipkan, jadi
+                        membuang subtes selalu butuh dua langkah sadar. */}
+                    {r.status === "Arsip" ? (
+                      <button
+                        className="ibtn danger"
+                        disabled={readOnly || busy}
+                        title="Hapus permanen"
+                        onClick={() => bukaHapus(r)}
+                      >🗑</button>
+                    ) : null}
                   </div>
                 </td>
               </tr>
@@ -301,6 +344,78 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
               </button>
               <button className="btn btn-ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setArsip(null)} disabled={busy}>
                 Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {hapus ? (
+        <div className="overlay" onClick={() => !busy && setHapus(null)}>
+          <div className="modal sm" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <h2>🗑 Hapus permanen?</h2>
+            </div>
+            <div className="modal-body">
+              <p className="modal-sub">
+                <b>{hapus.row.id}</b> — {hapus.row.subtes}
+                {hapus.row.kategori ? <span className="muted"> · {hapus.row.kategori}</span> : null}
+              </p>
+
+              {hapus.cek === "memuat" ? (
+                <p className="modal-sub">Memeriksa apakah subtes ini masih dipakai di bulan mana pun…</p>
+              ) : hapus.cek === "gagal" ? (
+                <p className="modal-sub warn-text">⚠ Gagal memeriksa pemakaian: {hapus.pesan}. Jangan dihapus dulu.</p>
+              ) : hapus.dipakai.length ? (
+                <>
+                  <p className="modal-sub warn-text">
+                    ⚠ Tidak bisa dihapus — masih dipakai <b>{hapus.dipakai.length} baris katalog</b>:
+                  </p>
+                  <ul className="dup-list">
+                    {hapus.dipakai.slice(0, 8).map((d) => (
+                      <li key={d.tab + d.row}><b>{d.bulan}</b> — {d.kode} {d.subtes ? `· ${d.subtes}` : ""}</li>
+                    ))}
+                    {hapus.dipakai.length > 8 ? <li>…dan {hapus.dipakai.length - 8} lagi</li> : null}
+                  </ul>
+                  <p className="modal-sub">
+                    Menghapusnya akan memutus tautan baris-baris itu ke master, sehingga tarif normal/terlambatnya tak
+                    bisa dibaca lagi. Biarkan diarsipkan saja — statusnya sudah cukup menyembunyikannya dari daftar
+                    pilihan proyek baru.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="modal-sub">
+                    Aman dihapus: subtes ini <b>tidak dipakai satu pun katalog bulanan</b>. Barisnya akan hilang dari
+                    spreadsheet dan <b>tidak bisa dikembalikan</b>.
+                  </p>
+                  <p className="modal-sub muted xs2">
+                    Nomor <b>{hapus.row.id}</b> akan bisa dipakai lagi oleh subtes berikutnya — aman, justru karena
+                    tidak ada data lama yang menunjuk ke sana.
+                  </p>
+                  <label className="ffield" style={{ marginTop: 4 }}>
+                    <span>Ketik <b>HAPUS</b> untuk mengonfirmasi</span>
+                    <input
+                      className="input"
+                      value={hapus.ketik}
+                      onChange={(e) => setHapus((h) => ({ ...h, ketik: e.target.value }))}
+                      placeholder="HAPUS"
+                      autoFocus
+                    />
+                  </label>
+                  <button
+                    className="btn btn-red"
+                    style={{ width: "100%" }}
+                    disabled={busy || hapus.ketik.trim().toUpperCase() !== "HAPUS"}
+                    onClick={jalankanHapus}
+                  >
+                    {busy ? "Menghapus…" : `Ya, hapus ${hapus.row.id} permanen`}
+                  </button>
+                </>
+              )}
+
+              <button className="btn btn-ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setHapus(null)} disabled={busy}>
+                {hapus.cek === "siap" && !hapus.dipakai.length ? "Batal" : "Tutup"}
               </button>
             </div>
           </div>

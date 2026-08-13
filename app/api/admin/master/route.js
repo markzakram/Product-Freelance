@@ -1,6 +1,6 @@
 // API katalog Master_Project — dilindungi middleware (cookie internal).
 import { NextResponse } from "next/server";
-import { getMaster, createSubtes, updateSubtes, archiveSubtes, findSimilar } from "@/lib/master";
+import { getMaster, createSubtes, updateSubtes, archiveSubtes, deleteSubtes, pemakaianSubtes, findSimilar } from "@/lib/master";
 import { canWrite } from "@/lib/gauth";
 
 export const dynamic = "force-dynamic";
@@ -40,12 +40,21 @@ export async function POST(req) {
         return NextResponse.json({ ok: true, ...(await updateSubtes(body.row, body.data || {})) });
       case "archive":
         return NextResponse.json({ ok: true, ...(await archiveSubtes(body.row, body.status || "Arsip")) });
+      // Dipakai popup konfirmasi untuk menampilkan dampaknya SEBELUM menghapus.
+      case "usage":
+        return NextResponse.json({ ok: true, dipakai: await pemakaianSubtes(body.id) });
+      case "delete":
+        return NextResponse.json({ ok: true, ...(await deleteSubtes(body.row, { id: body.id })) });
       default:
         return NextResponse.json({ error: "Aksi tidak dikenal: " + body.action }, { status: 400 });
     }
   } catch (e) {
     if (e.duplicate) {
       return NextResponse.json({ error: e.message, duplicate: e.duplicate }, { status: 409 });
+    }
+    // Penghapusan ditolak karena masih dipakai -> bukan kegagalan server.
+    if (e.dipakai) {
+      return NextResponse.json({ error: e.message, dipakai: e.dipakai }, { status: 409 });
     }
     console.error("master write:", e);
     return NextResponse.json({ error: e.message || "Gagal menyimpan." }, { status: 500 });
