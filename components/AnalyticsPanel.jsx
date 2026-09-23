@@ -8,7 +8,7 @@
 // ============================================================================
 
 import { useMemo, useState } from "react";
-import { rupiah, numberID } from "@/lib/format";
+import { rupiah, numberID, isBatal } from "@/lib/format";
 
 function Bars({ data, fmt = numberID, color, max: maxProp }) {
   if (!data.length) return <div className="empty">Belum ada data.</div>;
@@ -42,7 +42,10 @@ export default function AnalyticsPanel({ data, master }) {
   }, [master]);
 
   const cat = useMemo(() => (bulanFilter === "Semua" ? catalog : catalog.filter((c) => c.bulan === bulanFilter)), [catalog, bulanFilter]);
-  const lg = useMemo(() => (bulanFilter === "Semua" ? log : log.filter((l) => l.bulan === bulanFilter)), [log, bulanFilter]);
+  // Baris Cancel tidak dihitung sebagai pekerjaan (soal, guru aktif, fee); hanya
+  // rincian per status yang tetap memakai semua baris supaya batalnya terlihat.
+  const lgSemua = useMemo(() => (bulanFilter === "Semua" ? log : log.filter((l) => l.bulan === bulanFilter)), [log, bulanFilter]);
+  const lg = useMemo(() => lgSemua.filter((l) => !isBatal(l.status)), [lgSemua]);
 
   // ---- ringkasan per bulan -------------------------------------------------
   const perBulan = useMemo(() => {
@@ -53,7 +56,7 @@ export default function AnalyticsPanel({ data, master }) {
       x.keb += c.kebutuhan; x.sisa += c.sisa; x.anggaran += c.harga * c.kebutuhan; x.baris++;
     });
     log.forEach((l) => {
-      const x = m.get(l.bulan); if (!x) return;
+      const x = m.get(l.bulan); if (!x || isBatal(l.status)) return;
       x.fee += l.fee; if (l.guru) x.guru.add(l.guru);
     });
     return [...m.values()].map((x) => ({ ...x, diambil: x.keb - x.sisa, guru: x.guru.size, serap: x.keb ? Math.round(((x.keb - x.sisa) / x.keb) * 100) : 0 }));
@@ -106,9 +109,9 @@ export default function AnalyticsPanel({ data, master }) {
   // ---- status & kategori ---------------------------------------------------
   const perStatus = useMemo(() => {
     const m = {};
-    lg.forEach((l) => { const k = l.status || "(kosong)"; m[k] = m[k] || { fee: 0, soal: 0, n: 0 }; m[k].fee += l.fee; m[k].soal += l.jumlah; m[k].n++; });
+    lgSemua.forEach((l) => { const k = l.status || "(kosong)"; m[k] = m[k] || { fee: 0, soal: 0, n: 0 }; m[k].fee += l.fee; m[k].soal += l.jumlah; m[k].n++; });
     return Object.entries(m).sort((a, b) => b[1].fee - a[1].fee);
-  }, [lg]);
+  }, [lgSemua]);
 
   const perKategori = useMemo(() => {
     const m = {};

@@ -15,14 +15,14 @@
 // ============================================================================
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { rupiah, numberID, norm, parseNum, parseHarga, formatHarga, cekHargaBulanan } from "@/lib/format";
+import { rupiah, numberID, norm, parseNum, parseHarga, formatHarga, cekHargaBulanan, isBatal, STATUS_BATAL } from "@/lib/format";
 import PrintArea from "./Receipts";
 import MasterPanel from "./MasterPanel";
 import NewMonthPanel from "./NewMonthPanel";
 import AnalyticsPanel from "./AnalyticsPanel";
 import GuruPanel from "./GuruPanel";
 
-const STATUS_KNOWN = ["Running Soal", "QC Soal", "Revisi Soal", "Approved", "Running Video"];
+const STATUS_KNOWN = ["Running Soal", "QC Soal", "Revisi Soal", "Approved", "Running Video", STATUS_BATAL];
 const SEMUA = "Semua";
 const POLL_MS = 45000;
 const LOGIN_URL = "/admin/login?next=%2Fadmin";
@@ -78,6 +78,7 @@ function statusPill(s) {
   else if (t.includes("revisi")) cls = "rev";
   else if (t.includes("qc")) cls = "qc";
   else if (t.includes("paid")) cls = "paid";
+  if (isBatal(s)) cls = "batal";
   return <span className={"pill " + cls}>{s || "—"}</span>;
 }
 
@@ -322,7 +323,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
   const groups = useMemo(() => {
     const m = new Map();
     rows.forEach((a) => {
-      if (!a.guru) return;
+      if (!a.guru || isBatal(a.status)) return; // Cancel tidak dibayar -> tak masuk kwitansi
       if (!m.has(a.guru)) m.set(a.guru, { guru: a.guru, teacher: teacherOf(a), items: [], total: 0, soal: 0 });
       const g = m.get(a.guru);
       g.items.push(a);
@@ -825,7 +826,9 @@ function AssignmentModal({ mode, draft, onDraft, projects, teachers, opts, onSav
   // Kolom Tarif kosong = pakai harga katalog (normal).
   const mode2 = parseNum(draft.tarif) > 0 ? "telat" : "normal";
   const tarifDipakai = mode2 === "telat" ? parseNum(draft.tarif) : tarifNormal;
-  const fee = tarifDipakai * (parseInt(draft.jumlah, 10) || 0);
+  // Sama dengan rumus sheet: pekerjaan batal tidak dibayar.
+  const batal = isBatal(draft.status);
+  const fee = batal ? 0 : tarifDipakai * (parseInt(draft.jumlah, 10) || 0);
 
   const pilihTarif = (v) => {
     if (v === "normal") { onDraft("tarif", ""); onDraft("ketTarif", ""); }
@@ -945,7 +948,11 @@ function AssignmentModal({ mode, draft, onDraft, projects, teachers, opts, onSav
         <div>
           <span>Fee</span>
           <b>{rupiah(fee)}</b>
-          <small>Jumlah × {rupiah(tarifDipakai)}{mode2 === "telat" ? " (tarif terlambat)" : ""}</small>
+          <small>
+            {batal
+              ? "Status Cancel — tidak dibayar, kuotanya kembali ke Sisa"
+              : `Jumlah × ${rupiah(tarifDipakai)}${mode2 === "telat" ? " (tarif terlambat)" : ""}`}
+          </small>
         </div>
         <div>
           <span>Bulan</span>
@@ -1001,7 +1008,7 @@ function ProjectModal({ mode, draft, onDraft, onPilih, onSave, onCancel, busy, m
       {!draft.idSubtes ? (
         <>
           <Field label="Cari subtes di Master" wide hint="Ketik nama subtes atau ID. Belum ada? Tambahkan dulu di menu Master Subtes.">
-            <input className="input" value={cari} onChange={(e) => setCari(e.target.value)} placeholder="mis. Figural Analogi / SUB-001" autoFocus />
+            <input className="input" value={cari} onChange={(e) => setCari(e.target.value)} placeholder="mis. Figural Analogi / SOL-001" autoFocus />
           </Field>
           {hasil.length ? (
             <div className="picker">
@@ -1167,7 +1174,7 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, p
               </tr>
             ) : null}
             {rows.map((a) => (
-              <tr key={a.row}>
+              <tr key={a.row} className={isBatal(a.status) ? "row-dim" : ""}>
                 <td>
                   {tglID(a.tanggal) || "—"}
                   {a.bulan ? <div className="muted xs2">{a.bulan}</div> : null}

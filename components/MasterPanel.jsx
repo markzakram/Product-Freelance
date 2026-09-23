@@ -2,13 +2,15 @@
 
 // ============================================================================
 //  Halaman "Master Subtes" — katalog permanen semua subtes.
-//  Admin tidak pernah mengetik ID: sistem yang memberi SUB-xxx berikutnya.
+//  Admin tidak pernah mengetik ID: cukup memilih JENIS (Soal / Laporan FR /
+//  Liveclass / Editor), sistem yang memberi nomor berikutnya (SOL-097, …).
 //  Sebelum subtes baru dibuat, nama dicek kemiripannya supaya master tidak
 //  kotor lagi oleh typo (itu penyebab kekacauan ID sebelumnya).
 // ============================================================================
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { rupiah, numberID, formatHarga, parseHarga } from "@/lib/format";
+import { JENIS, nextId } from "@/lib/jenis";
 
 // Harga boleh satu angka ("13000") atau DUA TARIF "telat-normal" ("5000-7000"):
 // angka kecil = tarif untuk guru yang lewat deadline, angka besar = tarif normal.
@@ -23,8 +25,9 @@ const HargaSel = ({ v }) => {
   );
 };
 
+// jenis sengaja kosong: harus dipilih sadar, karena ID-nya ikut jenis.
 const BLANK = {
-  subtes: "", kategori: "", platform: "", output: "",
+  jenis: "", subtes: "", kategori: "", platform: "", output: "",
   hargaLengkap: "", hargaVideo: "", hargaSoal: "", hargaLive: "", catatan: "",
 };
 
@@ -63,6 +66,7 @@ async function api(payload) {
 export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, setErr }) {
   const [q, setQ] = useState("");
   const [kat, setKat] = useState("Semua");
+  const [jen, setJen] = useState("Semua");
   const [status, setStatus] = useState("Aktif");
   const [edit, setEdit] = useState(null); // { mode:'create'|'edit', row? }
   const [draft, setDraft] = useState(BLANK);
@@ -94,19 +98,19 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
     const s = q.trim().toLowerCase();
     return rows.filter((r) => {
       if (status !== "Semua" && (r.status || "Aktif") !== status) return false;
+      if (jen !== "Semua" && r.jenis !== jen) return false;
       if (kat === "(belum ada)" ? Boolean(r.kategori) : kat !== "Semua" && r.kategori !== kat) return false;
-      if (s && !`${r.id} ${r.subtes} ${r.kategori} ${r.idLama}`.toLowerCase().includes(s)) return false;
+      if (s && !`${r.id} ${r.subtes} ${r.kategori} ${r.idLama} ${r.jenis}`.toLowerCase().includes(s)) return false;
       return true;
     });
-  }, [rows, q, kat, status]);
+  }, [rows, q, kat, status, jen]);
 
-  const nextIdPreview = useMemo(() => {
-    let max = 0;
-    rows.forEach((r) => {
-      const m = /^SUB-(\d+)$/i.exec(r.id || "");
-      if (m) max = Math.max(max, parseInt(m[1], 10));
-    });
-    return `SUB-${String(max + 1).padStart(3, "0")}`;
+  // ID berikutnya untuk tiap jenis, mis. { Soal: "SOL-097", Editor: "EDI-001" }
+  const idBerikut = useMemo(() => Object.fromEntries(JENIS.map((j) => [j.nama, nextId(rows, j.nama)])), [rows]);
+  const jumlahJenis = useMemo(() => {
+    const m = {};
+    rows.forEach((r) => { m[r.jenis || "?"] = (m[r.jenis || "?"] || 0) + 1; });
+    return m;
   }, [rows]);
 
   const d = (k) => (e) => setDraft((p) => ({ ...p, [k]: e.target.value }));
@@ -179,8 +183,14 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
         </div>
         <div className="card stat hi">
           <div className="label">ID Berikutnya</div>
-          <div className="value navy" style={{ fontSize: 24 }}>{nextIdPreview}</div>
-          <div className="sub">otomatis, tak bisa diketik</div>
+          <div className="id-next">
+            {JENIS.map((j) => (
+              <div key={j.kode}>
+                <b className="mono">{idBerikut[j.nama]}</b>
+                <span>{j.nama} · {numberID(jumlahJenis[j.nama] || 0)}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -202,6 +212,10 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
         
         <div className="head-actions">
           <input className="input sm" placeholder="Cari subtes, ID, ID lama…" value={q} onChange={(e) => setQ(e.target.value)} />
+          <select className="select sm" value={jen} onChange={(e) => setJen(e.target.value)} aria-label="Jenis">
+            <option value="Semua">Semua jenis</option>
+            {JENIS.map((j) => <option key={j.kode} value={j.nama}>{j.nama} ({j.kode})</option>)}
+          </select>
           <select className="select sm" value={kat} onChange={(e) => setKat(e.target.value)}>
             <option>Semua</option>
             <option>(belum ada)</option>
@@ -259,12 +273,13 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
                       title="Edit"
                       onClick={() => {
                         setDraft({
+                          jenis: r.jenis || "",
                           subtes: r.subtes, kategori: r.kategori, platform: r.platform, output: r.output,
                           hargaLengkap: r.hargaLengkap || "", hargaVideo: r.hargaVideo || "",
                           hargaSoal: r.hargaSoal || "", hargaLive: r.hargaLive || "", catatan: r.catatan,
                         });
                         setDup(null);
-                        setEdit({ mode: "edit", row: r.row, id: r.id });
+                        setEdit({ mode: "edit", row: r.row, id: r.id, jenis: r.jenis });
                       }}
                     >✎</button>
                     <button
@@ -426,7 +441,11 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
         <div className="overlay" onClick={() => !busy && setEdit(null)}>
           <div className="modal wide" onClick={(e) => e.stopPropagation()}>
             <div className="modal-head">
-              <h2>{edit.mode === "create" ? `＋ Subtes Baru — ${nextIdPreview}` : `✎ Edit ${edit.id}`}</h2>
+              <h2>
+                {edit.mode === "create"
+                  ? `＋ Subtes Baru — ${draft.jenis ? idBerikut[draft.jenis] : "pilih jenis dulu"}`
+                  : `✎ Edit ${edit.id}`}
+              </h2>
               <button className="icon-x" onClick={() => setEdit(null)} disabled={busy}>✕</button>
             </div>
             <div className="modal-body">
@@ -444,6 +463,40 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
               ) : null}
 
               <div className="form-grid">
+                {/* Jenis menentukan awalan ID, jadi dipilih paling awal dan
+                    ID hasilnya langsung terlihat. */}
+                <div className="ffield wide">
+                  <span>Jenis proyek *</span>
+                  <div className="seg" role="radiogroup" aria-label="Jenis proyek">
+                    {JENIS.map((j) => (
+                      <button
+                        type="button"
+                        key={j.kode}
+                        role="radio"
+                        aria-checked={draft.jenis === j.nama}
+                        className={"seg-btn" + (draft.jenis === j.nama ? " on" : "")}
+                        onClick={() => setDraft((p) => ({ ...p, jenis: j.nama }))}
+                      >
+                        {j.nama}
+                        <small className="mono">{j.kode}</small>
+                      </button>
+                    ))}
+                  </div>
+                  {edit.mode === "edit" && draft.jenis && draft.jenis !== edit.jenis ? (
+                    <small className="warn-text">
+                      ⚠ ID akan berganti dari <b>{edit.id}</b> menjadi <b>{idBerikut[draft.jenis]}</b>. Semua katalog
+                      bulanan yang memakai subtes ini ikut dipindah ke ID baru; ID lama disimpan di kolom “ID Lama”.
+                    </small>
+                  ) : (
+                    <small>
+                      {draft.jenis
+                        ? edit.mode === "create"
+                          ? `Akan mendapat ID ${idBerikut[draft.jenis]}.`
+                          : "Mengganti jenis akan mengganti ID-nya."
+                        : "ID dibuat dari jenis: Soal → SOL-…, Laporan FR → LAP-…, Liveclass → LIV-…, Editor → EDI-…"}
+                    </small>
+                  )}
+                </div>
                 <label className="ffield wide">
                   <span>Nama Subtes *</span>
                   <input className="input" value={draft.subtes} onChange={d("subtes")} placeholder="mis. Figural Analogi" autoFocus />
@@ -492,7 +545,7 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
                   {busy ? "Menyimpan…" : "Tetap buat baru"}
                 </button>
               ) : null}
-              <button className="btn btn-blue" onClick={() => simpan(false)} disabled={busy || !draft.subtes.trim()}>
+              <button className="btn btn-blue" onClick={() => simpan(false)} disabled={busy || !draft.subtes.trim() || !draft.jenis}>
                 {busy ? "Menyimpan…" : "Simpan"}
               </button>
             </div>
