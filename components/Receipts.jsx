@@ -59,7 +59,7 @@ export function ReceiptSheet({ group, brand, periode }) {
               {owner ? <div className="rc-sub">a.n. {owner}</div> : null}
             </>
           ) : (
-            <b className="rc-warn">⚠ Nomor rekening belum terisi di sheet</b>
+            <b className="rc-warn">PERHATIAN: nomor rekening belum terisi di database guru</b>
           )}
         </div>
       </div>
@@ -189,7 +189,7 @@ export function ReceiptSummary({ groups, brand, periode }) {
 
       {tanpaRek.length ? (
         <p className="rc-warn rc-note">
-          ⚠ {tanpaRek.length} guru belum punya nomor rekening di sheet “Data guru freelance”:{" "}
+          Perhatian: {tanpaRek.length} guru belum punya nomor rekening di database guru:{" "}
           {tanpaRek.map((g) => g.teacher?.nama || g.guru).join(", ")}. Lengkapi dulu sebelum transfer.
         </p>
       ) : null}

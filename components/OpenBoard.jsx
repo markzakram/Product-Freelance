@@ -1,291 +1,248 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+
+// ============================================================================
+//  Halaman guru (/open) — ponsel dulu.
+//  Alur: pilih proyek -> tekan Ambil -> atur jumlah di kartu itu juga ->
+//  Ajukan. Dulu ada langkah terpisah "Masukkan ke keranjang" per kartu;
+//  sekarang jumlah yang diatur di kartu LANGSUNG jadi isi pengajuan.
+// ============================================================================
+
+import { useEffect, useMemo, useRef, useState } from "react";
 import { rupiah, numberID } from "@/lib/format";
-import DataBanner from "@/components/DataBanner";
-import GuideModal from "@/components/GuideModal";
-import CartView from "@/components/CartView";
+import Brand from "./Brand";
+import Icon from "./Icon";
+import DataBanner from "./DataBanner";
+import GuideModal from "./GuideModal";
+import CartView from "./CartView";
 
-function clamp(n, min, max) {
-  if (Number.isNaN(n)) return min;
-  return Math.max(min, Math.min(max, n));
-}
+const clamp = (n, min, max) => (Number.isNaN(n) ? min : Math.max(min, Math.min(max, n)));
+const JENIS_URUT = ["Soal", "Liveclass", "Laporan FR", "Editor", "Lainnya"];
 
-// ---- one catalog card with its own quantity row + live fee ----------------
-// "Stok soal" = kolom Sisa di spreadsheet (Kebutuhan - yang sudah diambil),
-// bukan Kebutuhan. Kalau Sisa <= 0 kartu ini tidak bisa dipesan sama sekali.
-function ProjectCard({ p, inCartQty, onAdd }) {
-  const [qty, setQty] = useState(0);
-  const habis = (p.sisa || 0) <= 0;
-  const setSafe = (v) => setQty(clamp(parseInt(v, 10), 0, p.sisa || 0));
-  const inCart = inCartQty > 0;
-  const canAdd = qty > 0 && !habis;
+function ProjectCard({ p, qty, setQty }) {
+  const input = useRef(null);
+  const [baruDiambil, setBaruDiambil] = useState(false);
+  const dipilih = qty > 0;
+  const pct = p.kebutuhan > 0 ? Math.round((p.sisa / p.kebutuhan) * 100) : 100;
+  const menipis = p.kebutuhan > 0 && p.sisa / p.kebutuhan < 0.25;
+  const set = (v) => setQty(p, clamp(parseInt(v, 10), 0, p.sisa));
+
+  // Tepat setelah "Ambil", fokus pindah ke jumlah dengan isi terpilih: guru
+  // bisa langsung mengetik "25" tanpa menekan plus berkali-kali. Sengaja
+  // BUKAN autoFocus — itu akan melompatkan halaman ke kartu terakhir setiap
+  // kali guru kembali dari halaman pengajuan.
+  useEffect(() => {
+    if (dipilih && baruDiambil) {
+      input.current?.focus();
+      input.current?.select();
+      setBaruDiambil(false);
+    }
+  }, [dipilih, baruDiambil]);
 
   return (
-    <div className={"card proj" + (habis ? " habis" : "")}>
-      <h3>{p.subtes}</h3>
-      <div className="out">{p.output}</div>
-      <div className="proj-meta">
-        <div className="m">
-          <div className="k">Harga</div>
-          <div className="v harga">{rupiah(p.harga)}</div>
+    <article className={"pcard" + (dipilih ? " on" : "")}>
+      <div className="pcard-top">
+        <div>
+          <h3>{p.subtes}</h3>
+          <span className="meta">
+            {p.output || "—"}
+            {p.jenis !== "Soal" ? <> · <span className="tag">{p.jenis}</span></> : null}
+          </span>
         </div>
-        <div className="m">
-          <div className="k">Stok soal</div>
-          <div className="v sisa">{numberID(p.sisa)}</div>
-        </div>
-      </div>
-
-      <div className="qrow">
-        <span className="qlbl">Jumlah</span>
-        <button
-          className="qbtn"
-          onClick={() => setSafe(qty - 1)}
-          disabled={habis || qty <= 0}
-          aria-label="Kurangi"
-        >
-          −
-        </button>
-        <input
-          className="qval qinp"
-          type="number"
-          min={0}
-          max={p.sisa}
-          value={qty}
-          onChange={(e) => setSafe(e.target.value)}
-          onFocus={(e) => e.target.select()}
-          disabled={habis}
-          aria-label="Jumlah soal"
-        />
-        <button
-          className="qbtn"
-          onClick={() => setSafe(qty + 1)}
-          disabled={habis || qty >= p.sisa}
-          aria-label="Tambah"
-        >
-          +
-        </button>
-        <button
-          className="qbtn qmax"
-          onClick={() => setSafe(p.sisa)}
-          disabled={habis || qty >= p.sisa}
-          title="Ambil semua stok (maks)"
-        >
-          Max
-        </button>
-        <span className="qfee">
-          = <b>{rupiah(qty * p.harga)}</b>
+        <span className="price">
+          {rupiah(p.harga)}
+          <small>/soal</small>
         </span>
       </div>
 
-      <button
-        className={"btn btn-blue add-btn" + (inCart ? " in-cart" : "")}
-        onClick={() => onAdd(p, qty)}
-        disabled={!canAdd}
-      >
-        {habis
-          ? "Stok habis"
-          : inCart
-          ? `✓ Di keranjang (${numberID(inCartQty)})`
-          : "＋ Masukkan ke Keranjang"}
-      </button>
-    </div>
+      <div className="pcard-bottom">
+        <div className="pcard-stock">
+          <div className={"meter" + (menipis ? " warn" : "")}>
+            <i style={{ width: pct + "%" }} />
+          </div>
+          <span className={menipis ? "low" : ""}>
+            Sisa {numberID(p.sisa)}
+            {p.kebutuhan > 0 ? ` dari ${numberID(p.kebutuhan)}` : ""} soal
+          </span>
+        </div>
+        {!dipilih ? (
+          <button type="button" className="take" onClick={() => { setBaruDiambil(true); set(1); }}>
+            Ambil
+          </button>
+        ) : null}
+      </div>
+
+      {dipilih ? (
+        <div className="pcard-pick">
+          <div className="stepper">
+            <button type="button" onClick={() => set(qty - 1)} aria-label={`Kurangi ${p.subtes}`}>
+              <Icon name="minus" />
+            </button>
+            <input
+              ref={input}
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={p.sisa}
+              value={qty}
+              onChange={(e) => set(e.target.value)}
+              onFocus={(e) => e.target.select()}
+              aria-label={`Jumlah soal ${p.subtes}`}
+            />
+            <button type="button" onClick={() => set(qty + 1)} disabled={qty >= p.sisa} aria-label={`Tambah ${p.subtes}`}>
+              <Icon name="plus" />
+            </button>
+            <button type="button" className="btn btn-ghost xs" onClick={() => set(p.sisa)} disabled={qty >= p.sisa}>
+              Maks
+            </button>
+          </div>
+          <span className="sub">{rupiah(qty * p.harga)}</span>
+        </div>
+      ) : null}
+    </article>
   );
 }
 
-export default function OpenBoard({
-  projects,
-  source,
-  waNumber,
-  panduan = [],
-  brand = "Cerebrum",
-}) {
+export default function OpenBoard({ projects, source, bulan, waNumber, panduan = [], brand = "Cerebrum" }) {
   const [q, setQ] = useState("");
+  const [jenis, setJenis] = useState("Semua");
   const [sort, setSort] = useState("sisa");
-
-  const [cart, setCart] = useState([]);
+  const [qty, setQtyMap] = useState({}); // id -> jumlah soal
   const [view, setView] = useState("catalog"); // "catalog" | "cart"
   const [guideOpen, setGuideOpen] = useState(false);
 
-  // Show the guide popup on every visit to this page.
-  useEffect(() => {
-    setGuideOpen(true);
-  }, []);
+  // Panduan muncul di setiap kunjungan — diminta supaya guru baru selalu membacanya.
+  useEffect(() => setGuideOpen(true), []);
 
-  // Adding sets the cart quantity to the card's chosen amount (replace).
-  const addToCart = (p, qty) => {
-    if (qty <= 0 || (p.sisa || 0) <= 0) return;
-    setCart((prev) => {
-      const nq = clamp(qty, 1, p.sisa);
-      const found = prev.find((it) => it.id === p.id);
-      if (found) {
-        return prev.map((it) => (it.id === p.id ? { ...it, qty: nq } : it));
-      }
-      return [
-        ...prev,
-        {
-          id: p.id,
-          subtes: p.subtes,
-          output: p.output,
-          harga: p.harga,
-          sisa: p.sisa,
-          qty: nq,
-        },
-      ];
-    });
-  };
+  const setQty = (p, n) => setQtyMap((m) => ({ ...m, [p.id]: clamp(n, 0, p.sisa) }));
 
-  const updateQty = (id, qty) =>
-    setCart((prev) =>
-      prev
-        .map((it) => (it.id === id ? { ...it, qty: clamp(qty, 0, it.sisa) } : it))
-        .filter((it) => it.qty > 0)
-    );
-
-  const removeItem = (id) => setCart((prev) => prev.filter((it) => it.id !== id));
-  const clearCart = () => {
-    setCart([]);
-    setView("catalog");
-  };
-
-  const cartQtyById = useMemo(() => {
-    const m = {};
-    cart.forEach((it) => (m[it.id] = it.qty));
-    return m;
-  }, [cart]);
-
+  const cart = useMemo(
+    () =>
+      projects
+        .filter((p) => (qty[p.id] || 0) > 0)
+        .map((p) => ({ id: p.id, subtes: p.subtes, output: p.output, harga: p.harga, sisa: p.sisa, qty: qty[p.id] })),
+    [projects, qty]
+  );
+  const soalCart = cart.reduce((s, it) => s + it.qty, 0);
   const feeCart = cart.reduce((s, it) => s + it.qty * it.harga, 0);
 
-  const filtered = useMemo(() => {
-    // Hanya yang stoknya masih ada. Pengaman lapis kedua: halaman sudah
-    // menyaring sisa > 0, tapi katalog tidak boleh pernah menawarkan stok habis.
-    let list = projects.filter((p) => {
-      if ((p.sisa || 0) <= 0) return false;
-      return !q || `${p.subtes} ${p.output}`.toLowerCase().includes(q.toLowerCase());
-    });
-    list = [...list].sort((a, b) => {
-      if (sort === "sisa") return b.sisa - a.sisa;
-      if (sort === "harga") return b.harga - a.harga;
-      return a.subtes.localeCompare(b.subtes);
-    });
-    return list;
-  }, [projects, q, sort]);
+  const daftarJenis = useMemo(() => {
+    const c = {};
+    projects.forEach((p) => (c[p.jenis] = (c[p.jenis] || 0) + 1));
+    return JENIS_URUT.filter((j) => c[j]).map((j) => ({ j, n: c[j] }));
+  }, [projects]);
 
-  const totalSisa = filtered.reduce((s, p) => s + p.sisa, 0);
+  const filtered = useMemo(() => {
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+    return projects
+      .filter((p) => p.sisa > 0)
+      .filter((p) => jenis === "Semua" || p.jenis === jenis)
+      .filter((p) => words.every((w) => `${p.subtes} ${p.output} ${p.jenis}`.toLowerCase().includes(w)))
+      .sort((a, b) =>
+        sort === "sisa" ? b.sisa - a.sisa : sort === "harga" ? b.harga - a.harga : a.subtes.localeCompare(b.subtes)
+      );
+  }, [projects, q, jenis, sort]);
+
+  const totalSisa = projects.reduce((s, p) => s + p.sisa, 0);
 
   return (
-    <>
-      {view === "catalog" ? (
-        <div className="hero">
-          <div className="container">
-            <h1>Open Freelance — Proyek Bulan Ini</h1>
-            <p>
-              Pilih submateri, tentukan jumlah soal yang mau kamu ambil,
-              masukkan ke keranjang, lalu kirim pesananmu ke Admin Akademik via
-              WhatsApp.
-            </p>
-          </div>
+    <div className="pub">
+      <header className="pub-head">
+        <div className="container">
+          <Brand size={30} row />
+          <button type="button" className="btn btn-ghost sm" onClick={() => setGuideOpen(true)}>
+            <Icon name="book" />
+            Panduan
+          </button>
         </div>
-      ) : (
-        <div className="hero" style={{ padding: "30px 0" }}>
-          <div className="container">
-            <h1>🛒 Keranjang Soal</h1>
-            <p>
-              Periksa daftar soal yang mau kamu ambil. Ubah jumlah bila perlu,
-              lalu kirim pesananmu ke Admin Akademik via WhatsApp.
-            </p>
-          </div>
-        </div>
-      )}
+      </header>
 
-      <div className="container section">
+      <main className="pub-body">
+        {source !== "live" ? <DataBanner source={source} /> : null}
+
         {view === "cart" ? (
           <CartView
             cart={cart}
-            onQty={updateQty}
-            onRemove={removeItem}
-            onClear={clearCart}
+            onQty={(id, n) => setQtyMap((m) => ({ ...m, [id]: clamp(n, 0, cart.find((c) => c.id === id)?.sisa || 0) }))}
+            onRemove={(id) => setQtyMap((m) => ({ ...m, [id]: 0 }))}
+            onClear={() => { setQtyMap({}); setView("catalog"); }}
             onBack={() => setView("catalog")}
             waNumber={waNumber}
             brand={brand}
           />
         ) : (
           <>
-            <DataBanner source={source} />
-
-            <div className="grid stat-grid" style={{ marginBottom: 20 }}>
-              <div className="card stat">
-                <div className="label">Proyek Buka</div>
-                <div className="value blue">{numberID(filtered.length)}</div>
-                <div className="sub">subtes tersedia</div>
-              </div>
-              <div className="card stat">
-                <div className="label">Total Soal Tersedia</div>
-                <div className="value navy">{numberID(totalSisa)}</div>
-                <div className="sub">sisa yang belum diambil</div>
-              </div>
+            <div className="pub-title">
+              <h1>Proyek {bulan || "bulan ini"}</h1>
+              <p>
+                {numberID(totalSisa)} soal masih tersedia di {numberID(projects.length)} proyek. Pilih, atur jumlahnya, lalu
+                ajukan ke Admin Akademik.
+              </p>
             </div>
 
-            <div className="controls">
-              <input
-                className="input"
-                placeholder="Cari submateri atau output…"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-              />
-              <select
-                className="select"
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-              >
-                <option value="sisa">Urut: Sisa terbanyak</option>
-                <option value="harga">Urut: Harga tertinggi</option>
-                <option value="subtes">Urut: Nama subtes</option>
+            <div className="pub-tools">
+              <label className="search">
+                <Icon name="search" />
+                <input
+                  type="search"
+                  placeholder="Cari mata pelajaran atau subtes"
+                  aria-label="Cari proyek"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                />
+              </label>
+              <select className="select sm" value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Urutkan">
+                <option value="sisa">Sisa terbanyak</option>
+                <option value="harga">Harga tertinggi</option>
+                <option value="nama">Nama A–Z</option>
               </select>
-              <button
-                className="btn btn-ghost"
-                onClick={() => setGuideOpen(true)}
-              >
-                📘 Tata Cara
-              </button>
-              <button
-                className="btn btn-ghost"
-                onClick={() => setView("cart")}
-              >
-                🛒 Keranjang ({cart.length})
-              </button>
             </div>
+
+            {daftarJenis.length > 1 ? (
+              <div className="chips" role="group" aria-label="Jenis proyek">
+                <button type="button" className={"chip" + (jenis === "Semua" ? " active" : "")} aria-pressed={jenis === "Semua"} onClick={() => setJenis("Semua")}>
+                  Semua <span className="n">{projects.length}</span>
+                </button>
+                {daftarJenis.map(({ j, n }) => (
+                  <button key={j} type="button" className={"chip" + (jenis === j ? " active" : "")} aria-pressed={jenis === j} onClick={() => setJenis(j)}>
+                    {j} <span className="n">{n}</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
 
             {filtered.length === 0 ? (
               <div className="card empty">
-                Tidak ada proyek yang cocok dengan pencarian.
+                {projects.length ? "Tidak ada proyek yang cocok dengan pencarian." : "Belum ada proyek yang dibuka bulan ini."}
               </div>
             ) : (
-              <div className="grid proj-grid">
+              <div className="pcards">
                 {filtered.map((p) => (
-                  <ProjectCard
-                    key={p.id}
-                    p={p}
-                    inCartQty={cartQtyById[p.id] || 0}
-                    onAdd={addToCart}
-                  />
+                  <ProjectCard key={p.id} p={p} qty={qty[p.id] || 0} setQty={setQty} />
                 ))}
               </div>
             )}
           </>
         )}
-      </div>
+      </main>
 
-      {view === "catalog" && cart.length > 0 ? (
-        <button className="cart-fab" onClick={() => setView("cart")}>
-          🛒 Keranjang ({cart.length}) · {rupiah(feeCart)}
-        </button>
+      {view === "catalog" && cart.length ? (
+        <div className="cartbar" role="region" aria-label="Pengajuan">
+          <div className="sum">
+            <span>
+              {cart.length} proyek · {numberID(soalCart)} soal
+            </span>
+            <b>{rupiah(feeCart)}</b>
+          </div>
+          <button type="button" className="btn" onClick={() => { setView("cart"); window.scrollTo(0, 0); }}>
+            Ajukan
+            <Icon name="chevronRight" />
+          </button>
+        </div>
       ) : null}
 
-      <GuideModal
-        open={guideOpen}
-        onClose={() => setGuideOpen(false)}
-        items={panduan}
-      />
-    </>
+      <div className="footer">© {new Date().getFullYear()} Product Freelance · data diperbarui otomatis dari spreadsheet</div>
+
+      <GuideModal open={guideOpen} onClose={() => setGuideOpen(false)} items={panduan} />
+    </div>
   );
 }

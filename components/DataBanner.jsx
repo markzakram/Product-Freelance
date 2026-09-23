@@ -1,15 +1,17 @@
+import Icon from "./Icon";
+
+// Hanya bersuara bila ada masalah. Banner hijau "data real-time" dulu tampil
+// terus di setiap halaman — informasi yang selalu benar tidak perlu diumumkan;
+// status sinkron sekarang ada di kaki sidebar.
 export default function DataBanner({ source }) {
-  if (source === "live") {
-    return (
-      <div className="banner live">
-        <span>●</span> Data langsung dari Google Sheets (real-time).
-      </div>
-    );
-  }
+  if (source === "live") return null;
   return (
     <div className="banner sample">
-      <span>●</span> Menampilkan data contoh. Atur kredensial Google Sheets di
-      Environment Variables agar data tampil real-time (lihat README).
+      <Icon name="alert" />
+      <div>
+        Menampilkan data contoh, bukan isi spreadsheet.
+        <div className="banner-detail">Atur kredensial Google Sheets di Environment Variables agar data tampil langsung.</div>
+      </div>
     </div>
   );
 }

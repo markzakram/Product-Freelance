@@ -8,6 +8,8 @@
 
 import { useMemo, useState } from "react";
 import { rupiah, numberID, parseHarga, formatHarga, cekHargaBulanan } from "@/lib/format";
+import Icon from "./Icon";
+import Combobox from "./Combobox";
 
 const BULAN = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 const OUTPUTS = ["Lengkap", "Video Pembahasan", "Soal & Pembahasan", "Liveclass"];
@@ -36,15 +38,20 @@ export default function NewMonthPanel({ master, months, readOnly, busy, setBusy,
   const [mode, setMode] = useState(belumAda.length ? "baru" : "tambah");
   const [bulanBaru, setBulanBaru] = useState(belumAda[0] || "");
   const [tabTarget, setTabTarget] = useState(months.length ? months[months.length - 1].tab : "");
-  const [q, setQ] = useState("");
   const [lines, setLines] = useState([]);
 
   const aktif = useMemo(() => master.filter((m) => (m.status || "Aktif") !== "Arsip"), [master]);
-  const hasil = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    if (!s) return [];
-    return aktif.filter((m) => `${m.id} ${m.subtes} ${m.kategori}`.toLowerCase().includes(s)).slice(0, 8);
-  }, [aktif, q]);
+  const opsiMaster = useMemo(
+    () =>
+      aktif.map((m) => ({
+        value: m.id,
+        code: m.id,
+        label: m.subtes,
+        meta: `${m.jenis || "—"} · ${m.kategori || "tanpa kategori"} · ${m.output || "—"}`,
+        search: `${m.id} ${m.subtes} ${m.kategori} ${m.jenis} ${m.idLama}`,
+      })),
+    [aktif]
+  );
 
   const tambah = (m) => {
     const output = (m.output || "").split(",")[0].trim() || "Lengkap";
@@ -53,7 +60,6 @@ export default function NewMonthPanel({ master, months, readOnly, busy, setBusy,
       idSubtes: m.id, subtes: m.subtes, kategori: m.kategori,
       platform: m.platform || "", output, harga: hargaDefault(m, output) || "", kebutuhan: "",
     }]);
-    setQ("");
   };
   const ubah = (i, k, v) =>
     setLines((p) => p.map((ln, idx) => {
@@ -94,9 +100,9 @@ export default function NewMonthPanel({ master, months, readOnly, busy, setBusy,
 
   return (
     <>
-      <div className="card card-p" style={{ marginTop: 18 }}>
-        <div className="section-head"><h2>Susun Anggaran Proyek</h2></div>
-        <div className="fl-row">
+      <div className="card card-p" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div className="section-head"><h2>Susun anggaran proyek</h2></div>
+        <div className="filters">
           <label className="fl">
             <span>Tujuan</span>
             <select className="select" value={mode} onChange={(e) => setMode(e.target.value)}>
@@ -119,42 +125,39 @@ export default function NewMonthPanel({ master, months, readOnly, busy, setBusy,
               </select>
             </label>
           )}
-          <label className="fl grow">
-            <span>Cari subtes di master untuk ditambahkan</span>
-            <input className="input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="ketik nama subtes / ID…" />
-          </label>
+          <div className="fl grow">
+            <label htmlFor="nb-cari" style={{ fontSize: 12, fontWeight: 700, color: "var(--text-2)" }}>Tambah subtes dari master</label>
+            <Combobox
+              id="nb-cari"
+              icon="search"
+              value=""
+              allowFree={false}
+              onChange={(id) => {
+                const m = aktif.find((x) => x.id === id);
+                if (m) tambah(m);
+              }}
+              options={opsiMaster}
+              placeholder="ketik nama subtes, kategori, atau ID"
+              footNote="Pilih untuk menambah satu baris. Belum ada? Tambahkan dulu di Master subtes."
+            />
+          </div>
         </div>
-
-        {hasil.length ? (
-          <div className="picker">
-            {hasil.map((m) => (
-              <button key={m.id} className="pick" onClick={() => tambah(m)}>
-                <b>{m.subtes}</b>
-                <span className="muted xs2">{m.id} · {m.kategori || "tanpa kategori"} · {m.output || "—"}</span>
-              </button>
-            ))}
-          </div>
-        ) : q.trim() ? (
-          <div className="muted" style={{ marginTop: 10 }}>
-            Tidak ada yang cocok. Tambahkan dulu lewat tab <b>Master Subtes</b> → “＋ Subtes Baru”.
-          </div>
-        ) : null}
       </div>
 
-      <div className="section-head" style={{ marginTop: 18 }}>
-        <h2>Baris Anggaran ({lines.length})</h2>
+      <div className="section-head">
+        <h2>Baris anggaran ({lines.length})</h2>
         <div className="head-actions">
           <span className="muted">{numberID(totalSoal)} soal · <b>{rupiah(totalRp)}</b></span>
-          <button className="btn btn-blue sm" disabled={readOnly || busy || !lines.length || belumLengkap > 0} onClick={simpan}>
-            {busy ? "Menyimpan…" : mode === "baru" ? `Buat Sheet ${bulanBaru}` : "Tambahkan ke Sheet"}
+          <button type="button" className="btn btn-blue" disabled={readOnly || busy || !lines.length || belumLengkap > 0} onClick={simpan}>
+            {busy ? "Menyimpan…" : mode === "baru" ? `Buat sheet ${bulanBaru}` : "Tambahkan ke sheet"}
           </button>
         </div>
       </div>
 
       {hargaSalah.length ? (
-        <div className="banner err"><span>⚠</span> {hargaSalah.length} baris harganya belum berupa satu angka. Harga di baris bulanan dipakai menghitung Fee, jadi rentang seperti "5000-7000" hanya boleh di Master Subtes — pilih satu angka di sini.</div>
+        <div className="banner err"><Icon name="alert" /><div>{hargaSalah.length} baris harganya belum berupa satu angka. Harga di baris bulanan dipakai menghitung Fee, jadi rentang seperti "5000-7000" hanya boleh di Master Subtes — pilih satu angka di sini.</div></div>
       ) : belumLengkap > 0 ? (
-        <div className="banner sample"><span>✏</span> {belumLengkap} baris belum diisi harga atau kebutuhannya.</div>
+        <div className="banner sample"><Icon name="info" /><div>{belumLengkap} baris belum diisi harga atau kebutuhannya.</div></div>
       ) : null}
 
       <div className="table-wrap fixed">
@@ -189,7 +192,7 @@ export default function NewMonthPanel({ master, months, readOnly, busy, setBusy,
                 <td className="num"><input className="input xs" type="number" min={0} value={l.kebutuhan} onChange={(e) => ubah(i, "kebutuhan", e.target.value)} /></td>
                 <td className="num">{rupiah((parseInt(l.kebutuhan, 10) || 0) * (parseInt(l.harga, 10) || 0))}</td>
                 <td className="act">
-                  <div className="rowmenu"><button className="ibtn danger" onClick={() => hapus(i)} title="Hapus baris">🗑</button></div>
+                  <div className="rowmenu"><button type="button" className="ibtn danger" onClick={() => hapus(i)} aria-label={`Hapus baris ${l.subtes}`} title="Hapus baris"><Icon name="trash" /></button></div>
                 </td>
               </tr>
             ))}
@@ -197,7 +200,7 @@ export default function NewMonthPanel({ master, months, readOnly, busy, setBusy,
           {lines.length ? (
             <tfoot>
               <tr>
-                <td colSpan={4}><b>TOTAL</b></td>
+                <td colSpan={4}><b>Total</b></td>
                 <td className="num"><b>{numberID(totalSoal)}</b></td>
                 <td className="num"><b>{rupiah(totalRp)}</b></td>
                 <td />

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { rupiah, numberID } from "@/lib/format";
+import Icon from "./Icon";
+import { Dialog } from "./Drawer";
 
 const FORM_URL =
   "https://docs.google.com/forms/d/e/1FAIpQLSdESBDdyAEaQfk7WllFk57qVb5_Kslm1zoi04wwL3OOLN1BJg/viewform";
@@ -11,250 +13,129 @@ const FORM_URL =
 // berbeda, jadi tanpa ID admin tidak bisa memastikan baris mana yang dicatat.
 function buildWaMessage(cart, brand, nama, wa) {
   const lines = cart
-    .map(
-      (it, i) =>
-        `${i + 1}. ${it.subtes} [${it.id}]\n   ${numberID(
-          it.qty
-        )} soal x ${rupiah(it.harga)} = ${rupiah(it.qty * it.harga)}`
-    )
+    .map((it, i) => `${i + 1}. ${it.subtes} [${it.id}]\n   ${numberID(it.qty)} soal x ${rupiah(it.harga)} = ${rupiah(it.qty * it.harga)}`)
     .join("\n");
-  const items = cart.length;
   const soal = cart.reduce((s, it) => s + it.qty, 0);
   const fee = cart.reduce((s, it) => s + it.qty * it.harga, 0);
   let msg =
     `Halo kak, saya mau mengambil proyek soal berikut:\n\n` +
     `${lines}\n\n———\n` +
-    `Total: ${items} submateri · ${numberID(soal)} soal\n` +
+    `Total: ${cart.length} submateri · ${numberID(soal)} soal\n` +
     `Total fee: ${rupiah(fee)}`;
   if (nama) msg += `\n\nNama: ${nama}`;
   if (wa) msg += `\nWA: ${wa}`;
   return msg;
 }
 
-export default function CartView({
-  cart = [],
-  onQty,
-  onRemove,
-  onClear,
-  onBack,
-  waNumber,
-  brand = "Cerebrum",
-}) {
+export default function CartView({ cart = [], onQty, onRemove, onClear, onBack, waNumber, brand = "Cerebrum" }) {
   const [nama, setNama] = useState("");
   const [wa, setWa] = useState("");
   const [showForm, setShowForm] = useState(false);
 
-  const items = cart.length;
   const soal = cart.reduce((s, it) => s + it.qty, 0);
   const fee = cart.reduce((s, it) => s + it.qty * it.harga, 0);
   const base = waNumber ? `https://wa.me/${waNumber}` : "https://wa.me/";
-  const waHref = `${base}?text=${encodeURIComponent(
-    buildWaMessage(cart, brand, nama, wa)
-  )}`;
-  const canCheckout = nama.trim() !== "" && wa.trim() !== "";
-
-  if (items === 0) {
-    return (
-      <div className="card empty" style={{ marginTop: 10 }}>
-        Keranjang masih kosong.
-        <br />
-        <br />
-        <button className="btn btn-blue" onClick={onBack}>
-          Pilih soal dulu
-        </button>
-      </div>
-    );
-  }
+  const waHref = `${base}?text=${encodeURIComponent(buildWaMessage(cart, brand, nama, wa))}`;
+  const lengkap = nama.trim() !== "" && wa.trim() !== "";
 
   return (
     <>
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Submateri</th>
-              <th className="num">Harga/soal</th>
-              <th style={{ textAlign: "center" }}>Jumlah</th>
-              <th className="num">Subtotal</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
+      <div className="section-head">
+        <div>
+          <button type="button" className="btn-link" onClick={onBack} style={{ paddingLeft: 0, display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <Icon name="chevronLeft" />
+            Kembali ke daftar proyek
+          </button>
+          <h1 style={{ margin: "2px 0 0", fontSize: 24, fontWeight: 800 }}>Periksa pengajuan</h1>
+        </div>
+      </div>
+
+      {cart.length === 0 ? (
+        <div className="card empty">
+          Belum ada proyek yang diambil.
+          <div style={{ marginTop: 14 }}>
+            <button type="button" className="btn btn-blue" onClick={onBack}>Pilih proyek</button>
+          </div>
+        </div>
+      ) : (
+        <div className="cart-grid">
+          <div className="cart-list">
             {cart.map((it) => (
-              <tr key={it.id}>
-                <td>
+              <div key={it.id} className="cart-item">
+                <div>
                   <b>{it.subtes}</b>
-                  <div className="muted" style={{ fontSize: 12 }}>
-                    {it.output}
-                  </div>
-                </td>
-                <td className="num">{rupiah(it.harga)}</td>
-                <td>
-                  <div
-                    className="qrow"
-                    style={{
-                      border: "none",
-                      padding: 0,
-                      justifyContent: "center",
-                      gap: 6,
-                    }}
-                  >
-                    <button
-                      className="qbtn"
-                      onClick={() => onQty(it.id, it.qty - 1)}
-                      disabled={it.qty <= 1}
-                    >
-                      −
-                    </button>
-                    <span className="qval">{it.qty}</span>
-                    <button
-                      className="qbtn"
-                      onClick={() => onQty(it.id, it.qty + 1)}
-                      disabled={it.qty >= it.sisa}
-                    >
-                      +
-                    </button>
-                  </div>
-                  <div
-                    className="muted"
-                    style={{ fontSize: 11, textAlign: "center", marginTop: 2 }}
-                  >
-                    maks {numberID(it.sisa)}
-                  </div>
-                </td>
-                <td className="num">
-                  <b>{rupiah(it.qty * it.harga)}</b>
-                </td>
-                <td>
-                  <button
-                    className="xbtn"
-                    onClick={() => onRemove(it.id)}
-                    title="Hapus"
-                  >
-                    ×
+                  <span className="meta">
+                    {it.output || "—"} · {rupiah(it.harga)}/soal · maks {numberID(it.sisa)}
+                  </span>
+                </div>
+                <div className="stepper">
+                  <button type="button" onClick={() => onQty(it.id, it.qty - 1)} disabled={it.qty <= 1} aria-label={`Kurangi ${it.subtes}`}>
+                    <Icon name="minus" />
                   </button>
-                </td>
-              </tr>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    value={it.qty}
+                    min={1}
+                    max={it.sisa}
+                    onChange={(e) => onQty(it.id, Math.max(1, parseInt(e.target.value, 10) || 1))}
+                    onFocus={(e) => e.target.select()}
+                    aria-label={`Jumlah soal ${it.subtes}`}
+                  />
+                  <button type="button" onClick={() => onQty(it.id, it.qty + 1)} disabled={it.qty >= it.sisa} aria-label={`Tambah ${it.subtes}`}>
+                    <Icon name="plus" />
+                  </button>
+                  <button type="button" className="ibtn danger" onClick={() => onRemove(it.id)} aria-label={`Hapus ${it.subtes}`}>
+                    <Icon name="trash" />
+                  </button>
+                </div>
+                <b className="subtotal">{rupiah(it.qty * it.harga)}</b>
+              </div>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </div>
 
-      <div className="split" style={{ marginTop: 16 }}>
-        <div className="card card-p">
-          <h2 style={{ margin: "0 0 12px", fontSize: 16 }}>
-            Data pengambil (wajib diisi)
-          </h2>
-          <input
-            className="input"
-            placeholder="Nama guru *"
-            style={{ width: "100%", marginBottom: 10 }}
-            value={nama}
-            onChange={(e) => setNama(e.target.value)}
-          />
-          <input
-            className="input"
-            placeholder="Nomor WhatsApp kamu * (mis. 0812…)"
-            style={{ width: "100%" }}
-            value={wa}
-            onChange={(e) => setWa(e.target.value)}
-          />
-          <div className="muted" style={{ marginTop: 10, fontSize: 12.5 }}>
-            Wajib diisi — ikut tercantum di pesan WhatsApp untuk konfirmasi.
-          </div>
-        </div>
-
-        <div className="card card-p summary">
-          <h2 style={{ margin: "0 0 12px", fontSize: 16 }}>Ringkasan Pesanan</h2>
-          <div className="sum-row">
-            <span>Jumlah submateri</span>
-            <span>{items}</span>
-          </div>
-          <div className="sum-row">
-            <span>Total soal</span>
-            <span>{numberID(soal)} soal</span>
-          </div>
-          <div className="sum-total">
-            <span>Total Fee</span>
-            <span>{rupiah(fee)}</span>
-          </div>
-          <button
-            className="btn btn-wa"
-            style={{ width: "100%", marginTop: 14 }}
-            onClick={() => setShowForm(true)}
-            disabled={!canCheckout}
-          >
-            📩 Kirim Pesanan
-          </button>
-          {!canCheckout ? (
-            <div
-              className="muted"
-              style={{
-                color: "var(--red-600)",
-                fontSize: 12.5,
-                marginTop: 8,
-                textAlign: "center",
-              }}
-            >
-              Isi nama &amp; nomor WhatsApp dulu untuk mengirim.
+          <div className="card card-p" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div className="ffield">
+              <label htmlFor="c-nama">Nama lengkap</label>
+              <input id="c-nama" className="input" value={nama} onChange={(e) => setNama(e.target.value)} autoComplete="name" />
             </div>
-          ) : null}
-          <button
-            className="btn btn-ghost"
-            style={{ width: "100%", marginTop: 8 }}
-            onClick={onBack}
-          >
-            + Tambah soal lagi
-          </button>
-          <button className="btn-link" onClick={onClear}>
-            Kosongkan keranjang
-          </button>
+            <div className="ffield">
+              <label htmlFor="c-wa">Nomor WhatsApp</label>
+              <input id="c-wa" className="input" inputMode="tel" placeholder="mis. 0812…" value={wa} onChange={(e) => setWa(e.target.value)} autoComplete="tel" />
+              <small>Dipakai admin untuk konfirmasi dan pencairan fee.</small>
+            </div>
+
+            <div>
+              <div className="sum-row"><span>Proyek</span><span>{cart.length}</span></div>
+              <div className="sum-row"><span>Total soal</span><span>{numberID(soal)}</span></div>
+              <div className="sum-total"><span>Total fee</span><span>{rupiah(fee)}</span></div>
+            </div>
+
+            <button type="button" className="btn btn-blue block" onClick={() => setShowForm(true)} disabled={!lengkap}>
+              <Icon name="send" />
+              Kirim pengajuan
+            </button>
+            {!lengkap ? <small className="muted" style={{ textAlign: "center" }}>Isi nama dan nomor WhatsApp dulu.</small> : null}
+            <button type="button" className="btn-link" onClick={onClear}>Kosongkan pengajuan</button>
+          </div>
         </div>
-      </div>
+      )}
 
       {showForm ? (
-        <div className="overlay" onClick={() => setShowForm(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-head">
-              <h2>📋 Pendataan Guru Freelance</h2>
-              <button
-                className="icon-x"
-                onClick={() => setShowForm(false)}
-                aria-label="Tutup"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="modal-body">
-              <p className="modal-sub">
-                Sebelum mengirim pesanan, mohon isi form pendataan berikut agar
-                kamu terdaftar di database kami, mendapat info proyek
-                selanjutnya, dan dihubungi untuk pencairan fee.
-              </p>
-              <a
-                className="btn btn-blue"
-                style={{ width: "100%", marginBottom: 10 }}
-                href={FORM_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                📋 Isi Form Pendataan Guru
-              </a>
-              <a
-                className="btn btn-wa"
-                href={waHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setShowForm(false)}
-              >
-                Lanjut kirim pesanan ke WhatsApp
-              </a>
-              <button className="btn-link" onClick={() => setShowForm(false)}>
-                Nanti saja
-              </button>
-            </div>
-          </div>
-        </div>
+        <Dialog title="Satu langkah lagi" onClose={() => setShowForm(false)}>
+          <p className="modal-sub">
+            Belum terdaftar? Isi form pendataan dulu supaya kamu masuk database guru, dapat info proyek berikutnya, dan
+            bisa dihubungi untuk pencairan fee.
+          </p>
+          <a className="btn btn-ghost block" href={FORM_URL} target="_blank" rel="noopener noreferrer">
+            <Icon name="file" />
+            Isi form pendataan guru
+          </a>
+          <a className="btn btn-wa block" href={waHref} target="_blank" rel="noopener noreferrer" onClick={() => setShowForm(false)}>
+            <Icon name="send" />
+            Kirim ke Admin lewat WhatsApp
+          </a>
+        </Dialog>
       ) : null}
     </>
   );

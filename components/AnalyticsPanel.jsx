@@ -146,10 +146,10 @@ export default function AnalyticsPanel({ data, master }) {
 
   return (
     <>
-      <div className="controls" style={{ marginTop: 18 }}>
+      <div>
         <div className="chips">
           {["Semua", ...months.map((m) => m.bulan)].map((b) => (
-            <button key={b} className={"chip" + (bulanFilter === b ? " active" : "")} onClick={() => setBulanFilter(b)}>{b}</button>
+            <button key={b} type="button" className={"chip" + (bulanFilter === b ? " active" : "")} aria-pressed={bulanFilter === b} onClick={() => setBulanFilter(b)}>{b}</button>
           ))}
         </div>
       </div>
@@ -195,7 +195,7 @@ export default function AnalyticsPanel({ data, master }) {
         </div>
         <div className="card card-p">
           <div className="section-head"><h2>Paling Mangkrak</h2><span className="muted">sisa belum diambil</span></div>
-          <Bars data={mangkrak.map((s) => ({ label: s.nama.slice(0, 34), value: s.sisa }))} color="linear-gradient(90deg,#fbbf24,#d97706)" />
+          <Bars data={mangkrak.map((s) => ({ label: s.nama.slice(0, 34), value: s.sisa }))} color="var(--warn)" />
         </div>
       </div>
 
@@ -206,7 +206,7 @@ export default function AnalyticsPanel({ data, master }) {
         </div>
         <div className="card card-p">
           <div className="section-head"><h2>Fee per Status</h2></div>
-          <Bars data={perStatus.map(([k, v]) => ({ label: k, value: v.fee }))} fmt={rupiah} color="linear-gradient(90deg,#34d399,#059669)" />
+          <Bars data={perStatus.map(([k, v]) => ({ label: k, value: v.fee }))} fmt={rupiah} color="var(--good)" />
         </div>
       </div>
 
@@ -238,7 +238,7 @@ export default function AnalyticsPanel({ data, master }) {
       <div className="split" style={{ marginTop: 18 }}>
         <div className="card card-p">
           <div className="section-head"><h2>Beban PIC QC</h2><span className="muted">jumlah baris ditangani</span></div>
-          <Bars data={perPic.map((p) => ({ label: p.pic, value: p.total }))} color="linear-gradient(90deg,#c4b5fd,#7c3aed)" />
+          <Bars data={perPic.map((p) => ({ label: p.pic, value: p.total }))} color="var(--violet)" />
           <div className="muted" style={{ marginTop: 8 }}>
             {perPic.map((p) => `${p.pic}: ${p.soal} soal / ${p.video} video`).join("  ·  ")}
           </div>

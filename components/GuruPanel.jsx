@@ -8,6 +8,10 @@
 
 import { useMemo, useState } from "react";
 import { rupiah, numberID } from "@/lib/format";
+import Icon from "./Icon";
+import Combobox from "./Combobox";
+import Drawer from "./Drawer";
+import PageActions from "./PageActions";
 
 const BLANK = {
   nama: "", status: "Guru Baru", email: "", wa: "",
@@ -31,7 +35,7 @@ async function api(payload) {
   return j;
 }
 
-export default function GuruPanel({ rows, feeByGuru, readOnly, busy, setBusy, setErr, onChanged }) {
+export default function GuruPanel({ rows, feeByGuru, readOnly, busy, setBusy, setErr, onChanged, aksiEl }) {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("Semua");
   const [saring, setSaring] = useState("Semua");
@@ -84,93 +88,153 @@ export default function GuruPanel({ rows, feeByGuru, readOnly, busy, setBusy, se
     }
   };
 
+  const tutupEdit = () => {
+    setEdit(null);
+    setDup(null);
+  };
+  const pernahDibayar = rows.filter((r) => feeByGuru.get(String(r.idGuru))).length;
+
   return (
     <>
-      <div className="grid stat-grid" style={{ marginTop: 18 }}>
+      <PageActions el={aksiEl}>
+        <label className="search">
+          <Icon name="search" />
+          <input type="search" placeholder="Cari nama, ID, rekening, WA" aria-label="Cari guru" value={q} onChange={(e) => setQ(e.target.value)} />
+        </label>
+        <button
+          type="button"
+          className="btn btn-blue"
+          disabled={readOnly || busy}
+          onClick={() => {
+            setDraft(BLANK);
+            setDup(null);
+            setEdit({ mode: "create" });
+          }}
+        >
+          <Icon name="plus" stroke={2.2} />
+          Guru baru
+        </button>
+      </PageActions>
+
+      <div className="grid stat-grid">
         <div className="card stat">
-          <div className="label">Total Guru</div>
-          <div className="value blue">{numberID(rows.length)}</div>
+          <div className="label">Total guru</div>
+          <div className="value">{numberID(rows.length)}</div>
           <div className="sub">terdaftar di database</div>
         </div>
         <div className="card stat">
-          <div className="label">Pernah Dibayar</div>
-          <div className="value green">{numberID(rows.filter((r) => feeByGuru.get(String(r.idGuru))).length)}</div>
+          <div className="label">Pernah dibayar</div>
+          <div className="value green">{numberID(pernahDibayar)}</div>
           <div className="sub">punya riwayat fee</div>
         </div>
         <div className="card stat">
-          <div className="label">Tanpa Rekening</div>
+          <div className="label">Tanpa rekening</div>
           <div className={"value " + (tanpaRek.length ? "amber" : "green")}>{numberID(tanpaRek.length)}</div>
           <div className="sub">belum bisa ditransfer</div>
         </div>
         <div className="card stat hi">
-          <div className="label">ID Berikutnya</div>
-          <div className="value navy">{nextId}</div>
-          <div className="sub">otomatis, tak bisa diketik</div>
+          <div className="label">ID berikutnya</div>
+          <div className="value mono">{nextId}</div>
+          <div className="sub">dibuat sistem, tak bisa diketik</div>
         </div>
       </div>
 
-      <div className="section-head" style={{ marginTop: 18 }}>
-        <div className="head-actions">
-          <input className="input sm" placeholder="Cari nama, ID, rekening, WA…" value={q} onChange={(e) => setQ(e.target.value)} />
-          <select className="select sm" value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option>Semua</option>
-            {statusList.map((s) => <option key={s}>{s}</option>)}
-          </select>
-          <select className="select sm" value={saring} onChange={(e) => setSaring(e.target.value)}>
-            <option>Semua</option>
-            <option>Tanpa rekening</option>
-            <option>Pernah dibayar</option>
-          </select>
-          <button
-            className="btn btn-blue sm"
-            disabled={readOnly || busy}
-            onClick={() => { setDraft(BLANK); setDup(null); setEdit({ mode: "create" }); }}
-          >
-            ＋ Guru Baru
-          </button>
+      <div className="card card-p" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className="chips" role="group" aria-label="Saring guru">
+          {[
+            ["Semua", rows.length],
+            ["Tanpa rekening", tanpaRek.length],
+            ["Pernah dibayar", pernahDibayar],
+          ].map(([k, n]) => (
+            <button key={k} type="button" className={"chip" + (saring === k ? " active" : "")} aria-pressed={saring === k} onClick={() => setSaring(k)}>
+              {k} <span className="n">{numberID(n)}</span>
+            </button>
+          ))}
+        </div>
+        <div className="filters">
+          <label className="fl">
+            <span>Status guru</span>
+            <select className="select" value={status} onChange={(e) => setStatus(e.target.value)}>
+              <option>Semua</option>
+              {statusList.map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </select>
+          </label>
+          <span className="muted fl-more">{numberID(list.length)} guru</span>
         </div>
       </div>
 
       <div className="table-wrap fixed">
         <table className="grid-table">
-          <colgroup>{[6, 24, 11, 16, 13, 13, 10, 7].map((w, i) => <col key={i} style={{ width: w + "%" }} />)}</colgroup>
+          <colgroup>
+            {[7, 24, 11, 16, 14, 13, 10, 5].map((w, i) => (
+              <col key={i} style={{ width: w + "%" }} />
+            ))}
+          </colgroup>
           <thead>
             <tr>
-              <th>ID</th><th>Nama Lengkap</th><th>Status</th><th>Nomor Rekening</th>
-              <th>a.n.</th><th>WhatsApp</th><th className="num">Fee Tercatat</th><th className="act" />
+              <th>ID</th>
+              <th>Nama lengkap</th>
+              <th>Status</th>
+              <th>Nomor rekening</th>
+              <th>Atas nama</th>
+              <th>WhatsApp</th>
+              <th className="num">Fee tercatat</th>
+              <th className="act">
+                <span className="sr-only">Aksi</span>
+              </th>
             </tr>
           </thead>
           <tbody>
-            {list.length === 0 ? <tr><td colSpan={8} className="empty">Tidak ada guru yang cocok.</td></tr> : null}
+            {list.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="empty">
+                  Tidak ada guru yang cocok.
+                </td>
+              </tr>
+            ) : null}
             {list.map((t) => (
               <tr key={t.row}>
                 <td className="mono">{t.idGuru}</td>
                 <td className="wrap">
-                  <b>{t.nama}</b>
+                  <b style={{ fontWeight: 600, color: "var(--text)" }}>{t.nama}</b>
                   {t.bidang ? <div className="muted xs2">{t.bidang.slice(0, 60)}</div> : null}
                 </td>
                 <td className="wrap">{t.status || "—"}</td>
-                <td className="mono wrap">{t.rekening || <span className="neg">— belum ada —</span>}</td>
+                <td className="mono wrap">{t.rekening || <span className="neg">belum ada</span>}</td>
                 <td className="wrap">{t.pemilikRekening || "—"}</td>
                 <td className="mono">{t.wa || "—"}</td>
                 <td className="num">{feeByGuru.get(String(t.idGuru)) ? rupiah(feeByGuru.get(String(t.idGuru))) : "—"}</td>
                 <td className="act">
                   <div className="rowmenu">
                     <button
+                      type="button"
                       className="ibtn"
                       disabled={readOnly || busy}
+                      aria-label={`Edit ${t.nama}`}
                       title="Edit"
                       onClick={() => {
                         setDraft({
-                          nama: t.nama, status: t.status, email: t.email, wa: t.wa,
-                          rekening: t.rekening, pemilikRekening: t.pemilikRekening, npwp: t.npwp,
-                          pendidikan: t.pendidikan, universitas: t.universitas, bidang: t.bidang,
-                          kapasitas: t.kapasitas || "", catatan: t.catatan,
+                          nama: t.nama,
+                          status: t.status,
+                          email: t.email,
+                          wa: t.wa,
+                          rekening: t.rekening,
+                          pemilikRekening: t.pemilikRekening,
+                          npwp: t.npwp,
+                          pendidikan: t.pendidikan,
+                          universitas: t.universitas,
+                          bidang: t.bidang,
+                          kapasitas: t.kapasitas || "",
+                          catatan: t.catatan,
                         });
                         setDup(null);
                         setEdit({ mode: "edit", row: t.row, id: t.idGuru });
                       }}
-                    >✎</button>
+                    >
+                      <Icon name="edit" />
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -180,97 +244,101 @@ export default function GuruPanel({ rows, feeByGuru, readOnly, busy, setBusy, se
       </div>
 
       {edit ? (
-        <div className="overlay" onClick={() => !busy && setEdit(null)}>
-          <div className="modal wide" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-head">
-              <h2>{edit.mode === "create" ? `＋ Guru Baru — ID ${nextId}` : `✎ Edit Guru ID ${edit.id}`}</h2>
-              <button className="icon-x" onClick={() => setEdit(null)} disabled={busy}>✕</button>
-            </div>
-            <div className="modal-body">
+        <Drawer
+          wide
+          title={edit.mode === "create" ? "Guru baru" : `Edit guru ID ${edit.id}`}
+          sub={edit.mode === "create" ? `Akan mendapat ID ${nextId}` : "Kolom lain di spreadsheet (KTP, CV, portofolio) tidak ikut diubah"}
+          onClose={tutupEdit}
+          busy={busy}
+          foot={
+            <div className="drawer-actions">
+              <button type="button" className="btn btn-ghost" onClick={tutupEdit} disabled={busy}>
+                Batal
+              </button>
               {dup ? (
-                <div className="banner err" style={{ marginBottom: 14 }}>
-                  <span>⚠</span>
-                  <div>
-                    Nama ini sudah terdaftar:
-                    <ul className="dup-list">
-                      {dup.map((x) => <li key={x.idGuru}><b>ID {x.idGuru}</b> — {x.nama}</li>)}
-                    </ul>
-                    Kalau memang orang yang berbeda, tekan “Tetap simpan”.
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="form-grid">
-                <label className="ffield wide">
-                  <span>Nama Lengkap (beserta gelar) *</span>
-                  <input className="input" value={draft.nama} onChange={d("nama")} autoFocus />
-                </label>
-                <label className="ffield">
-                  <span>Status</span>
-                  <input className="input" list="status-guru" value={draft.status} onChange={d("status")} />
-                  <datalist id="status-guru">{statusList.map((s) => <option key={s} value={s} />)}</datalist>
-                </label>
-                <label className="ffield">
-                  <span>Nomor WhatsApp</span>
-                  <input className="input" value={draft.wa} onChange={d("wa")} placeholder="628xxxxxxxxxx" />
-                </label>
-                <label className="ffield wide">
-                  <span>Email</span>
-                  <input className="input" value={draft.email} onChange={d("email")} />
-                </label>
-
-                <label className="ffield">
-                  <span>Nomor Rekening</span>
-                  <input className="input" value={draft.rekening} onChange={d("rekening")} placeholder="tanpa spasi" />
-                  <small>Boleh bank selain BSI — tulis banknya, mis. “123456 (BCA)”.</small>
-                </label>
-                <label className="ffield">
-                  <span>Nama Pemilik Rekening</span>
-                  <input className="input" value={draft.pemilikRekening} onChange={d("pemilikRekening")} />
-                </label>
-                <label className="ffield">
-                  <span>NPWP</span>
-                  <input className="input" value={draft.npwp} onChange={d("npwp")} />
-                </label>
-                <label className="ffield">
-                  <span>Kapasitas / minggu</span>
-                  <input className="input" type="number" min={0} value={draft.kapasitas} onChange={d("kapasitas")} />
-                </label>
-
-                <label className="ffield">
-                  <span>Pendidikan</span>
-                  <input className="input" value={draft.pendidikan} onChange={d("pendidikan")} />
-                </label>
-                <label className="ffield">
-                  <span>Universitas</span>
-                  <input className="input" value={draft.universitas} onChange={d("universitas")} />
-                </label>
-                <label className="ffield wide">
-                  <span>Bidang materi yang dikuasai</span>
-                  <input className="input" value={draft.bidang} onChange={d("bidang")} />
-                </label>
-                <label className="ffield wide">
-                  <span>Catatan</span>
-                  <input className="input" value={draft.catatan} onChange={d("catatan")} />
-                </label>
-              </div>
-              <p className="modal-sub" style={{ marginTop: 14 }}>
-                Kolom lain di spreadsheet (KTP, CV, portofolio, pernyataan) tidak ikut diubah.
-              </p>
-            </div>
-            <div className="modal-foot">
-              <button className="btn btn-ghost" onClick={() => setEdit(null)} disabled={busy}>Batal</button>
-              {dup ? (
-                <button className="btn btn-red" onClick={() => simpan(true)} disabled={busy}>
+                <button type="button" className="btn btn-red" onClick={() => simpan(true)} disabled={busy}>
                   {busy ? "Menyimpan…" : "Tetap simpan"}
                 </button>
               ) : null}
-              <button className="btn btn-blue" onClick={() => simpan(false)} disabled={busy || !draft.nama.trim()}>
-                {busy ? "Menyimpan…" : "Simpan"}
+              <button type="button" className="btn btn-blue" onClick={() => simpan(false)} disabled={busy || !draft.nama.trim()}>
+                {busy ? "Menyimpan…" : edit.mode === "create" ? "Tambah guru" : "Simpan"}
               </button>
             </div>
+          }
+        >
+          {dup ? (
+            <div className="banner err" style={{ margin: 0 }}>
+              <Icon name="alert" />
+              <div>
+                Nama ini sudah terdaftar:
+                <ul className="dup-list">
+                  {dup.map((x) => (
+                    <li key={x.idGuru}>
+                      <b>ID {x.idGuru}</b> — {x.nama}
+                    </li>
+                  ))}
+                </ul>
+                Kalau memang orang yang berbeda, tekan “Tetap simpan”.
+              </div>
+            </div>
+          ) : null}
+
+          <label className="ffield">
+            <span>Nama lengkap (beserta gelar)</span>
+            <input className="input" value={draft.nama} onChange={d("nama")} autoComplete="off" />
+          </label>
+
+          <div className="form-grid">
+            <div className="ffield">
+              <label htmlFor="g-status">Status</label>
+              <Combobox id="g-status" value={draft.status} onChange={(v) => setDraft((p) => ({ ...p, status: v }))} options={statusList.map((s) => ({ value: s, label: s }))} />
+            </div>
+            <label className="ffield">
+              <span>Nomor WhatsApp</span>
+              <input className="input" inputMode="tel" value={draft.wa} onChange={d("wa")} placeholder="628xxxxxxxxxx" />
+            </label>
           </div>
-        </div>
+          <label className="ffield">
+            <span>Email</span>
+            <input className="input" type="email" value={draft.email} onChange={d("email")} />
+          </label>
+
+          <div className="form-grid">
+            <label className="ffield">
+              <span>Nomor rekening</span>
+              <input className="input" inputMode="numeric" value={draft.rekening} onChange={d("rekening")} placeholder="tanpa spasi" />
+              <small>Bank selain BSI? Tulis banknya, mis. “123456 (BCA)”.</small>
+            </label>
+            <label className="ffield">
+              <span>Nama pemilik rekening</span>
+              <input className="input" value={draft.pemilikRekening} onChange={d("pemilikRekening")} />
+            </label>
+            <label className="ffield">
+              <span>NPWP</span>
+              <input className="input" value={draft.npwp} onChange={d("npwp")} />
+            </label>
+            <label className="ffield">
+              <span>Kapasitas / minggu</span>
+              <input className="input" type="number" inputMode="numeric" min={0} value={draft.kapasitas} onChange={d("kapasitas")} />
+            </label>
+            <label className="ffield">
+              <span>Pendidikan</span>
+              <input className="input" value={draft.pendidikan} onChange={d("pendidikan")} />
+            </label>
+            <label className="ffield">
+              <span>Universitas</span>
+              <input className="input" value={draft.universitas} onChange={d("universitas")} />
+            </label>
+          </div>
+          <label className="ffield">
+            <span>Bidang materi yang dikuasai</span>
+            <input className="input" value={draft.bidang} onChange={d("bidang")} />
+          </label>
+          <label className="ffield">
+            <span>Catatan</span>
+            <input className="input" value={draft.catatan} onChange={d("catatan")} />
+          </label>
+        </Drawer>
       ) : null}
     </>
   );

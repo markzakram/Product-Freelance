@@ -17,6 +17,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { rupiah, numberID, norm, parseNum, parseHarga, formatHarga, cekHargaBulanan, isBatal, STATUS_BATAL } from "@/lib/format";
 import PrintArea from "./Receipts";
+import Icon from "./Icon";
+import Brand from "./Brand";
+import Drawer, { Dialog } from "./Drawer";
+import Combobox from "./Combobox";
+import ThemeToggle from "./ThemeToggle";
+import PageActions from "./PageActions";
+import DataBanner from "./DataBanner";
 import MasterPanel from "./MasterPanel";
 import NewMonthPanel from "./NewMonthPanel";
 import AnalyticsPanel from "./AnalyticsPanel";
@@ -111,7 +118,7 @@ const Cols = ({ widths }) => (
 );
 
 // ============================================================================
-export default function AdminBoard({ initial, brand = "Cerebrum" }) {
+export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPassword = false }) {
   const [board, setBoard] = useState(initial);
   const [tab, setTab] = useState("ringkasan");
   const [f, setF] = useState(F0);
@@ -122,6 +129,8 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
   const [syncedAt, setSyncedAt] = useState(null);
   const [print, setPrint] = useState(null);
   const [navOpen, setNavOpen] = useState(false); // sidebar di layar sempit
+  // Wadah tombol utama di header halaman; panel mengisinya lewat portal.
+  const [aksiEl, setAksiEl] = useState(null);
   // Bulan yang sedang dikelola. Kosong = bulan terbaru (ditentukan server).
   const [bulanAktif, setBulanAktif] = useState("");
   // data tambahan: katalog master & seluruh bulan (untuk Master/Proyek Baru/Analisis)
@@ -175,6 +184,11 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
   useEffect(() => {
     if (!expired) refreshExtra();
   }, [refreshExtra, expired]);
+
+  // Data sudah dibaca server saat halaman dibuka — itu sinkron pertama. Diset
+  // setelah mount, bukan nilai awal state, supaya jam server & browser tidak
+  // bentrok saat hidrasi.
+  useEffect(() => setSyncedAt(new Date()), []);
 
   // Ganti bulan -> muat ulang papan untuk bulan itu.
   const pertama = useRef(true);
@@ -314,7 +328,10 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
       byGuru,
       byPlat,
       pct: kebutuhan ? Math.round((diambil / kebutuhan) * 100) : 0,
-      guruAktif: new Set(assignments.map((a) => a.guru).filter(Boolean)).size,
+      // Hanya yang benar-benar mengerjakan: baris cadangan berisi 0 soal
+      // (mis. kode "xx" untuk guru yang belum dapat proyek) dan baris Cancel
+      // tidak dihitung — dulu keduanya ikut, sehingga 15 guru terbaca 36.
+      guruAktif: new Set(assignments.filter((a) => a.jumlah > 0 && !isBatal(a.status)).map((a) => a.guru).filter(Boolean)).size,
       habis: projects.filter((p) => p.sisa <= 0).length,
       negatif: projects.filter((p) => p.sisa < 0).length,
     };
@@ -323,7 +340,10 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
   const groups = useMemo(() => {
     const m = new Map();
     rows.forEach((a) => {
-      if (!a.guru || isBatal(a.status)) return; // Cancel tidak dibayar -> tak masuk kwitansi
+      // Cancel tidak dibayar, dan baris cadangan tanpa pekerjaan (0 soal, Rp0 —
+      // mis. kode "xx" untuk guru yang belum dapat proyek) bukan tagihan:
+      // dulu keduanya ikut, jadi admin mencetak puluhan kwitansi Rp0.
+      if (!a.guru || isBatal(a.status) || (!a.jumlah && !a.fee)) return;
       if (!m.has(a.guru)) m.set(a.guru, { guru: a.guru, teacher: teacherOf(a), items: [], total: 0, soal: 0 });
       const g = m.get(a.guru);
       g.items.push(a);
@@ -368,6 +388,9 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
 
   if (expired) return <SessionExpired />;
 
+  const info = PAGE[tab] || {};
+  const namaBulan = (board.months || []).find((m) => m.tab === board.tab)?.bulan || "";
+
   return (
     <>
       <div className="admin-shell">
@@ -378,166 +401,192 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
             log: assignments.length,
             katalog: projects.length,
             master: master.rows?.length || 0,
-            guru: teachers.length,
+            guru: (guru.rows || []).length || teachers.length,
           }}
           open={navOpen}
           setOpen={setNavOpen}
+          months={board.months || []}
+          bulanTab={bulanAktif || board.tab || ""}
+          setBulan={setBulanAktif}
+          kunciBulan={syncing || busy}
+          syncedAt={syncedAt}
+          syncing={syncing}
+          refresh={refresh}
         />
 
-        <div className="admin-main">
-          <div className="page-head">
-            <button className="navburger" onClick={() => setNavOpen(true)} aria-label="Buka menu">☰</button>
-            <div>
-              <div className="page-crumb">{PAGE[tab]?.group}</div>
-              <h1 className="page-title">{PAGE[tab]?.title}</h1>
-            </div>
-            <div className="page-sync">
-              {PERBULAN.has(tab) && (board.months || []).length ? (
-                <label className="bulan-pick">
-                  <span>Bulan</span>
-                  <select
-                    className="select sm"
-                    value={bulanAktif || board.tab || ""}
-                    onChange={(e) => setBulanAktif(e.target.value)}
-                    disabled={syncing || busy}
-                  >
-                    {(board.months || []).map((m) => (
-                      <option key={m.tab} value={m.tab}>{m.bulan}</option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
-              {syncedAt ? <span className="muted">Sinkron {syncedAt.toLocaleTimeString("id-ID")}</span> : null}
-              <button className="btn btn-ghost sm" onClick={refresh} disabled={syncing}>
-                {syncing ? "⏳ Menyegarkan…" : "⟳ Segarkan"}
-              </button>
-            </div>
+        <div className="admin-col">
+          <div className="mobile-bar">
+            <button type="button" className="navburger" onClick={() => setNavOpen(true)} aria-label="Buka menu">
+              <Icon name="menu" size={20} />
+            </button>
+            <Brand size={28} row />
+            <span style={{ width: 40 }} />
           </div>
 
-      {kurangIzin ? (
-        <div className="banner err">
-          <span>🔒</span>
-          <div>
-            <b>Belum punya izin menulis ke spreadsheet.</b> Data terbaca, tapi setiap penyimpanan akan ditolak Google.
-            <div className="banner-detail">
-              Perbaiki sekali saja: buka spreadsheet di Google Sheets → tombol <b>Bagikan</b> → tambahkan{" "}
-              <b>{serviceAccount || "service account"}</b> dengan akses <b>Editor</b> (sekarang masih Pembaca), lalu
-              tekan Segarkan di sini. Data yang sudah ada tidak terpengaruh.
+          <main className="admin-main">
+            <div className="page-head">
+              <div>
+                <div className="page-crumb">
+                  {info.crumb}
+                  {PERBULAN.has(tab) && namaBulan ? ` · ${namaBulan}` : ""}
+                </div>
+                <h1 className="page-title">{info.judul}</h1>
+              </div>
+              <div className="head-actions" ref={setAksiEl} />
             </div>
-          </div>
-        </div>
-      ) : readOnly ? (
-        <div className="banner sample">
-          <span>🔒</span>
-          <div>
-            {source === "sample"
-              ? "Menampilkan data contoh — perubahan tidak bisa disimpan ke spreadsheet."
-              : "Mode baca-saja — butuh GOOGLE_SERVICE_ACCOUNT_JSON dengan akses Editor agar bisa menyimpan."}
-            {diag && !diag.ok ? (
-              <div className="banner-detail">
-                <b>Penyebab:</b> {diag.msg}
+
+            {peringatanPassword ? (
+              <div className="banner sample">
+                <Icon name="alert" />
+                <div>
+                  Area internal belum dilindungi password. Set <b>INTERNAL_PASSWORD</b> di Environment Variables.
+                </div>
               </div>
             ) : null}
-          </div>
-        </div>
-      ) : null}
-      {err ? (
-        <div className="banner err">
-          <span>⚠</span> {err}
-          <button className="btn-link" onClick={() => setErr("")}>
-            tutup
-          </button>
-        </div>
-      ) : null}
-      {/* Tab yang mirip sheet bulanan tapi tidak dipakai. Tanpa ini sebuah
-          bulan bisa hilang dari pilihan tanpa penjelasan apa pun. */}
-      {(board.tabDiabaikan || []).length ? (
-        <div className="banner sample">
-          <span>🗂</span>
-          <div>
-            Ada tab yang tidak dibaca sebagai sheet bulanan:
-            <ul className="dup-list">
-              {board.tabDiabaikan.map((d) => (
-                <li key={d.tab}><b>{d.tab}</b> — {d.alasan}</li>
+            <DataBanner source={source} />
+            {kurangIzin ? (
+              <div className="banner err">
+                <Icon name="lock" />
+                <div>
+                  <b>Belum punya izin menulis ke spreadsheet.</b> Data terbaca, tapi setiap penyimpanan akan ditolak Google.
+                  <div className="banner-detail">
+                    Perbaiki sekali saja: buka spreadsheet di Google Sheets → <b>Bagikan</b> → tambahkan{" "}
+                    <b>{serviceAccount || "service account"}</b> dengan akses <b>Editor</b> (sekarang masih Pembaca), lalu
+                    segarkan halaman ini. Data yang sudah ada tidak terpengaruh.
+                  </div>
+                </div>
+              </div>
+            ) : readOnly && source === "live" ? (
+              <div className="banner sample">
+                <Icon name="lock" />
+                <div>
+                  Mode baca-saja — butuh GOOGLE_SERVICE_ACCOUNT_JSON dengan akses Editor agar bisa menyimpan.
+                  {diag && !diag.ok ? (
+                    <div className="banner-detail">
+                      <b>Penyebab:</b> {diag.msg}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            ) : source === "sample" && diag && !diag.ok ? (
+              <div className="banner sample">
+                <Icon name="info" />
+                <div>
+                  <b>Penyebab data contoh:</b> {diag.msg}
+                </div>
+              </div>
+            ) : null}
+            {err ? (
+              <div className="banner err" role="alert">
+                <Icon name="alert" />
+                <div>{err}</div>
+                <button type="button" className="btn-link" onClick={() => setErr("")}>
+                  tutup
+                </button>
+              </div>
+            ) : null}
+            {/* Tab yang mirip sheet bulanan tapi tidak dipakai. Tanpa ini sebuah
+                bulan bisa hilang dari pilihan tanpa penjelasan apa pun. */}
+            {(board.tabDiabaikan || []).length ? (
+              <div className="banner sample">
+                <Icon name="info" />
+                <div>
+                  Ada tab yang tidak dibaca sebagai sheet bulanan:
+                  <ul className="dup-list">
+                    {board.tabDiabaikan.map((d) => (
+                      <li key={d.tab}>
+                        <b>{d.tab}</b> — {d.alasan}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ) : null}
+
+            {tab === "ringkasan" && <Ringkasan stat={stat} projects={projects} />}
+
+            {tab === "log" && <StatBulan stat={stat} projects={projects} teachers={teachers} />}
+
+            {(tab === "log" || tab === "bayar") && (
+              <Filters f={f} set={set} setF={setF} opts={opts} reset={() => setF(F0)} aktif={filterAktif} n={rows.length} stat={stat} total={assignments.length} />
+            )}
+
+            {tab === "log" && (
+              <LogTable
+                rows={rows}
+                projects={projects}
+                teachers={teachers}
+                opts={opts}
+                stat={stat}
+                run={run}
+                busy={busy}
+                readOnly={readOnly}
+                master={master.rows || []}
+                aksiEl={aksiEl}
+                namaBulan={namaBulan}
+              />
+            )}
+            {tab === "katalog" && (
+              <KatalogTable projects={projects} run={run} busy={busy} readOnly={readOnly} master={master.rows || []} aksiEl={aksiEl} namaBulan={namaBulan} />
+            )}
+
+            {tab === "master" &&
+              (extraLoaded ? (
+                <MasterPanel
+                  rows={master.rows || []}
+                  readOnly={readOnly || !master.canWrite}
+                  busy={busy}
+                  setBusy={setBusy}
+                  setErr={setErr}
+                  onChanged={refreshExtra}
+                  aksiEl={aksiEl}
+                />
+              ) : (
+                <div className="card empty">Memuat master…</div>
               ))}
-            </ul>
-          </div>
-        </div>
-      ) : null}
 
-      {tab === "ringkasan" && <Ringkasan stat={stat} projects={projects} />}
+            {tab === "baru" &&
+              (extraLoaded ? (
+                <NewMonthPanel
+                  master={master.rows || []}
+                  months={allMonths.months || []}
+                  readOnly={readOnly || !allMonths.canWrite}
+                  busy={busy}
+                  setBusy={setBusy}
+                  setErr={setErr}
+                  onDone={async () => {
+                    await refreshExtra();
+                    await refresh();
+                  }}
+                />
+              ) : (
+                <div className="card empty">Memuat data bulan…</div>
+              ))}
 
-      {(tab === "log" || tab === "bayar") && (
-        <Filters f={f} set={set} opts={opts} reset={() => setF(F0)} aktif={filterAktif} n={rows.length} />
-      )}
+            {tab === "analisis" &&
+              (extraLoaded ? (
+                <AnalyticsPanel data={allMonths} master={master.rows || []} />
+              ) : (
+                <div className="card empty">Memuat analisis…</div>
+              ))}
+            {tab === "bayar" && <Bayar groups={groups} periode={periode} doPrint={doPrint} rows={rows} aksiEl={aksiEl} />}
 
-      {tab === "log" && (
-        <LogTable
-          rows={rows}
-          projects={projects}
-          teachers={teachers}
-          opts={opts}
-          stat={stat}
-          run={run}
-          busy={busy}
-          readOnly={readOnly}
-          platformOf={platformOf}
-          master={master.rows || []}
-        />
-      )}
-      {tab === "katalog" && <KatalogTable projects={projects} run={run} busy={busy} readOnly={readOnly} master={master.rows || []} />}
-
-      {tab === "master" &&
-        (extraLoaded ? (
-          <MasterPanel
-            rows={master.rows || []}
-            readOnly={readOnly || !master.canWrite}
-            busy={busy}
-            setBusy={setBusy}
-            setErr={setErr}
-            onChanged={refreshExtra}
-          />
-        ) : (
-          <div className="empty">Memuat master…</div>
-        ))}
-
-      {tab === "baru" &&
-        (extraLoaded ? (
-          <NewMonthPanel
-            master={master.rows || []}
-            months={allMonths.months || []}
-            readOnly={readOnly || !allMonths.canWrite}
-            busy={busy}
-            setBusy={setBusy}
-            setErr={setErr}
-            onDone={async () => { await refreshExtra(); await refresh(); }}
-          />
-        ) : (
-          <div className="empty">Memuat data bulan…</div>
-        ))}
-
-      {tab === "analisis" &&
-        (extraLoaded ? (
-          <AnalyticsPanel data={allMonths} master={master.rows || []} />
-        ) : (
-          <div className="empty">Memuat analisis…</div>
-        ))}
-      {tab === "bayar" && <Bayar groups={groups} periode={periode} doPrint={doPrint} rows={rows} />}
-
-      {tab === "guru" &&
-        (extraLoaded ? (
-          <GuruPanel
-            rows={guru.rows || []}
-            feeByGuru={feeSemuaBulan}
-            readOnly={readOnly || !guru.canWrite}
-            busy={busy}
-            setBusy={setBusy}
-            setErr={setErr}
-            onChanged={refreshExtra}
-          />
-        ) : (
-          <div className="empty">Memuat data guru…</div>
-        ))}
+            {tab === "guru" &&
+              (extraLoaded ? (
+                <GuruPanel
+                  rows={guru.rows || []}
+                  feeByGuru={feeSemuaBulan}
+                  readOnly={readOnly || !guru.canWrite}
+                  busy={busy}
+                  setBusy={setBusy}
+                  setErr={setErr}
+                  onChanged={refreshExtra}
+                  aksiEl={aksiEl}
+                />
+              ) : (
+                <div className="card empty">Memuat data guru…</div>
+              ))}
+          </main>
         </div>
       </div>
 
@@ -547,64 +596,124 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
 }
 
 /* ============================ NAVIGASI SAMPING ============================ */
-// Menu disusun mengikuti urutan kerja sebenarnya, bukan dikelompokkan per
-// jenis: subtes didaftarkan di master dulu, baru dianggarkan jadi katalog
-// bulan itu, baru dicatat siapa yang mengambil, baru dibayar. Nomor langkah
-// ditaruh terpisah dari judul supaya header halaman tetap bersih.
-// [kunci, judul, keterangan, kunciHitung, nomorLangkah]
+// Menu disusun mengikuti urutan kerja sebenarnya: subtes didaftarkan di
+// master dulu, baru dianggarkan jadi katalog bulan itu, baru dicatat siapa
+// yang mengambil, baru dibayar. Nomor langkah terpisah dari judul supaya
+// judul halaman tetap bersih.
 const NAV = [
-  { grup: "Alur Kerja", ikon: "🧭", item: [
-    ["master", "Master Subtes", "Daftar permanen semua subtes", "master", 1],
-    ["baru", "Proyek Bulan Baru", "Susun anggaran sebulan sekaligus", null, 2],
-    ["katalog", "Katalog Bulan Ini", "Anggaran soal bulan berjalan", "katalog", 3],
-    ["log", "Log Pengambilan", "Siapa mengerjakan apa", "log", 4],
-    ["bayar", "Pembayaran & Kwitansi", "Rekap fee & cetak kwitansi", null, 5],
-  ]},
-  { grup: "Pantauan", ikon: "📊", item: [
-    ["ringkasan", "Ringkasan", "Angka utama bulan berjalan"],
-    ["analisis", "Analisis Lintas Bulan", "Tren, produktivitas, anggaran"],
-  ]},
-  { grup: "Data Pendukung", ikon: "🗂", item: [
-    ["guru", "Database Guru", "Data & rekening guru", "guru"],
-  ]},
+  {
+    grup: "Alur kerja",
+    item: [
+      { k: "master", label: "Master subtes", judul: "Master Subtes", langkah: 1, hitung: "master" },
+      { k: "baru", label: "Proyek bulan baru", judul: "Proyek Bulan Baru", langkah: 2 },
+      { k: "katalog", label: "Katalog bulan ini", judul: "Katalog Bulan Ini", langkah: 3, hitung: "katalog" },
+      { k: "log", label: "Log pengambilan", judul: "Log Pengambilan", langkah: 4, hitung: "log" },
+      { k: "bayar", label: "Pembayaran & kwitansi", judul: "Pembayaran & Kwitansi", langkah: 5 },
+    ],
+  },
+  {
+    grup: "Pantauan",
+    item: [
+      { k: "ringkasan", label: "Ringkasan", judul: "Ringkasan", ikon: "home" },
+      { k: "analisis", label: "Analisis lintas bulan", judul: "Analisis Lintas Bulan", ikon: "chart" },
+    ],
+  },
+  {
+    grup: "Data pendukung",
+    item: [{ k: "guru", label: "Database guru", judul: "Database Guru", ikon: "users", hitung: "guru" }],
+  },
 ];
+const JUMLAH_LANGKAH = NAV[0].item.length;
 
-// Peta untuk judul halaman di kanan atas.
+// Judul & jejak halaman di atas konten.
 const PAGE = {};
-NAV.forEach((g) => g.item.forEach(([k, title]) => (PAGE[k] = { title, group: g.grup })));
+NAV.forEach((g) =>
+  g.item.forEach((it) => {
+    PAGE[it.k] = {
+      judul: it.judul,
+      crumb: it.langkah ? `Alur kerja · Langkah ${it.langkah} dari ${JUMLAH_LANGKAH}` : g.grup,
+    };
+  })
+);
 
-function SideNav({ tab, setTab, counts, open, setOpen }) {
+function SideNav({ tab, setTab, counts, open, setOpen, months, bulanTab, setBulan, kunciBulan, syncedAt, syncing, refresh }) {
   return (
     <>
       {open ? <div className="nav-scrim" onClick={() => setOpen(false)} /> : null}
-      <nav className={"admin-side" + (open ? " open" : "")}>
-        <div className="side-top">
-          <span className="side-title">Menu Admin</span>
-          <button className="icon-x side-close" onClick={() => setOpen(false)} aria-label="Tutup menu">✕</button>
-        </div>
-
+      <nav className={"admin-side" + (open ? " open" : "")} aria-label="Menu admin">
         <div className="side-scroll">
+          <div className="side-brand">
+            <Brand size={34} />
+            <button type="button" className="icon-x side-close" onClick={() => setOpen(false)} aria-label="Tutup menu">
+              <Icon name="x" />
+            </button>
+          </div>
+
+          {months.length ? (
+            <div className="side-month">
+              <label>
+                <Icon name="calendar" />
+                <span className="sr-only">Bulan yang dikelola</span>
+                <select value={bulanTab} onChange={(e) => setBulan(e.target.value)} disabled={kunciBulan}>
+                  {months.map((m) => (
+                    <option key={m.tab} value={m.tab}>
+                      {m.bulan}
+                    </option>
+                  ))}
+                </select>
+                <Icon name="chevronDown" />
+              </label>
+              <small>Bulan untuk katalog, log &amp; pembayaran</small>
+            </div>
+          ) : null}
+
           {NAV.map((g) => (
             <div className="side-group" key={g.grup}>
-              <div className="side-label"><span>{g.ikon}</span>{g.grup}</div>
-              {g.item.map(([k, label, desc, countKey, langkah]) => (
+              <div className="side-label">{g.grup}</div>
+              {g.item.map((it) => (
                 <button
-                  key={k}
-                  className={"side-item" + (tab === k ? " active" : "")}
-                  onClick={() => { setTab(k); setOpen(false); }}
+                  key={it.k}
+                  type="button"
+                  className={"side-item" + (tab === it.k ? " active" : "")}
+                  aria-current={tab === it.k ? "page" : undefined}
+                  onClick={() => {
+                    setTab(it.k);
+                    setOpen(false);
+                  }}
                 >
-                  <span className="si-main">
-                    {langkah ? <span className="si-step">{langkah}</span> : null}
-                    <span className="si-label">{label}</span>
-                    {countKey && counts[countKey] != null ? <span className="si-count">{numberID(counts[countKey])}</span> : null}
-                  </span>
-                  <span className="si-desc">{desc}</span>
+                  {it.langkah ? <span className="si-step">{it.langkah}</span> : <Icon name={it.ikon} size={18} />}
+                  <span className="si-label">{it.label}</span>
+                  {it.hitung && counts[it.hitung] != null ? <span className="si-count">{numberID(counts[it.hitung])}</span> : null}
                 </button>
               ))}
+              {g.grup === "Data pendukung" ? (
+                <a className="side-item" href="/open" target="_blank" rel="noopener noreferrer">
+                  <Icon name="external" size={18} />
+                  <span className="si-label">Halaman guru</span>
+                </a>
+              ) : null}
             </div>
           ))}
         </div>
 
+        <div className="side-foot">
+          <span className="avatar" aria-hidden="true">AD</span>
+          <div className="who">
+            <b>Admin</b>
+            <span>{syncing ? "Menyinkronkan…" : syncedAt ? `Sinkron ${syncedAt.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}` : "Tersambung"}</span>
+          </div>
+          <button type="button" className="ibtn" onClick={refresh} disabled={syncing} aria-label="Segarkan data" title="Segarkan data">
+            <Icon name="refresh" />
+          </button>
+          <ThemeToggle />
+          {/* Logout lewat form POST, bukan <Link>: Next.js mem-prefetch <Link>
+              di production begitu terlihat, dan user jadi ter-logout sendiri. */}
+          <form method="POST" action="/api/logout">
+            <button type="submit" className="ibtn" aria-label="Keluar" title="Keluar">
+              <Icon name="logout" />
+            </button>
+          </form>
+        </div>
       </nav>
     </>
   );
@@ -613,16 +722,52 @@ function SideNav({ tab, setTab, counts, open, setOpen }) {
 /* ========================= SESI BERAKHIR ================================== */
 function SessionExpired() {
   return (
-    <div className="card card-p expired">
-      <div className="expired-ico">🔒</div>
+    <div className="card expired">
+      <span className="expired-ico">
+        <Icon name="lock" size={24} />
+      </span>
       <h2>Sesi kamu sudah berakhir</h2>
-      <p className="muted">
-        Ini terjadi kalau password internal baru saja diganti, atau sesi sudah lewat 12 jam. Datanya aman — cukup
-        login ulang untuk melanjutkan.
+      <p>
+        Ini terjadi kalau password internal baru saja diganti, atau sesi sudah lewat 12 jam. Datanya aman — cukup login
+        ulang untuk melanjutkan.
       </p>
       <a className="btn btn-blue" href={LOGIN_URL}>
         Login ulang
       </a>
+    </div>
+  );
+}
+
+/* ====================== ANGKA BULAN BERJALAN (log) ======================== */
+function StatBulan({ stat, projects, teachers }) {
+  return (
+    <div className="grid stat-grid">
+      <div className="card stat">
+        <span className="label">Fee bulan ini</span>
+        <span className="value">{rupiah(stat.feeTotal)}</span>
+        <span className="sub">status Cancel tidak dihitung</span>
+      </div>
+      <div className="card stat">
+        <span className="label">Soal diambil</span>
+        <span className="value">
+          {numberID(stat.diambil)} <small>/ {numberID(stat.kebutuhan)}</small>
+        </span>
+        <div className="meter" aria-label={`${stat.pct}% terserap`}>
+          <i style={{ width: Math.min(100, stat.pct) + "%" }} />
+        </div>
+      </div>
+      <div className="card stat">
+        <span className="label">Sisa kuota</span>
+        <span className="value">{numberID(stat.sisa)} soal</span>
+        <span className="sub">
+          {numberID(stat.habis)} dari {numberID(projects.length)} proyek sudah habis
+        </span>
+      </div>
+      <div className="card stat">
+        <span className="label">Guru aktif</span>
+        <span className="value">{numberID(stat.guruAktif)}</span>
+        <span className="sub">{teachers.length ? `dari ${numberID(teachers.length)} guru terdaftar` : "punya baris di log"}</span>
+      </div>
     </div>
   );
 }
@@ -640,19 +785,21 @@ function Ringkasan({ stat, projects }) {
     <>
       <div className="grid stat-grid">
         <div className="card stat">
-          <div className="label">Total Proyek</div>
-          <div className="value blue">{numberID(projects.length)}</div>
+          <div className="label">Total proyek</div>
+          <div className="value">{numberID(projects.length)}</div>
           <div className="sub">{stat.habis} stok habis</div>
         </div>
         <div className="card stat">
-          <div className="label">Kebutuhan Soal</div>
-          <div className="value navy">{numberID(stat.kebutuhan)}</div>
+          <div className="label">Kebutuhan soal</div>
+          <div className="value">{numberID(stat.kebutuhan)}</div>
           <div className="sub">target seluruh katalog</div>
         </div>
         <div className="card stat">
-          <div className="label">Sudah Diambil</div>
+          <div className="label">Sudah diambil</div>
           <div className="value green">{numberID(stat.diambil)}</div>
-          <div className="sub">{stat.pct}% dari kebutuhan</div>
+          <div className="meter">
+            <i style={{ width: Math.min(100, stat.pct) + "%" }} />
+          </div>
         </div>
         <div className="card stat">
           <div className="label">Sisa</div>
@@ -660,41 +807,39 @@ function Ringkasan({ stat, projects }) {
           <div className="sub">{stat.negatif ? `${stat.negatif} proyek kelebihan ambil` : "belum diambil"}</div>
         </div>
         <div className="card stat">
-          <div className="label">Tampil di /open</div>
-          <div className={"value " + (projects.length - stat.habis > 0 ? "green" : "amber")}>
-            {numberID(projects.length - stat.habis)}
-          </div>
-          <div className="sub">bisa diambil guru · {stat.habis} stok habis</div>
+          <div className="label">Tampil di halaman guru</div>
+          <div className={"value " + (projects.length - stat.habis > 0 ? "green" : "amber")}>{numberID(projects.length - stat.habis)}</div>
+          <div className="sub">bisa diambil · {stat.habis} stok habis</div>
         </div>
         <div className="card stat">
-          <div className="label">Guru Aktif</div>
-          <div className="value blue">{numberID(stat.guruAktif)}</div>
+          <div className="label">Guru aktif</div>
+          <div className="value">{numberID(stat.guruAktif)}</div>
           <div className="sub">punya baris di log</div>
         </div>
       </div>
 
-      <div className="grid stat-grid" style={{ marginTop: 14 }}>
+      <div className="grid stat-grid">
         <div className="card stat hi">
-          <div className="label">Fee Harus Dibayar</div>
-          <div className="value green">{rupiah(stat.feeTotal)}</div>
-          <div className="sub">total kolom Fee pada log</div>
+          <div className="label">Fee harus dibayar</div>
+          <div className="value">{rupiah(stat.feeTotal)}</div>
+          <div className="sub">total kolom Fee pada log · Cancel = 0</div>
         </div>
-        <div className="card stat hi">
-          <div className="label">Anggaran Harus Disiapkan</div>
-          <div className="value navy">{rupiah(stat.anggaran)}</div>
+        <div className="card stat">
+          <div className="label">Anggaran harus disiapkan</div>
+          <div className="value">{rupiah(stat.anggaran)}</div>
           <div className="sub">harga × kebutuhan, seluruh katalog</div>
         </div>
-        <div className="card stat hi">
-          <div className="label">Sisa Anggaran</div>
+        <div className="card stat">
+          <div className="label">Sisa anggaran</div>
           <div className="value amber">{rupiah(stat.anggaranSisa)}</div>
           <div className="sub">harga × sisa yang belum diambil</div>
         </div>
       </div>
 
-      <div className="split" style={{ marginTop: 18 }}>
+      <div className="split">
         <div className="card card-p">
           <div className="section-head">
-            <h2>Progress per Platform</h2>
+            <h2>Progres per platform</h2>
             <span className="muted">soal selesai</span>
           </div>
           <Bars data={platBars} />
@@ -706,26 +851,36 @@ function Ringkasan({ stat, projects }) {
         </div>
         <div className="card card-p">
           <div className="section-head">
-            <h2>Fee per Status</h2>
+            <h2>Fee per status</h2>
             <span className="muted">nilai pekerjaan</span>
           </div>
-          <Bars data={statusBars} fmt={rupiah} color="linear-gradient(90deg,#34d399,#059669)" />
+          <Bars data={statusBars} fmt={rupiah} color="var(--good)" />
         </div>
       </div>
 
-      <div className="card card-p" style={{ marginTop: 18 }}>
+      <div className="card card-p">
         <div className="section-head">
-          <h2>10 Guru dengan Fee Terbesar</h2>
-          <span className="muted">seluruh periode</span>
+          <h2>10 guru dengan fee terbesar</h2>
+          <span className="muted">bulan ini</span>
         </div>
-        <Bars data={guruBars} fmt={rupiah} color="linear-gradient(90deg,#60a5fa,#2563eb)" />
+        <Bars data={guruBars} fmt={rupiah} />
       </div>
     </>
   );
 }
 
 /* =============================== FILTER =================================== */
-function Filters({ f, set, opts, reset, aktif, n }) {
+// Status dipajang sebagai chip (paling sering dipakai: "mana yang perlu
+// revisi?"), filter lain disimpan di "Filter lanjutan" supaya tidak memenuhi
+// layar — tapi otomatis terbuka bila ada yang sedang aktif, supaya tabel yang
+// tersaring tidak pernah terlihat "hilang" tanpa alasan.
+function Filters({ f, set, setF, opts, reset, aktif, n, stat, total }) {
+  const [lanjut, setLanjut] = useState(false);
+  const nLanjut = [f.from, f.to].filter(Boolean).length + ["platform", "guru", "pic", "subtes"].filter((k) => f[k] !== SEMUA).length;
+  const buka = lanjut || nLanjut > 0;
+  const statusAda = opts.status.filter((s) => stat.byStatus[s]?.n);
+  const kosong = stat.byStatus["(kosong)"]?.n || 0;
+
   const sel = (k, list, label) => (
     <label className="fl">
       <span>{label}</span>
@@ -737,81 +892,103 @@ function Filters({ f, set, opts, reset, aktif, n }) {
       </select>
     </label>
   );
+
   return (
-    <div className="card card-p filters">
-      <div className="fl-row">
-        <label className="fl grow">
-          <span>Cari</span>
-          <input className="input" placeholder="ID, guru, subtes, status, PIC…" value={f.q} onChange={set("q")} />
+    <div className="card card-p" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div className="filters" style={{ alignItems: "center" }}>
+        <label className="search sm" style={{ flex: 1, minWidth: 220 }}>
+          <Icon name="search" />
+          <input type="search" placeholder="Cari kode, guru, subtes, status, PIC" aria-label="Cari" value={f.q} onChange={set("q")} />
         </label>
-        <label className="fl">
-          <span>Tanggal dari</span>
-          <input className="input" type="date" value={f.from} onChange={set("from")} />
-        </label>
-        <label className="fl">
-          <span>sampai</span>
-          <input className="input" type="date" value={f.to} onChange={set("to")} />
-        </label>
+        <button type="button" className={"btn sm " + (buka ? "btn-blue" : "btn-ghost")} onClick={() => setLanjut((v) => !v)} aria-expanded={buka}>
+          <Icon name="filter" />
+          Filter lanjutan{nLanjut ? ` · ${nLanjut}` : ""}
+        </button>
+        <span className="muted">{numberID(n)} baris</span>
+        {aktif ? (
+          <button type="button" className="btn-link" onClick={reset}>
+            Hapus semua filter
+          </button>
+        ) : null}
       </div>
-      <div className="fl-row">
-        {sel("platform", opts.platform, "Platform")}
-        {sel("guru", opts.guru, "Guru")}
-        {sel("status", opts.status, "Status")}
-        {sel("pic", opts.pic, "PIC QC")}
-        {sel("subtes", opts.subtes, "Subtes")}
-        <div className="fl fl-end">
-          <span className="muted">{numberID(n)} baris</span>
-          {aktif ? (
-            <button className="btn btn-ghost sm" onClick={reset}>
-              ✕ Reset filter
+
+      <div className="chips" role="group" aria-label="Saring status">
+        <button type="button" className={"chip" + (f.status === SEMUA ? " active" : "")} aria-pressed={f.status === SEMUA} onClick={() => setF((p) => ({ ...p, status: SEMUA }))}>
+          Semua <span className="n">{numberID(total)}</span>
+        </button>
+        {statusAda.map((s) => (
+          <button key={s} type="button" className={"chip" + (f.status === s ? " active" : "")} aria-pressed={f.status === s} onClick={() => setF((p) => ({ ...p, status: s }))}>
+            {s} <span className="n">{numberID(stat.byStatus[s].n)}</span>
+          </button>
+        ))}
+        {kosong ? <span className="muted">· {numberID(kosong)} baris tanpa status</span> : null}
+      </div>
+
+      {buka ? (
+        <div className="filters">
+          <label className="fl">
+            <span>Tanggal dari</span>
+            <input className="input" type="date" value={f.from} onChange={set("from")} />
+          </label>
+          <label className="fl">
+            <span>sampai</span>
+            <input className="input" type="date" value={f.to} onChange={set("to")} />
+          </label>
+          {sel("platform", opts.platform, "Platform")}
+          {sel("guru", opts.guru, "Guru")}
+          {sel("pic", opts.pic, "PIC QC")}
+          {sel("subtes", opts.subtes, "Subtes")}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/* ====================== PANEL SAMPING TAMBAH/EDIT ========================= */
+function FormDrawer({ title, sub, children, onCancel, onSave, busy, saveLabel = "Simpan", bisaSimpan = true, ringkasan }) {
+  return (
+    <Drawer
+      title={title}
+      sub={sub}
+      onClose={onCancel}
+      busy={busy}
+      foot={
+        <>
+          {ringkasan}
+          <div className="drawer-actions">
+            <button type="button" className="btn btn-ghost" onClick={onCancel} disabled={busy}>
+              Batal
             </button>
-          ) : null}
-        </div>
-      </div>
-    </div>
+            <button type="button" className="btn btn-blue" onClick={onSave} disabled={busy || !bisaSimpan}>
+              {busy ? "Menyimpan…" : saveLabel}
+            </button>
+          </div>
+        </>
+      }
+    >
+      {children}
+    </Drawer>
   );
 }
 
-/* =========================== POPUP EDIT/TAMBAH ============================ */
-function Modal({ title, children, onCancel, onSave, busy, saveLabel = "Simpan", bisaSimpan = true }) {
-  useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && !busy && onCancel();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onCancel, busy]);
-
-  return (
-    <div className="overlay" onClick={() => !busy && onCancel()}>
-      <div className="modal wide" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-head">
-          <h2>{title}</h2>
-          <button className="icon-x" onClick={onCancel} disabled={busy} aria-label="Tutup">
-            ✕
-          </button>
-        </div>
-        <div className="modal-body">{children}</div>
-        <div className="modal-foot">
-          <button className="btn btn-ghost" onClick={onCancel} disabled={busy}>
-            Batal
-          </button>
-          <button className="btn btn-blue" onClick={onSave} disabled={busy || !bisaSimpan}>
-            {busy ? "Menyimpan…" : saveLabel}
-          </button>
-        </div>
-      </div>
+// Dengan `htmlFor` label berdiri sendiri — wajib untuk kotak pencarian, yang
+// berisi beberapa tombol (token) dan tidak boleh dibungkus <label>.
+const Field = ({ label, children, hint, wide, htmlFor, err }) =>
+  htmlFor ? (
+    <div className={"ffield" + (wide ? " wide" : "")}>
+      <label htmlFor={htmlFor}>{label}</label>
+      {children}
+      {hint ? <small className={err ? "cbx-hint err" : "cbx-hint"}>{hint}</small> : null}
     </div>
+  ) : (
+    <label className={"ffield" + (wide ? " wide" : "")}>
+      <span>{label}</span>
+      {children}
+      {hint ? <small>{hint}</small> : null}
+    </label>
   );
-}
 
-const Field = ({ label, children, hint, wide }) => (
-  <label className={"ffield" + (wide ? " wide" : "")}>
-    <span>{label}</span>
-    {children}
-    {hint ? <small>{hint}</small> : null}
-  </label>
-);
-
-function AssignmentModal({ mode, draft, onDraft, projects, teachers, opts, onSave, onCancel, busy, master }) {
+function AssignmentModal({ mode, draft, onDraft, projects, teachers, opts, onSave, onCancel, busy, master, namaBulan }) {
   const proj = projects.find((p) => p.id === draft.idProject);
   const picList = opts.picSemua || opts.pic || [];
   const bulan = /^(\d{4})-(\d{2})/.exec(draft.tanggal || "");
@@ -828,97 +1005,141 @@ function AssignmentModal({ mode, draft, onDraft, projects, teachers, opts, onSav
   const tarifDipakai = mode2 === "telat" ? parseNum(draft.tarif) : tarifNormal;
   // Sama dengan rumus sheet: pekerjaan batal tidak dibayar.
   const batal = isBatal(draft.status);
-  const fee = batal ? 0 : tarifDipakai * (parseInt(draft.jumlah, 10) || 0);
+  const jml = parseInt(draft.jumlah, 10) || 0;
+  const fee = batal ? 0 : tarifDipakai * jml;
 
   const pilihTarif = (v) => {
-    if (v === "normal") { onDraft("tarif", ""); onDraft("ketTarif", ""); }
-    else { onDraft("tarif", String(tarifTelat)); onDraft("ketTarif", "Terlambat"); }
+    if (v === "normal") {
+      onDraft("tarif", "");
+      onDraft("ketTarif", "");
+    } else {
+      onDraft("tarif", String(tarifTelat));
+      onDraft("ketTarif", "Terlambat");
+    }
   };
 
+  const opsiProyek = useMemo(
+    () =>
+      projects.map((p) => ({
+        value: p.id,
+        code: p.id,
+        label: p.subtes,
+        meta: `${p.output || "—"} · ${rupiah(p.harga)}/soal`,
+        side: p.sisa > 0 ? `sisa ${numberID(p.sisa)}` : "habis",
+        sideOff: p.sisa <= 0,
+        search: `${p.id} ${p.subtes} ${p.output} ${p.platform}`,
+      })),
+    [projects]
+  );
+  // Merah HANYA bila ketikan tidak cocok dengan proyek mana pun. Selama daftar
+  // saran masih menemukan sesuatu, admin sedang mencari — bukan salah isi.
+  // (Peringatan yang muncul saat orang masih mengetik membuat peringatan lain
+  // ikut diabaikan.) Kode yatim seperti P08-29 tetap tertangkap.
+  const ketik = norm(draft.idProject).toLowerCase().split(/\s+/).filter(Boolean);
+  const adaCocok = opsiProyek.some((o) => ketik.every((w) => o.search.toLowerCase().includes(w)));
+  const kodeAsing = ketik.length > 0 && !proj && !adaCocok;
+  const opsiGuru = useMemo(
+    () => teachers.map((t) => ({ value: t.nama, label: t.nama, meta: t.idGuru ? `ID ${t.idGuru}` : "", search: `${t.nama} ${t.idGuru}` })),
+    [teachers]
+  );
+  const opsiPic = useMemo(() => picList.map((p) => ({ value: p, label: p })), [picList]);
+
   return (
-    <Modal
-      title={mode === "create" ? "＋ Tambah Baris Log" : "✎ Edit Baris Log"}
+    <FormDrawer
+      title={mode === "create" ? "Tambah log pengambilan" : "Edit log pengambilan"}
+      sub={`${namaBulan ? namaBulan + " · " : ""}tersimpan langsung ke spreadsheet`}
       onCancel={onCancel}
       onSave={onSave}
       busy={busy}
+      saveLabel={mode === "create" ? "Simpan log" : "Simpan perubahan"}
+      ringkasan={
+        <div className={"fee-box" + (batal ? " batal" : "")}>
+          <span>
+            {batal
+              ? "Status Cancel — tidak dibayar, kuota kembali"
+              : `${numberID(jml)} soal × ${rupiah(tarifDipakai)}${mode2 === "telat" ? " (terlambat)" : ""}`}
+          </span>
+          <b>{rupiah(batal ? tarifDipakai * jml : fee)}</b>
+        </div>
+      }
     >
+      <Field
+        label="Proyek"
+        htmlFor="log-proyek"
+        err={kodeAsing}
+        hint={
+          proj
+            ? `${proj.subtes} · ${proj.output || "—"} · ${rupiah(proj.harga)}/soal · sisa ${numberID(proj.sisa)}`
+            : kodeAsing
+            ? "Tidak ada proyek dengan kode/nama ini di katalog bulan ini — Fee tidak akan terhitung sampai proyeknya dibuat."
+            : norm(draft.idProject)
+            ? "Pilih salah satu dari daftar."
+            : "Ketik kode atau nama subtes; daftar menyaring sendiri."
+        }
+      >
+        <Combobox
+          id="log-proyek"
+          icon="search"
+          value={draft.idProject}
+          onChange={(v) => onDraft("idProject", v)}
+          options={opsiProyek}
+          invalid={kodeAsing}
+          placeholder="mis. P09-04 atau matematika"
+        />
+      </Field>
+
       <div className="form-grid">
-        <Field label="Tanggal">
+        <Field label="Guru" htmlFor="log-guru" hint={draft.idGuru ? `ID guru ${draft.idGuru}` : "Pilih dari daftar agar ID guru terisi otomatis."}>
+          <Combobox id="log-guru" value={draft.guru} onChange={(v) => onDraft("guru", v)} options={opsiGuru} placeholder="Nama guru" />
+        </Field>
+        <Field label="Tanggal" hint={bulan ? `Bulan tercatat ${bulan[1]}-${bulan[2]}` : null}>
           <input className="input" type="date" value={draft.tanggal} onChange={(e) => onDraft("tanggal", e.target.value)} />
         </Field>
-        <Field
-          label="ID Project"
-          hint={
-            proj
-              ? `${proj.subtes} · ${proj.output || "—"} · harga ${rupiah(proj.harga)} · sisa ${numberID(proj.sisa)}`
-              : norm(draft.idProject)
-              ? "⚠ Kode ini tidak ada di katalog bulan ini — Fee tidak akan terhitung sampai proyeknya dibuat."
-              : "Ketik kode atau nama subtes; daftar menyaring sendiri sesuai ketikan."
-          }
-        >
-          {/* Sama seperti kolom Guru: bisa diketik bebas sekaligus memberi
-              saran. Daftar dropdown biasa tidak praktis untuk 90+ proyek. */}
+      </div>
+
+      <div className="ffield">
+        <span>Tarif per soal</span>
+        {adaTarifTelat ? (
+          <div className="seg" role="radiogroup" aria-label="Tarif per soal">
+            <button type="button" role="radio" aria-checked={mode2 === "normal"} className={"seg-btn" + (mode2 === "normal" ? " on" : "")} onClick={() => pilihTarif("normal")}>
+              <b>Normal</b>
+              <small>{rupiah(tarifNormal)}</small>
+            </button>
+            <button type="button" role="radio" aria-checked={mode2 === "telat"} className={"seg-btn" + (mode2 === "telat" ? " on" : "")} onClick={() => pilihTarif("telat")}>
+              <b>Terlambat</b>
+              <small>{rupiah(tarifTelat)}</small>
+            </button>
+          </div>
+        ) : (
+          // Tanpa dua tarif di master (atau proyeknya sudah dihapus), pilihan
+          // tidak berguna — beri isian angka supaya Fee tetap bisa dibetulkan.
           <input
-            className={"input" + (norm(draft.idProject) && !proj ? " input-err" : "")}
-            list="proyek-list"
-            value={draft.idProject}
-            onChange={(e) => onDraft("idProject", e.target.value)}
-            placeholder="mis. P08-14 atau Komparasi…"
+            className="input"
+            inputMode="numeric"
+            aria-label="Tarif khusus per soal"
+            value={draft.tarif || ""}
+            onChange={(e) => {
+              onDraft("tarif", e.target.value);
+              onDraft("ketTarif", e.target.value ? draft.ketTarif || "Tarif khusus" : "");
+            }}
+            placeholder={proj ? `kosong = pakai ${rupiah(tarifNormal)}` : kodeAsing ? "mis. 5000" : "pilih proyek dulu"}
+            disabled={!proj && !kodeAsing}
           />
-          <datalist id="proyek-list">
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.subtes} · {p.output || "—"} · sisa {numberID(p.sisa)}
-              </option>
-            ))}
-          </datalist>
-        </Field>
-        <Field label="Guru" hint="Pilih dari daftar agar ID Guru terisi otomatis">
-          <input className="input" list="guru-list" value={draft.guru} onChange={(e) => onDraft("guru", e.target.value)} placeholder="Nama guru" />
-          <datalist id="guru-list">
-            {teachers.map((t) => (
-              <option key={t.idGuru} value={t.nama} />
-            ))}
-          </datalist>
-        </Field>
-        <Field label="ID Guru">
-          <input className="input" value={draft.idGuru} onChange={(e) => onDraft("idGuru", e.target.value)} />
-        </Field>
-        <Field label="Subtes" wide>
-          <input className="input" value={draft.subtes} onChange={(e) => onDraft("subtes", e.target.value)} />
-        </Field>
+        )}
+        <small>
+          {adaTarifTelat
+            ? "Guru yang lewat deadline dibayar dengan tarif terlambat."
+            : proj
+            ? "Master belum punya tarif terlambat untuk subtes ini. Isi angka bila tarifnya berbeda, atau kosongkan untuk memakai harga proyek."
+            : kodeAsing
+            ? "Harga normal tidak terbaca karena proyeknya tidak ada di katalog — isi tarif manual agar Fee tetap terhitung."
+            : "Tarif mengikuti harga proyek yang dipilih."}
+        </small>
+      </div>
+
+      <div className="form-grid">
         <Field label="Jumlah soal">
-          <input className="input" type="number" min={0} value={draft.jumlah} onChange={(e) => onDraft("jumlah", e.target.value)} />
-        </Field>
-        <Field
-          label="Tarif per soal"
-          hint={
-            adaTarifTelat
-              ? "Guru yang lewat deadline dibayar dengan tarif terlambat."
-              : proj
-              ? "Master belum punya tarif terlambat untuk subtes ini. Isi angka bila tarifnya berbeda dari harga proyek, atau kosongkan untuk memakai harga proyek."
-              : "Proyek dengan kode ini sudah tidak ada di katalog, jadi harga normalnya tak bisa dibaca — isi tarifnya manual agar Fee tetap terhitung."
-          }
-        >
-          {adaTarifTelat ? (
-            <select className="select" value={mode2} onChange={(e) => pilihTarif(e.target.value)}>
-              <option value="normal">Normal — {rupiah(tarifNormal)}</option>
-              <option value="telat">Terlambat — {rupiah(tarifTelat)}</option>
-            </select>
-          ) : (
-            // Tanpa dua tarif di master (atau proyeknya sudah dihapus), dropdown
-            // tidak berguna — beri isian angka supaya Fee tetap bisa dibetulkan.
-            <input
-              className="input"
-              inputMode="numeric"
-              value={draft.tarif || ""}
-              onChange={(e) => {
-                onDraft("tarif", e.target.value);
-                onDraft("ketTarif", e.target.value ? draft.ketTarif || "Tarif khusus" : "");
-              }}
-              placeholder={proj ? `kosong = pakai ${rupiah(tarifNormal)}` : "mis. 5000"}
-            />
-          )}
+          <input className="input" type="number" inputMode="numeric" min={0} value={draft.jumlah} onChange={(e) => onDraft("jumlah", e.target.value)} />
         </Field>
         <Field label="Status">
           <select className="select" value={draft.status} onChange={(e) => onDraft("status", e.target.value)}>
@@ -928,39 +1149,27 @@ function AssignmentModal({ mode, draft, onDraft, projects, teachers, opts, onSav
             ))}
           </select>
         </Field>
-        {/* Sama seperti ID Project & Guru: ketik untuk menyaring, tapi nama
-            baru tetap boleh diketik bebas tanpa harus didaftarkan dulu. */}
-        <Field label="PIC QC Soal" hint={picList.length ? "Ketik untuk menyaring; nama baru boleh langsung diketik." : null}>
-          <input className="input" list="pic-list" value={draft.picSoal} onChange={(e) => onDraft("picSoal", e.target.value)} placeholder="mis. Uma" />
+        {/* Nama PIC baru boleh langsung diketik tanpa harus didaftarkan dulu. */}
+        <Field label="PIC QC soal" htmlFor="log-pic1">
+          <Combobox id="log-pic1" value={draft.picSoal} onChange={(v) => onDraft("picSoal", v)} options={opsiPic} placeholder="mis. Uma" />
         </Field>
-        <Field label="PIC QC Video" hint={picList.length ? "Daftar sama dengan PIC QC Soal." : null}>
-          <input className="input" list="pic-list" value={draft.picVideo} onChange={(e) => onDraft("picVideo", e.target.value)} placeholder="mis. Bilar" />
+        <Field label="PIC QC video" htmlFor="log-pic2">
+          <Combobox id="log-pic2" value={draft.picVideo} onChange={(v) => onDraft("picVideo", v)} options={opsiPic} placeholder="opsional" />
         </Field>
-        <datalist id="pic-list">
-          {picList.map((p) => (
-            <option key={p} value={p} />
-          ))}
-        </datalist>
       </div>
 
-      <div className="derived-box">
-        <b>🔒 Dihitung otomatis oleh spreadsheet</b>
-        <div>
-          <span>Fee</span>
-          <b>{rupiah(fee)}</b>
-          <small>
-            {batal
-              ? "Status Cancel — tidak dibayar, kuotanya kembali ke Sisa"
-              : `Jumlah × ${rupiah(tarifDipakai)}${mode2 === "telat" ? " (tarif terlambat)" : ""}`}
-          </small>
+      <details className="card card-p" style={{ padding: "10px 14px" }}>
+        <summary className="muted" style={{ cursor: "pointer", fontWeight: 700 }}>Isian lanjutan</summary>
+        <div className="form-grid" style={{ marginTop: 12 }}>
+          <Field label="ID guru" hint="Terisi otomatis saat guru dipilih dari daftar.">
+            <input className="input" value={draft.idGuru} onChange={(e) => onDraft("idGuru", e.target.value)} />
+          </Field>
+          <Field label="Subtes" hint="Terisi otomatis dari proyek.">
+            <input className="input" value={draft.subtes} onChange={(e) => onDraft("subtes", e.target.value)} />
+          </Field>
         </div>
-        <div>
-          <span>Bulan</span>
-          <b>{bulan ? `${bulan[1]}-${bulan[2]}` : "—"}</b>
-          <small>diambil dari Tanggal</small>
-        </div>
-      </div>
-    </Modal>
+      </details>
+    </FormDrawer>
   );
 }
 
@@ -969,80 +1178,102 @@ const hargaRawMaster = (m, output) =>
   ({ "Lengkap": m?.hargaLengkap, "Video Pembahasan": m?.hargaVideo, "Soal & Pembahasan": m?.hargaSoal, "Liveclass": m?.hargaLive }[output]) || "";
 // Harga di master bisa rentang tentatif -> form diisi batas BAWAH, rentangnya
 // ditampilkan sebagai petunjuk supaya admin sadar harganya belum pasti.
-const hargaMaster = (m, output) => { const h = parseHarga(hargaRawMaster(m, output)); return h.ada ? h.min : ""; };
+const hargaMaster = (m, output) => {
+  const h = parseHarga(hargaRawMaster(m, output));
+  return h.ada ? h.min : "";
+};
 
 // Sama seperti di "Proyek Bulan Baru": subtes selalu dipilih dari Master_Project
 // supaya tautan ID Subtes terisi dan harga/platform ikut terbawa.
-function ProjectModal({ mode, draft, onDraft, onPilih, onSave, onCancel, busy, master }) {
-  const [cari, setCari] = useState("");
+function ProjectModal({ mode, draft, onDraft, onPilih, onSave, onCancel, busy, master, namaBulan }) {
   const terpilih = master.find((m) => m.id === draft.idSubtes);
   const cekHarga = cekHargaBulanan(draft.harga);
   const rentangMaster = parseHarga(hargaRawMaster(terpilih, draft.output));
   const total = (cekHarga.ok ? cekHarga.nilai : 0) * (parseInt(draft.kebutuhan, 10) || 0);
-  const petunjukHarga = !cekHarga.ok && !cekHarga.kosong
-    ? cekHarga.pesan
-    : rentangMaster.tentatif
-    ? `Master menandai harga ini TENTATIF: ${formatHarga(hargaRawMaster(terpilih, draft.output))} — pilih satu angka untuk bulan ini`
-    : rentangMaster.ada
-    ? "Terisi dari master, boleh diubah untuk bulan ini"
-    : "Master belum punya harga untuk output ini — isi manual";
+  const petunjukHarga =
+    !cekHarga.ok && !cekHarga.kosong
+      ? cekHarga.pesan
+      : rentangMaster.tentatif
+      ? `Master punya dua tarif: ${formatHarga(hargaRawMaster(terpilih, draft.output))} — pilih satu angka untuk bulan ini`
+      : rentangMaster.ada
+      ? "Terisi dari master, boleh diubah untuk bulan ini"
+      : "Master belum punya harga untuk output ini — isi manual";
   const bolehSimpan = cekHarga.ok && Boolean(draft.idSubtes);
 
-  const hasil = useMemo(() => {
-    const s = cari.trim().toLowerCase();
-    if (!s) return [];
-    return master
-      .filter((m) => (m.status || "Aktif") !== "Arsip")
-      .filter((m) => `${m.id} ${m.subtes} ${m.kategori}`.toLowerCase().includes(s))
-      .slice(0, 8);
-  }, [master, cari]);
+  const opsiMaster = useMemo(
+    () =>
+      master
+        .filter((m) => (m.status || "Aktif") !== "Arsip")
+        .map((m) => ({
+          value: m.id,
+          code: m.id,
+          label: m.subtes,
+          meta: `${m.jenis || "—"} · ${m.kategori || "tanpa kategori"}`,
+          search: `${m.id} ${m.subtes} ${m.kategori} ${m.jenis} ${m.idLama}`,
+        })),
+    [master]
+  );
 
   return (
-    <Modal
-      title={mode === "create" ? "＋ Tambah Proyek ke Bulan Ini" : "✎ Edit Proyek"}
+    <FormDrawer
+      title={mode === "create" ? "Tambah proyek ke katalog" : "Edit proyek katalog"}
+      sub={`${namaBulan ? namaBulan + " · " : ""}subtes diambil dari master`}
       onCancel={onCancel}
       onSave={onSave}
       busy={busy}
       bisaSimpan={bolehSimpan}
+      saveLabel={mode === "create" ? "Tambah proyek" : "Simpan perubahan"}
+      ringkasan={
+        draft.idSubtes ? (
+          <div className="fee-box">
+            <span>
+              Anggaran · kode {draft.id || "otomatis"} · sisa dihitung sheet
+            </span>
+            <b>{rupiah(total)}</b>
+          </div>
+        ) : null
+      }
     >
       {!draft.idSubtes ? (
-        <>
-          <Field label="Cari subtes di Master" wide hint="Ketik nama subtes atau ID. Belum ada? Tambahkan dulu di menu Master Subtes.">
-            <input className="input" value={cari} onChange={(e) => setCari(e.target.value)} placeholder="mis. Figural Analogi / SOL-001" autoFocus />
-          </Field>
-          {hasil.length ? (
-            <div className="picker">
-              {hasil.map((m) => (
-                <button key={m.id} className="pick" onClick={() => { onPilih(m); setCari(""); }}>
-                  <b>{m.subtes}</b>
-                  <span className="muted xs2">{m.id} · {m.kategori || "tanpa kategori"}</span>
-                </button>
-              ))}
-            </div>
-          ) : cari.trim() ? (
-            <div className="muted" style={{ marginTop: 10 }}>Tidak ada yang cocok di master.</div>
-          ) : null}
-        </>
+        <Field label="Subtes dari master" htmlFor="kat-master" hint="Ketik nama, kategori, atau ID. Belum ada? Tambahkan dulu di Master subtes.">
+          <Combobox
+            id="kat-master"
+            icon="search"
+            value=""
+            allowFree={false}
+            onChange={(v) => onPilih(master.find((m) => m.id === v) || null)}
+            options={opsiMaster}
+            placeholder="mis. Figural Analogi / SOL-001"
+          />
+        </Field>
       ) : (
         <>
           <div className="picked">
             <div>
               <b>{terpilih?.subtes || draft.subtes}</b>
-              <div className="muted xs2">{draft.idSubtes}{terpilih?.kategori ? " · " + terpilih.kategori : ""}</div>
+              <div className="muted xs2">
+                <span className="mono">{draft.idSubtes}</span>
+                {terpilih?.jenis ? " · " + terpilih.jenis : ""}
+                {terpilih?.kategori ? " · " + terpilih.kategori : ""}
+              </div>
             </div>
             {mode === "create" ? (
-              <button className="btn btn-ghost xs" onClick={() => onPilih(null)}>Ganti subtes</button>
+              <button type="button" className="btn btn-ghost xs" onClick={() => onPilih(null)}>
+                Ganti
+              </button>
             ) : null}
           </div>
 
-          <div className="form-grid" style={{ marginTop: 14 }}>
+          <div className="form-grid">
             <Field label="Platform">
               <input className="input" value={draft.platform} onChange={(e) => onDraft("platform", e.target.value)} />
             </Field>
             <Field label="Output">
               <select className="select" value={draft.output} onChange={(e) => onDraft("output", e.target.value)}>
                 <option value="">— pilih —</option>
-                {OUTPUTS.map((o) => <option key={o}>{o}</option>)}
+                {OUTPUTS.map((o) => (
+                  <option key={o}>{o}</option>
+                ))}
               </select>
             </Field>
             <Field label="Harga per soal" hint={petunjukHarga}>
@@ -1057,53 +1288,35 @@ function ProjectModal({ mode, draft, onDraft, onPilih, onSave, onCancel, busy, m
                 inputMode="numeric"
               />
               {rentangMaster.tentatif ? (
-                <div className="quickpick">
+                <span className="quickpick">
                   <span className="muted xs2">Pakai cepat:</span>
-                  <button className="btn btn-ghost xs" onClick={() => onDraft("harga", String(rentangMaster.min))}>
+                  <button type="button" className="btn btn-ghost xs" onClick={() => onDraft("harga", String(rentangMaster.min))}>
                     {rupiah(rentangMaster.min)}
                   </button>
-                  <button className="btn btn-ghost xs" onClick={() => onDraft("harga", String(rentangMaster.max))}>
+                  <button type="button" className="btn btn-ghost xs" onClick={() => onDraft("harga", String(rentangMaster.max))}>
                     {rupiah(rentangMaster.max)}
                   </button>
-                </div>
+                </span>
               ) : null}
             </Field>
             <Field label="Kebutuhan (jumlah soal)">
-              <input className="input" type="number" min={0} value={draft.kebutuhan} onChange={(e) => onDraft("kebutuhan", e.target.value)} />
+              <input className="input" type="number" inputMode="numeric" min={0} value={draft.kebutuhan} onChange={(e) => onDraft("kebutuhan", e.target.value)} />
             </Field>
-          </div>
-
-          <div className="derived-box">
-            <b>🔒 Dibuat / dihitung otomatis</b>
-            <div>
-              <span>Kode</span>
-              <b>{draft.id || "otomatis"}</b>
-              <small>nomor urut bulan ini</small>
-            </div>
-            <div>
-              <span>Sisa</span>
-              <b>otomatis</b>
-              <small>Kebutuhan − yang sudah diambil</small>
-            </div>
-            <div>
-              <span>Anggaran</span>
-              <b>{rupiah(total)}</b>
-              <small>Harga × Kebutuhan</small>
-            </div>
           </div>
         </>
       )}
-    </Modal>
+    </FormDrawer>
   );
 }
 
 /* ========================= LOG PENGAMBILAN =============================== */
 const BLANK_A = { tanggal: "", idProject: "", guru: "", idGuru: "", subtes: "", jumlah: "", status: "", picSoal: "", picVideo: "", tarif: "", ketTarif: "" };
 
-function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, platformOf, master }) {
+function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, master, aksiEl, namaBulan }) {
   const [edit, setEdit] = useState(null); // { mode, row }
   const [draft, setDraft] = useState(BLANK_A);
   const [confirm, setConfirm] = useState(null);
+  const projById = useMemo(() => new Map(projects.map((p) => [p.id, p])), [projects]);
 
   const onDraft = (k, v) =>
     setDraft((d) => {
@@ -1128,41 +1341,44 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, p
     if (ok) setEdit(null);
   };
 
+  const hariIni = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+
   return (
     <>
-      <div className="section-head" style={{ marginTop: 18 }}>
-        
-        <div className="head-actions">
-          <span className="muted">
-            Fee tampil: <b>{rupiah(rows.reduce((a, x) => a + x.fee, 0))}</b> · total {rupiah(stat.feeTotal)}
-          </span>
-          <button
-            className="btn btn-blue sm"
-            disabled={readOnly || busy}
-            onClick={() => {
-              setDraft(BLANK_A);
-              setEdit({ mode: "create" });
-            }}
-          >
-            ＋ Tambah Baris
-          </button>
-        </div>
-      </div>
+      <PageActions el={aksiEl}>
+        <span className="muted">
+          Fee tampil <b>{rupiah(rows.reduce((a, x) => a + x.fee, 0))}</b>
+        </span>
+        <button
+          type="button"
+          className="btn btn-blue"
+          disabled={readOnly || busy}
+          onClick={() => {
+            setDraft({ ...BLANK_A, tanggal: hariIni() });
+            setEdit({ mode: "create" });
+          }}
+        >
+          <Icon name="plus" stroke={2.2} />
+          Tambah log
+        </button>
+      </PageActions>
 
       <div className="table-wrap fixed">
         <table className="grid-table">
-          <Cols widths={[9, 12, 14, 24, 6, 11, 11, 8, 5]} />
+          <Cols widths={[10, 10, 14, 25, 6, 11, 12, 7, 5]} />
           <thead>
             <tr>
               <th>Tanggal</th>
-              <th>ID Project</th>
+              <th>Proyek</th>
               <th>Guru</th>
               <th>Subtes</th>
               <th className="num">Jml</th>
-              <th className="num">Fee 🔒</th>
+              <th className="num">Fee</th>
               <th>Status</th>
-              <th>PIC QC</th>
-              <th className="act" />
+              <th>PIC</th>
+              <th className="act">
+                <span className="sr-only">Aksi</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -1173,67 +1389,73 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, p
                 </td>
               </tr>
             ) : null}
-            {rows.map((a) => (
-              <tr key={a.row} className={isBatal(a.status) ? "row-dim" : ""}>
-                <td>
-                  {tglID(a.tanggal) || "—"}
-                  {a.bulan ? <div className="muted xs2">{a.bulan}</div> : null}
-                </td>
-                <td>
-                  <span className="mono">{a.idProject || "—"}</span>
-                  {platformOf(a) ? <div className="muted xs2">{platformOf(a)}</div> : null}
-                  {/* Kode yang tidak ada di katalog -> Fee tidak bisa dihitung.
-                      Biasanya karena baris katalognya dihapus belakangan. */}
-                  {a.idProject && !projects.some((p) => p.id === a.idProject) ? (
-                    <div className="neg xs2" title="Baris katalog dengan kode ini sudah tidak ada, jadi Fee-nya tidak bisa dihitung">
-                      ⚠ proyek tak ditemukan
-                    </div>
-                  ) : null}
-                </td>
-                <td>
-                  {a.guru || "—"}
-                  {a.idGuru ? <div className="muted xs2">ID {a.idGuru}</div> : null}
-                </td>
-                <td className="wrap">{a.subtes || "—"}</td>
-                <td className="num">{a.jumlah ? numberID(a.jumlah) : "—"}</td>
-                <td className="num derived">
-                  {a.fee ? rupiah(a.fee) : "—"}
-                  {a.tarif ? (
-                    <div className="tentatif xs2" title={`Tarif khusus ${rupiah(a.tarif)}/soal — ${a.ketTarif || "di luar tarif normal"}`}>
-                      {a.ketTarif || "tarif khusus"}
-                    </div>
-                  ) : null}
-                </td>
-                <td>{statusPill(a.status)}</td>
-                <td className="xs2">
-                  {a.picSoal ? <div>📝 {a.picSoal}</div> : null}
-                  {a.picVideo ? <div>🎬 {a.picVideo}</div> : null}
-                  {!a.picSoal && !a.picVideo ? "—" : null}
-                </td>
-                <td className="act">
-                  <RowMenu
-                    disabled={readOnly || busy}
-                    onEdit={() => {
-                      setDraft({
-                        tanggal: a.tanggal,
-                        idProject: a.idProject,
-                        guru: a.guru,
-                        idGuru: a.idGuru,
-                        subtes: a.subtes,
-                        jumlah: a.jumlah || "",
-                        status: a.status,
-                        picSoal: a.picSoal,
-                        picVideo: a.picVideo,
-                        tarif: a.tarif || "",
-                        ketTarif: a.ketTarif || "",
-                      });
-                      setEdit({ mode: "edit", row: a.row });
-                    }}
-                    onDelete={() => setConfirm(a)}
-                  />
-                </td>
-              </tr>
-            ))}
+            {rows.map((a) => {
+              const p = projById.get(a.idProject);
+              return (
+                <tr key={a.row} className={isBatal(a.status) ? "row-dim" : ""}>
+                  <td>{tglID(a.tanggal) || "—"}</td>
+                  <td>
+                    <span className="code">
+                      <b>{a.idProject || "—"}</b>
+                      {p?.idSubtes ? <span>{p.idSubtes}</span> : null}
+                    </span>
+                    {/* Kode yang tidak ada di katalog -> Fee tidak bisa dihitung.
+                        Biasanya karena baris katalognya dihapus belakangan. */}
+                    {a.idProject && !p ? (
+                      <div className="neg xs2" title="Baris katalog dengan kode ini sudah tidak ada, jadi Fee-nya tidak bisa dihitung">
+                        proyek tak ditemukan
+                      </div>
+                    ) : null}
+                  </td>
+                  <td>
+                    <b style={{ fontWeight: 600 }}>{a.guru || "—"}</b>
+                    {a.idGuru ? <div className="muted xs2">ID {a.idGuru}</div> : null}
+                  </td>
+                  <td className="wrap">
+                    {a.subtes || "—"}
+                    {p?.output ? <div className="muted xs2">{p.output}</div> : null}
+                  </td>
+                  <td className="num">{a.jumlah ? numberID(a.jumlah) : "—"}</td>
+                  <td className="num">
+                    <b style={{ textDecoration: isBatal(a.status) ? "line-through" : "none" }}>{a.fee ? rupiah(a.fee) : "—"}</b>
+                    {a.tarif ? (
+                      <div className="tentatif xs2" title={`Tarif khusus ${rupiah(a.tarif)}/soal — ${a.ketTarif || "di luar tarif normal"}`}>
+                        {a.ketTarif || "tarif khusus"}
+                      </div>
+                    ) : null}
+                  </td>
+                  <td>{statusPill(a.status)}</td>
+                  <td className="xs2">
+                    {a.picSoal ? <div title="PIC QC soal">{a.picSoal}</div> : null}
+                    {a.picVideo ? <div className="muted" title="PIC QC video">{a.picVideo} · video</div> : null}
+                    {!a.picSoal && !a.picVideo ? "—" : null}
+                  </td>
+                  <td className="act">
+                    <RowMenu
+                      label={`${a.guru || a.idProject || "baris"}`}
+                      disabled={readOnly || busy}
+                      onEdit={() => {
+                        setDraft({
+                          tanggal: a.tanggal,
+                          idProject: a.idProject,
+                          guru: a.guru,
+                          idGuru: a.idGuru,
+                          subtes: a.subtes,
+                          jumlah: a.jumlah || "",
+                          status: a.status,
+                          picSoal: a.picSoal,
+                          picVideo: a.picVideo,
+                          tarif: a.tarif || "",
+                          ketTarif: a.ketTarif || "",
+                        });
+                        setEdit({ mode: "edit", row: a.row });
+                      }}
+                      onDelete={() => setConfirm(a)}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -1250,15 +1472,14 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, p
           onCancel={() => setEdit(null)}
           busy={busy}
           master={master}
+          namaBulan={namaBulan}
         />
       ) : null}
 
       {confirm ? (
         <ConfirmDelete
           title="Hapus baris log ini?"
-          detail={`${confirm.guru || "(tanpa guru)"} · ${confirm.subtes || confirm.idProject} · ${
-            confirm.jumlah || 0
-          } soal · ${rupiah(confirm.fee)}`}
+          detail={`${confirm.guru || "(tanpa guru)"} · ${confirm.subtes || confirm.idProject} · ${confirm.jumlah || 0} soal · ${rupiah(confirm.fee)}`}
           onCancel={() => setConfirm(null)}
           onOk={async () => {
             const ok = await run({ table: "assignments", action: "delete", row: confirm.row });
@@ -1274,15 +1495,17 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, p
 /* ============================== KATALOG ================================== */
 const BLANK_P = { id: "", idSubtes: "", platform: "", subtes: "", output: "", harga: "", kebutuhan: "" };
 
-function KatalogTable({ projects, run, busy, readOnly, master }) {
+function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan }) {
   const [edit, setEdit] = useState(null);
   const [draft, setDraft] = useState(BLANK_P);
   const [confirm, setConfirm] = useState(null);
   const [q, setQ] = useState("");
 
   const list = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    return s ? projects.filter((p) => `${p.id} ${p.platform} ${p.subtes} ${p.output}`.toLowerCase().includes(s)) : projects;
+    const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    return words.length
+      ? projects.filter((p) => words.every((w) => `${p.id} ${p.idSubtes} ${p.platform} ${p.subtes} ${p.output}`.toLowerCase().includes(w)))
+      : projects;
   }, [projects, q]);
 
   // Ganti output -> harga ikut default master (kalau ada), tapi tetap bisa diubah.
@@ -1322,59 +1545,75 @@ function KatalogTable({ projects, run, busy, readOnly, master }) {
 
   return (
     <>
-      <div className="section-head" style={{ marginTop: 18 }}>
-        
-        <div className="head-actions">
-          <input className="input sm" placeholder="Cari ID, platform, subtes…" value={q} onChange={(e) => setQ(e.target.value)} />
-          <button
-            className="btn btn-blue sm"
-            disabled={readOnly || busy}
-            onClick={() => {
-              setDraft(BLANK_P);
-              setEdit({ mode: "create" });
-            }}
-          >
-            ＋ Tambah Proyek
-          </button>
-        </div>
-      </div>
+      <PageActions el={aksiEl}>
+        <label className="search">
+          <Icon name="search" />
+          <input type="search" placeholder="Cari kode, subtes, platform" aria-label="Cari katalog" value={q} onChange={(e) => setQ(e.target.value)} />
+        </label>
+        <button
+          type="button"
+          className="btn btn-blue"
+          disabled={readOnly || busy}
+          onClick={() => {
+            setDraft(BLANK_P);
+            setEdit({ mode: "create" });
+          }}
+        >
+          <Icon name="plus" stroke={2.2} />
+          Tambah proyek
+        </button>
+      </PageActions>
 
       <div className="table-wrap fixed">
         <table className="grid-table">
-          <Cols widths={[12, 11, 29, 14, 10, 9, 8, 7]} />
+          <Cols widths={[10, 10, 28, 13, 10, 11, 11, 7]} />
           <thead>
             <tr>
-              <th>Kode Baris</th>
+              <th>Kode</th>
               <th>Platform</th>
               <th>Subtes</th>
               <th>Output</th>
               <th className="num">Harga</th>
               <th className="num">Kebutuhan</th>
-              <th className="num">Sisa 🔒</th>
-              <th className="act" />
+              <th className="num">Sisa</th>
+              <th className="act">
+                <span className="sr-only">Aksi</span>
+              </th>
             </tr>
           </thead>
           <tbody>
+            {list.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="empty">
+                  {projects.length ? "Tidak ada proyek yang cocok." : "Katalog bulan ini masih kosong."}
+                </td>
+              </tr>
+            ) : null}
             {list.map((p) => (
               <tr key={p.row} className={p.sisa <= 0 ? "row-dim" : ""}>
-                <td className="mono">
-                  {p.id}
-                  {/* tautan ke katalog permanen supaya kaitannya terlihat */}
-                  {p.idSubtes ? <div className="muted xs2">{p.idSubtes}</div> : null}
+                <td>
+                  <span className="code">
+                    <b>{p.id}</b>
+                    {/* tautan ke katalog permanen supaya kaitannya terlihat */}
+                    {p.idSubtes ? <span>{p.idSubtes}</span> : <span className="neg">tanpa master</span>}
+                  </span>
                 </td>
                 <td className="wrap">{p.platform || "—"}</td>
-                <td className="wrap">{p.subtes}</td>
+                <td className="wrap">
+                  <b style={{ fontWeight: 600, color: "var(--text)" }}>{p.subtes}</b>
+                </td>
                 <td className="wrap">{p.output || "—"}</td>
                 <td className="num">{rupiah(p.harga)}</td>
                 <td className="num">{numberID(p.kebutuhan)}</td>
-                <td className={"num derived" + (p.sisa < 0 ? " neg" : "")}>
-                  {numberID(p.sisa)}
+                <td className={"num" + (p.sisa < 0 ? " neg" : "")}>
+                  <b>{numberID(p.sisa)}</b>
                   {/* Halaman guru hanya menampilkan yang sisanya > 0. Ditandai di
                       sini supaya admin tidak bingung kenapa proyeknya tak muncul. */}
-                  {p.sisa <= 0 ? <div className="muted xs2">stok habis · tak tampil di /open</div> : null}
+                  {p.sisa <= 0 ? <div className="muted xs2">tak tampil di halaman guru</div> : null}
                 </td>
                 <td className="act">
                   <RowMenu
+                    label={p.id}
                     disabled={readOnly || busy}
                     onEdit={() => {
                       setDraft({
@@ -1407,14 +1646,15 @@ function KatalogTable({ projects, run, busy, readOnly, master }) {
           onCancel={() => setEdit(null)}
           busy={busy}
           master={master}
+          namaBulan={namaBulan}
         />
       ) : null}
 
       {confirm ? (
         <ConfirmDelete
-          title="Hapus proyek ini dari katalog?"
+          title="Hapus proyek dari katalog?"
           detail={`${confirm.id} · ${confirm.subtes} · kebutuhan ${numberID(confirm.kebutuhan)}`}
-          warn="Baris log yang memakai ID ini tidak ikut terhapus dan Fee-nya akan jadi 0 karena harga tidak lagi ditemukan."
+          warn="Baris log yang memakai kode ini tidak ikut terhapus, dan Fee-nya akan jadi 0 karena harganya tidak lagi ditemukan."
           onCancel={() => setConfirm(null)}
           onOk={async () => {
             const ok = await run({ table: "projects", action: "delete", row: confirm.row });
@@ -1428,66 +1668,67 @@ function KatalogTable({ projects, run, busy, readOnly, master }) {
 }
 
 /* ====================== PEMBAYARAN & KWITANSI ============================= */
-function Bayar({ groups, periode, doPrint, rows }) {
+function Bayar({ groups, periode, doPrint, rows, aksiEl }) {
   const total = groups.reduce((a, g) => a + g.total, 0);
   const tanpaRek = groups.filter((g) => !g.teacher?.rekening);
 
   return (
     <>
-      <div className="grid stat-grid" style={{ marginTop: 18 }}>
+      <PageActions el={aksiEl}>
+        <button type="button" className="btn btn-ghost" onClick={() => doPrint(groups, "summary")} disabled={!groups.length}>
+          <Icon name="printer" />
+          Cetak rekap
+        </button>
+        <button type="button" className="btn btn-blue" onClick={() => doPrint(groups, "each")} disabled={!groups.length}>
+          <Icon name="printer" />
+          Cetak semua kwitansi ({groups.length})
+        </button>
+      </PageActions>
+
+      <div className="grid stat-grid">
         <div className="card stat hi">
-          <div className="label">Total Dibayar (filter)</div>
-          <div className="value green">{rupiah(total)}</div>
-          <div className="sub">{periode}</div>
+          <div className="label">Total dibayar</div>
+          <div className="value">{rupiah(total)}</div>
+          <div className="sub">{periode} · tanpa status Cancel</div>
         </div>
         <div className="card stat">
-          <div className="label">Jumlah Guru</div>
-          <div className="value blue">{numberID(groups.length)}</div>
+          <div className="label">Jumlah guru</div>
+          <div className="value">{numberID(groups.length)}</div>
           <div className="sub">{numberID(rows.length)} baris log</div>
         </div>
         <div className="card stat">
-          <div className="label">Total Soal</div>
-          <div className="value navy">{numberID(groups.reduce((a, g) => a + g.soal, 0))}</div>
+          <div className="label">Total soal</div>
+          <div className="value">{numberID(groups.reduce((a, g) => a + g.soal, 0))}</div>
           <div className="sub">pada periode terpilih</div>
         </div>
         <div className="card stat">
-          <div className="label">Rekening Belum Ada</div>
+          <div className="label">Rekening belum ada</div>
           <div className={"value " + (tanpaRek.length ? "red" : "green")}>{numberID(tanpaRek.length)}</div>
           <div className="sub">guru perlu dilengkapi</div>
         </div>
       </div>
 
       {tanpaRek.length ? (
-        <div className="banner err" style={{ marginTop: 14 }}>
-          <span>⚠</span> Belum ada nomor rekening untuk:{" "}
-          <b>{tanpaRek.map((g) => g.teacher?.nama || g.guru).join(", ")}</b>. Lengkapi di sheet “Data guru freelance”
-          sebelum transfer.
+        <div className="banner err">
+          <Icon name="alert" />
+          <div>
+            Belum ada nomor rekening untuk <b>{tanpaRek.map((g) => g.teacher?.nama || g.guru).join(", ")}</b>. Lengkapi di
+            Database guru sebelum transfer.
+          </div>
         </div>
       ) : null}
 
-      <div className="section-head" style={{ marginTop: 18 }}>
-        <h2>Pembayaran per Guru</h2>
-        <div className="head-actions">
-          <button className="btn btn-ghost sm" onClick={() => doPrint(groups, "summary")} disabled={!groups.length}>
-            🖨 Cetak Rekap Semua
-          </button>
-          <button className="btn btn-blue sm" onClick={() => doPrint(groups, "each")} disabled={!groups.length}>
-            🖨 Cetak Semua Kwitansi ({groups.length})
-          </button>
-        </div>
-      </div>
-
       <div className="table-wrap fixed">
         <table className="grid-table">
-          <Cols widths={[26, 16, 18, 7, 8, 14, 11]} />
+          <Cols widths={[26, 17, 18, 7, 8, 13, 11]} />
           <thead>
             <tr>
               <th>Guru</th>
-              <th>Nomor Rekening</th>
-              <th>a.n.</th>
+              <th>Nomor rekening</th>
+              <th>Atas nama</th>
               <th className="num">Baris</th>
               <th className="num">Soal</th>
-              <th className="num">Total Fee</th>
+              <th className="num">Total fee</th>
               <th className="act">Kwitansi</th>
             </tr>
           </thead>
@@ -1502,10 +1743,10 @@ function Bayar({ groups, periode, doPrint, rows }) {
             {groups.map((g) => (
               <tr key={g.guru}>
                 <td className="wrap">
-                  <b>{g.teacher?.nama || g.guru}</b>
+                  <b style={{ color: "var(--text)" }}>{g.teacher?.nama || g.guru}</b>
                   {g.teacher?.nama && g.teacher.nama !== g.guru ? <div className="muted xs2">di log: {g.guru}</div> : null}
                 </td>
-                <td className="mono wrap">{g.teacher?.rekening || <span className="neg">— belum ada —</span>}</td>
+                <td className="mono wrap">{g.teacher?.rekening || <span className="neg">belum ada</span>}</td>
                 <td className="wrap">{g.teacher?.pemilikRekening || "—"}</td>
                 <td className="num">{numberID(g.items.length)}</td>
                 <td className="num">{numberID(g.soal)}</td>
@@ -1513,8 +1754,9 @@ function Bayar({ groups, periode, doPrint, rows }) {
                   <b>{rupiah(g.total)}</b>
                 </td>
                 <td className="act">
-                  <button className="btn btn-ghost xs" onClick={() => doPrint([g], "each")}>
-                    🖨 Cetak
+                  <button type="button" className="btn btn-ghost xs" onClick={() => doPrint([g], "each")}>
+                    <Icon name="printer" size={14} />
+                    Cetak
                   </button>
                 </td>
               </tr>
@@ -1524,7 +1766,7 @@ function Bayar({ groups, periode, doPrint, rows }) {
             <tfoot>
               <tr>
                 <td colSpan={5}>
-                  <b>TOTAL</b>
+                  <b>Total</b>
                 </td>
                 <td className="num">
                   <b>{rupiah(total)}</b>
@@ -1540,14 +1782,14 @@ function Bayar({ groups, periode, doPrint, rows }) {
 }
 
 /* ============================== AKSI BARIS =============================== */
-function RowMenu({ onEdit, onDelete, disabled }) {
+function RowMenu({ onEdit, onDelete, disabled, label = "baris" }) {
   return (
     <div className="rowmenu">
-      <button className="ibtn" onClick={onEdit} disabled={disabled} title="Edit">
-        ✎
+      <button type="button" className="ibtn" onClick={onEdit} disabled={disabled} aria-label={`Edit ${label}`} title="Edit">
+        <Icon name="edit" />
       </button>
-      <button className="ibtn danger" onClick={onDelete} disabled={disabled} title="Hapus">
-        🗑
+      <button type="button" className="ibtn danger" onClick={onDelete} disabled={disabled} aria-label={`Hapus ${label}`} title="Hapus">
+        <Icon name="trash" />
       </button>
     </div>
   );
@@ -1556,26 +1798,31 @@ function RowMenu({ onEdit, onDelete, disabled }) {
 /* ============================ KONFIRMASI ================================== */
 function ConfirmDelete({ title, detail, warn, onCancel, onOk, busy }) {
   return (
-    <div className="overlay" onClick={() => !busy && onCancel()}>
-      <div className="modal sm" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-head">
-          <h2>🗑 {title}</h2>
-        </div>
-        <div className="modal-body">
-          <p className="modal-sub">{detail}</p>
-          <p className="modal-sub">
-            Baris akan dihapus dari spreadsheet dan baris di bawahnya digeser naik. Tindakan ini tidak bisa dibatalkan
-            dari sini.
-          </p>
-          {warn ? <p className="modal-sub warn-text">⚠ {warn}</p> : null}
-          <button className="btn btn-red" style={{ width: "100%" }} onClick={onOk} disabled={busy}>
-            {busy ? "Menghapus…" : "Ya, hapus"}
-          </button>
-          <button className="btn btn-ghost" style={{ width: "100%", marginTop: 8 }} onClick={onCancel} disabled={busy}>
+    <Dialog
+      title={title}
+      onClose={onCancel}
+      busy={busy}
+      foot={
+        <>
+          <button type="button" className="btn btn-ghost" onClick={onCancel} disabled={busy}>
             Batal
           </button>
+          <button type="button" className="btn btn-red solid" onClick={onOk} disabled={busy}>
+            {busy ? "Menghapus…" : "Ya, hapus"}
+          </button>
+        </>
+      }
+    >
+      <p className="modal-sub">
+        <b style={{ color: "var(--text)" }}>{detail}</b>
+      </p>
+      <p className="modal-sub">Baris akan dihapus dari spreadsheet dan baris di bawahnya digeser naik. Tindakan ini tidak bisa dibatalkan dari sini.</p>
+      {warn ? (
+        <div className="banner sample" style={{ margin: 0 }}>
+          <Icon name="alert" />
+          <div>{warn}</div>
         </div>
-      </div>
-    </div>
+      ) : null}
+    </Dialog>
   );
 }

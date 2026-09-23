@@ -1,4 +1,6 @@
-export const metadata = { title: "Login Internal" };
+import Brand from "@/components/Brand";
+
+export const metadata = { title: "Masuk" };
 
 export default function Login({ searchParams }) {
   const error = searchParams?.error;
@@ -6,23 +8,22 @@ export default function Login({ searchParams }) {
   return (
     <div className="login-wrap">
       <form className="login-card" method="POST" action="/api/login">
-        <div className="brand" style={{ marginBottom: 18 }}>
-          <span className="brand-badge">C</span>
-          <span>Dashboard Internal</span>
+        <Brand size={38} />
+        <div>
+          <h1>Masuk dashboard admin</h1>
+          <p>Halaman ini berisi data honor dan rekening guru. Masukkan password tim.</p>
         </div>
-        <h1>Masuk area internal</h1>
-        <p>Halaman ini berisi data sensitif. Masukkan password tim.</p>
-        {error ? <div className="err">Password salah. Coba lagi.</div> : null}
+        {error ? (
+          <div className="banner err" role="alert" style={{ margin: 0 }}>
+            <div>Password salah. Coba lagi.</div>
+          </div>
+        ) : null}
         <input type="hidden" name="next" value={next} />
-        <input
-          className="input"
-          type="password"
-          name="password"
-          placeholder="Password internal"
-          autoFocus
-          required
-        />
-        <button className="btn btn-blue" style={{ width: "100%" }} type="submit">
+        <label className="ffield">
+          <span>Password internal</span>
+          <input className="input" type="password" name="password" autoComplete="current-password" autoFocus required />
+        </label>
+        <button className="btn btn-blue block" type="submit">
           Masuk
         </button>
       </form>
