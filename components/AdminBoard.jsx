@@ -448,6 +448,21 @@ export default function AdminBoard({ initial, brand = "Cerebrum" }) {
           </button>
         </div>
       ) : null}
+      {/* Tab yang mirip sheet bulanan tapi tidak dipakai. Tanpa ini sebuah
+          bulan bisa hilang dari pilihan tanpa penjelasan apa pun. */}
+      {(board.tabDiabaikan || []).length ? (
+        <div className="banner sample">
+          <span>🗂</span>
+          <div>
+            Ada tab yang tidak dibaca sebagai sheet bulanan:
+            <ul className="dup-list">
+              {board.tabDiabaikan.map((d) => (
+                <li key={d.tab}><b>{d.tab}</b> — {d.alasan}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ) : null}
 
       {tab === "ringkasan" && <Ringkasan stat={stat} projects={projects} />}
 
