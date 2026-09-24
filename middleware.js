@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { COOKIE, tokenFor, passwordConfigured } from "@/lib/auth";
+import { COOKIE, tokenFor, passwordConfigured, bolehTanpaPassword } from "@/lib/auth";
 
 // The write API lives under /api/admin and must be gated by the same cookie as
 // the pages — otherwise anyone could POST edits straight into the spreadsheet.
@@ -11,8 +11,20 @@ export async function middleware(req) {
   // Always allow the login page itself.
   if (pathname === "/admin/login") return NextResponse.next();
 
-  // If no password set, allow through (preview mode).
-  if (!passwordConfigured()) return NextResponse.next();
+  // Password belum diset: di lokal boleh lewat (pratinjau), di produksi TUTUP.
+  if (!passwordConfigured()) {
+    if (bolehTanpaPassword()) return NextResponse.next();
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json(
+        { error: "Area internal dikunci: INTERNAL_PASSWORD belum diset di server." },
+        { status: 503 }
+      );
+    }
+    const url = req.nextUrl.clone();
+    url.pathname = "/admin/login";
+    url.search = "?error=belum-diset";
+    return NextResponse.redirect(url);
+  }
 
   const cookie = req.cookies.get(COOKIE)?.value;
   const expected = await tokenFor(process.env.INTERNAL_PASSWORD);

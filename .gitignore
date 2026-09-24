@@ -3,8 +3,12 @@ node_modules
 .env
 .env*.local
 credentials*.json
-token*.json
+# kunci service account dalam nama apa pun yang biasa dipakai — satu `git add .`
+# pada nama tanpa "s" (credential.json) pernah hampir membocorkan kunci baru
+credential*.json
 service-account*.json
+*-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f].json
+token*.json
 *.pem
 *.p12
 *.key

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { COOKIE, tokenFor, passwordConfigured } from "@/lib/auth";
+import { COOKIE, tokenFor, passwordConfigured, bolehTanpaPassword } from "@/lib/auth";
 
 export async function POST(req) {
   const form = await req.formData();
@@ -8,7 +8,9 @@ export async function POST(req) {
   const origin = req.nextUrl.origin;
 
   if (!passwordConfigured()) {
-    return NextResponse.redirect(new URL(next, origin), { status: 303 });
+    // Di produksi jangan pernah "meloloskan" — dulu ini langsung ke /admin.
+    const tujuan = bolehTanpaPassword() ? next : "/admin/login?error=belum-diset";
+    return NextResponse.redirect(new URL(tujuan, origin), { status: 303 });
   }
   if (pw && pw === process.env.INTERNAL_PASSWORD) {
     const token = await tokenFor(pw);

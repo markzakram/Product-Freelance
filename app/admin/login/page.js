@@ -13,7 +13,14 @@ export default function Login({ searchParams }) {
           <h1>Masuk dashboard admin</h1>
           <p>Halaman ini berisi data honor dan rekening guru. Masukkan password tim.</p>
         </div>
-        {error ? (
+        {error === "belum-diset" ? (
+          <div className="banner err" role="alert" style={{ margin: 0 }}>
+            <div>
+              Area internal dikunci karena password server belum diset. Isi <b>INTERNAL_PASSWORD</b> di Environment
+              Variables Vercel, lalu deploy ulang.
+            </div>
+          </div>
+        ) : error ? (
           <div className="banner err" role="alert" style={{ margin: 0 }}>
             <div>Password salah. Coba lagi.</div>
           </div>
