@@ -551,6 +551,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
                 <NewMonthPanel
                   master={master.rows || []}
                   months={allMonths.months || []}
+                  semuaBulan={allMonths.semuaBulan || []}
                   readOnly={readOnly || !allMonths.canWrite}
                   busy={busy}
                   setBusy={setBusy}

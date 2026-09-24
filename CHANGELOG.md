@@ -12,6 +12,37 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 1.1.0 — Dashboard dimulai dari September (24 September 2026)
+
+Revisi dari manajer: data dibersihkan, master hanya berisi yang relevan, katalog
+September dilengkapi. "Dibersihkan" dijalankan sebagai **menyembunyikan & mengarsipkan**,
+bukan menghapus — Juni–Agustus memuat Rp23.319.000 fee yang sudah dibayar.
+
+### Juni–Agustus disembunyikan
+
+- Pemilih bulan, Analisis, halaman guru, saran PIC, dan fee per guru kini hanya memakai
+  **September** (daftar di `BULAN_DISEMBUNYIKAN`, `lib/juli.js`).
+- Sheet Juni–Agustus **tetap utuh** di spreadsheet sebagai arsip pembayaran.
+- Yang disaring hanya tampilan. Pengaman hapus master dan ganti jenis tetap memindai
+  semua bulan — kalau tidak, subtes yang hanya dipakai bulan lama bisa terhapus dan
+  tautan arsipnya putus.
+- "Proyek bulan baru" tetap tahu Juni–Agustus sudah ada, jadi tidak menawarkan membuatnya
+  ulang.
+
+### Master diarsipkan (perubahan data, langsung di spreadsheet)
+
+- 86 subtes yang tidak dipakai September diarsipkan; **15 tetap aktif** (Soal 12,
+  Liveclass 2, Laporan FR 1). Hanya kolom Status yang berubah — ID, nama, harga, dan
+  tautan bulan lama utuh. Subtes arsip bisa diaktifkan lagi dari Master subtes.
+- ID tetap mengikuti 4 jenis proyek (SOL / LAP / LIV / EDI) seperti di 1.0.0.
+
+### Tidak berubah
+
+- Katalog September (17 baris, 33 log, Rp8.050.000) dipertahankan untuk dilengkapi.
+- Kolom Kategori materi (Figural, Verbal, …) tetap.
+
+---
+
 ## 1.0.0 — Rilis bernomor pertama (24 September 2026)
 
 Titik awal pencatatan versi. Semua yang sudah berjalan di produksi dihitung sebagai 1.0.0.

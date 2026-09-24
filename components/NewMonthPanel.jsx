@@ -31,8 +31,10 @@ async function api(payload) {
   return j;
 }
 
-export default function NewMonthPanel({ master, months, readOnly, busy, setBusy, setErr, onDone }) {
-  const sudahAda = useMemo(() => new Set(months.map((m) => m.bulan)), [months]);
+export default function NewMonthPanel({ master, months, semuaBulan = [], readOnly, busy, setBusy, setErr, onDone }) {
+  // Termasuk bulan tersembunyi: sheet Juni–Agustus masih ada, jadi jangan
+  // ditawarkan untuk dibuat ulang.
+  const sudahAda = useMemo(() => new Set([...semuaBulan, ...months.map((m) => m.bulan)]), [months, semuaBulan]);
   const belumAda = BULAN.filter((b) => !sudahAda.has(b));
 
   const [mode, setMode] = useState(belumAda.length ? "baru" : "tambah");
