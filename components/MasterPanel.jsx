@@ -178,7 +178,7 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
         </label>
         <button
           type="button"
-          className="btn btn-blue"
+          className="btn btn-blue fab"
           disabled={readOnly || busy}
           onClick={() => {
             setDraft(BLANK);
@@ -268,7 +268,7 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
       </div>
 
       <div className="table-wrap fixed">
-        <table className="grid-table">
+        <table className="grid-table t-master">
           <colgroup>
             {/* kolom aksi lebar: baris Arsip punya tiga tombol (edit, aktifkan, hapus) */}
             {[10, 28, 14, 8, 11, 9, 9, 11].map((w, i) => (
@@ -299,18 +299,18 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
             ) : null}
             {list.map((r) => (
               <tr key={r.id} className={r.status === "Arsip" ? "row-dim" : ""}>
-                <td>
+                <td className="c-id" data-l="ID">
                   <span className="code">
                     <b>{r.id}</b>
                     <span>{r.jenis}</span>
                   </span>
                 </td>
-                <td className="wrap">
+                <td className="wrap c-subtes">
                   <b style={{ fontWeight: 600, color: "var(--text)" }}>{r.subtes}</b>
                   {r.catatan ? <div className="muted xs2">{r.catatan}</div> : null}
                 </td>
-                <td className="wrap">{r.kategori || <span className="neg">belum ada</span>}</td>
-                <td>
+                <td className="wrap c-kat" data-l="Kategori">{r.kategori || <span className="neg">belum ada</span>}</td>
+                <td className="c-status">
                   {r.status === "Arsip" ? (
                     <span className="pill batal" style={{ textDecoration: "none" }}>
                       Arsip
@@ -319,11 +319,11 @@ export default function MasterPanel({ rows, readOnly, onChanged, busy, setBusy, 
                     <span className="pill appr">Aktif</span>
                   )}
                 </td>
-                <td className="wrap">{r.platform || "—"}</td>
-                <td className="num">
+                <td className="wrap c-plat" data-l="Platform">{r.platform || "—"}</td>
+                <td className="num c-lengkap" data-l="Lengkap">
                   <HargaSel v={r.hargaLengkap} />
                 </td>
-                <td className="num">
+                <td className="num c-video" data-l="Video">
                   <HargaSel v={r.hargaVideo} />
                 </td>
                 <td className="act">

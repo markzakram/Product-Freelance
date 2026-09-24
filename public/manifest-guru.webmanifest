@@ -1,0 +1,17 @@
+{
+  "id": "/open",
+  "name": "Proyek Guru · Product Freelance",
+  "short_name": "Proyek Guru",
+  "description": "Katalog proyek soal untuk guru freelance: pilih proyek, atur jumlah soal, ajukan ke Admin Akademik.",
+  "lang": "id",
+  "start_url": "/open",
+  "scope": "/open",
+  "display": "standalone",
+  "background_color": "#F9FAFB",
+  "theme_color": "#FFFFFF",
+  "icons": [
+    { "src": "/icons/guru-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/guru-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/guru-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

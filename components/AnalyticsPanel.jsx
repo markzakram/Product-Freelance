@@ -173,15 +173,15 @@ export default function AnalyticsPanel({ data, master }) {
           <tbody>
             {perBulan.map((b) => (
               <tr key={b.bulan}>
-                <td><b>{b.bulan}</b></td>
-                <td className="num">{numberID(b.baris)}</td>
-                <td className="num">{numberID(b.keb)}</td>
-                <td className="num">{numberID(b.diambil)}</td>
-                <td className={"num" + (b.sisa < 0 ? " neg" : "")}>{numberID(b.sisa)}</td>
-                <td className="num">{rupiah(b.anggaran)}</td>
-                <td className="num">{rupiah(b.fee)}</td>
-                <td className="num">{numberID(b.guru)}</td>
-                <td className="num"><b>{b.serap}%</b></td>
+                <td className="c-title"><b>{b.bulan}</b></td>
+                <td className="num" data-l="Baris">{numberID(b.baris)}</td>
+                <td className="num" data-l="Kebutuhan">{numberID(b.keb)}</td>
+                <td className="num" data-l="Diambil">{numberID(b.diambil)}</td>
+                <td className={"num" + (b.sisa < 0 ? " neg" : "")} data-l="Sisa">{numberID(b.sisa)}</td>
+                <td className="num" data-l="Anggaran">{rupiah(b.anggaran)}</td>
+                <td className="num" data-l="Fee tercatat">{rupiah(b.fee)}</td>
+                <td className="num" data-l="Guru">{numberID(b.guru)}</td>
+                <td className="num" data-l="Serap"><b>{b.serap}%</b></td>
               </tr>
             ))}
           </tbody>
@@ -222,13 +222,13 @@ export default function AnalyticsPanel({ data, master }) {
             {perGuru.length === 0 ? <tr><td colSpan={7} className="empty">Belum ada data.</td></tr> : null}
             {perGuru.map((g) => (
               <tr key={g.guru}>
-                <td className="wrap"><b>{g.guru}</b></td>
-                <td className="num">{numberID(g.baris)}</td>
-                <td className="num">{numberID(g.soal)}</td>
-                <td className="num">{numberID(g.rata)}</td>
-                <td className="num">{g.bulan}</td>
-                <td className="num"><b>{rupiah(g.fee)}</b></td>
-                <td className="num">{tot.fee ? Math.round((g.fee / tot.fee) * 100) : 0}%</td>
+                <td className="wrap c-title"><b>{g.guru}</b></td>
+                <td className="num" data-l="Baris">{numberID(g.baris)}</td>
+                <td className="num" data-l="Soal">{numberID(g.soal)}</td>
+                <td className="num" data-l="Rata/baris">{numberID(g.rata)}</td>
+                <td className="num" data-l="Bulan aktif">{g.bulan}</td>
+                <td className="num" data-l="Total fee"><b>{rupiah(g.fee)}</b></td>
+                <td className="num" data-l="Share">{tot.fee ? Math.round((g.fee / tot.fee) * 100) : 0}%</td>
               </tr>
             ))}
           </tbody>
@@ -270,12 +270,12 @@ export default function AnalyticsPanel({ data, master }) {
               <tbody>
                 {overrun.map((c) => (
                   <tr key={c.tab + c.row}>
-                    <td>{c.bulan}</td>
-                    <td className="wrap">{namaOf(c.idSubtes, c.subtes)}</td>
-                    <td className="mono">{c.kode}</td>
-                    <td className="num">{numberID(c.kebutuhan)}</td>
-                    <td className="num neg">{numberID(c.sisa)}</td>
-                    <td className="num neg">{numberID(-c.sisa)}</td>
+                    <td data-l="Bulan">{c.bulan}</td>
+                    <td className="wrap c-title">{namaOf(c.idSubtes, c.subtes)}</td>
+                    <td className="mono" data-l="Kode baris">{c.kode}</td>
+                    <td className="num" data-l="Kebutuhan">{numberID(c.kebutuhan)}</td>
+                    <td className="num neg" data-l="Sisa">{numberID(c.sisa)}</td>
+                    <td className="num neg" data-l="Kelebihan">{numberID(-c.sisa)}</td>
                   </tr>
                 ))}
               </tbody>

@@ -157,22 +157,22 @@ export default function NewMonthPanel({ master, months, semuaBulan = [], readOnl
             ) : null}
             {lines.map((l, i) => (
               <tr key={l.key}>
-                <td className="wrap">
+                <td className="wrap c-title">
                   <b>{l.subtes}</b>
                   <div className="muted xs2">{l.idSubtes}{l.kategori ? " · " + l.kategori : ""}</div>
                 </td>
-                <td><input className="input xs" value={l.platform} onChange={(e) => ubah(i, "platform", e.target.value)} /></td>
-                <td>
+                <td data-l="Platform"><input className="input xs" value={l.platform} onChange={(e) => ubah(i, "platform", e.target.value)} /></td>
+                <td data-l="Output">
                   <select className="select xs" value={l.output} onChange={(e) => ubah(i, "output", e.target.value)}>
                     {OUTPUTS.map((o) => <option key={o}>{o}</option>)}
                   </select>
                 </td>
-                <td className="num">
+                <td className="num" data-l="Harga">
                   {/* teks, bukan number: input number membuang ketikan rentang jadi "" */}
                   <input className={"input xs" + (cekHargaBulanan(l.harga).ok || !String(l.harga).trim() ? "" : " input-err")} inputMode="numeric" value={l.harga} onChange={(e) => ubah(i, "harga", e.target.value)} title={cekHargaBulanan(l.harga).ok ? "" : cekHargaBulanan(l.harga).pesan} />
                 </td>
-                <td className="num"><input className="input xs" type="number" min={0} value={l.kebutuhan} onChange={(e) => ubah(i, "kebutuhan", e.target.value)} /></td>
-                <td className="num">{rupiah((parseInt(l.kebutuhan, 10) || 0) * (parseInt(l.harga, 10) || 0))}</td>
+                <td className="num" data-l="Kebutuhan"><input className="input xs" type="number" min={0} value={l.kebutuhan} onChange={(e) => ubah(i, "kebutuhan", e.target.value)} /></td>
+                <td className="num" data-l="Anggaran">{rupiah((parseInt(l.kebutuhan, 10) || 0) * (parseInt(l.harga, 10) || 0))}</td>
                 <td className="act">
                   <div className="rowmenu"><button type="button" className="ibtn danger" onClick={() => hapus(i)} aria-label={`Hapus baris ${l.subtes}`} title="Hapus baris"><Icon name="trash" /></button></div>
                 </td>
@@ -183,8 +183,8 @@ export default function NewMonthPanel({ master, months, semuaBulan = [], readOnl
             <tfoot>
               <tr>
                 <td colSpan={4}><b>Total</b></td>
-                <td className="num"><b>{numberID(totalSoal)}</b></td>
-                <td className="num"><b>{rupiah(totalRp)}</b></td>
+                <td className="num" data-l="Soal"><b>{numberID(totalSoal)}</b></td>
+                <td className="num" data-l="Anggaran"><b>{rupiah(totalRp)}</b></td>
                 <td />
               </tr>
             </tfoot>

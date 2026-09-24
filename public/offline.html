@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tidak ada koneksi · Product Freelance</title>
+<meta name="theme-color" content="#FFFFFF">
+<style>
+  :root{--bg:#F6F5FB;--surface:#FFFFFF;--border:#E6E3F0;--text:#16122B;--muted:#5E5874;--accent:#3B12C9;--weak:#F4F0FF}
+  @media (prefers-color-scheme:dark){:root{--bg:#0E0B1A;--surface:#16122B;--border:#2A2447;--text:#EEEBFA;--muted:#AAA3C6;--accent:#6B47FF;--weak:rgba(139,107,255,.14)}}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);display:grid;place-items:center;padding:24px;-webkit-font-smoothing:antialiased}
+  .card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:28px 24px;text-align:center}
+  .ico{width:56px;height:56px;margin:0 auto 14px;border-radius:16px;display:grid;place-items:center;background:var(--weak);color:var(--accent)}
+  h1{margin:0 0 6px;font-size:20px;letter-spacing:-.02em}
+  p{margin:0 0 20px;color:var(--muted);font-size:14px;line-height:1.55}
+  button{width:100%;min-height:46px;border:none;border-radius:12px;background:var(--accent);color:#fff;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+  small{display:block;margin-top:12px;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+  <main class="card">
+    <div class="ico" aria-hidden="true">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5a15 15 0 0 1 19 0"/><path d="M5.5 12a10.5 10.5 0 0 1 13 0"/><path d="M8.8 15.5a5.5 5.5 0 0 1 6.4 0"/><path d="M12 19.5h.01"/><path d="M3 3l18 18"/></svg>
+    </div>
+    <h1>Tidak ada koneksi</h1>
+    <p>Data proyek selalu diambil langsung dari spreadsheet, jadi aplikasi ini perlu internet. Periksa koneksi, lalu coba lagi.</p>
+    <button type="button" onclick="location.reload()">Coba lagi</button>
+    <small>Halaman akan terbuka sendiri begitu koneksi kembali.</small>
+  </main>
+  <script>window.addEventListener("online", function () { location.reload(); });</script>
+</body>
+</html>

@@ -103,7 +103,7 @@ export default function GuruPanel({ rows, feeByGuru, readOnly, busy, setBusy, se
         </label>
         <button
           type="button"
-          className="btn btn-blue"
+          className="btn btn-blue fab"
           disabled={readOnly || busy}
           onClick={() => {
             setDraft(BLANK);
@@ -196,16 +196,16 @@ export default function GuruPanel({ rows, feeByGuru, readOnly, busy, setBusy, se
             ) : null}
             {list.map((t) => (
               <tr key={t.row}>
-                <td className="mono">{t.idGuru}</td>
-                <td className="wrap">
+                <td className="mono" data-l="ID">{t.idGuru}</td>
+                <td className="wrap c-title">
                   <b style={{ fontWeight: 600, color: "var(--text)" }}>{t.nama}</b>
                   {t.bidang ? <div className="muted xs2">{t.bidang.slice(0, 60)}</div> : null}
                 </td>
-                <td className="wrap">{t.status || "—"}</td>
-                <td className="mono wrap">{t.rekening || <span className="neg">belum ada</span>}</td>
-                <td className="wrap">{t.pemilikRekening || "—"}</td>
-                <td className="mono">{t.wa || "—"}</td>
-                <td className="num">{feeByGuru.get(String(t.idGuru)) ? rupiah(feeByGuru.get(String(t.idGuru))) : "—"}</td>
+                <td className="wrap" data-l="Status">{t.status || "—"}</td>
+                <td className="mono wrap" data-l="Nomor rekening">{t.rekening || <span className="neg">belum ada</span>}</td>
+                <td className="wrap" data-l="Atas nama">{t.pemilikRekening || "—"}</td>
+                <td className="mono" data-l="WhatsApp">{t.wa || "—"}</td>
+                <td className="num" data-l="Fee tercatat">{feeByGuru.get(String(t.idGuru)) ? rupiah(feeByGuru.get(String(t.idGuru))) : "—"}</td>
                 <td className="act">
                   <div className="rowmenu">
                     <button

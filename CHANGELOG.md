@@ -12,6 +12,57 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 1.3.0 — Aplikasi HP: bisa dipasang ke layar utama (24 September 2026)
+
+Halaman guru dan dashboard admin kini bisa **dipasang di HP seperti aplikasi** (PWA):
+ikon sendiri di layar utama, terbuka layar penuh tanpa bilah alamat. Tidak lewat Play
+Store/App Store — satu kode yang sama, jadi tiap push ke master otomatis ter-update di HP.
+
+### Dua aplikasi terpisah
+
+- **Proyek Guru** (ikon putih, dari `/open`) dan **PF Admin** (ikon indigo, dari
+  `/admin`) punya manifest sendiri, jadi bisa sama-sama terpasang di satu HP tanpa
+  tertukar.
+- Android/Chrome: tombol **Pasang** memakai tawaran pasang bawaan browser. iPhone: tombol
+  yang sama membuka petunjuk "Bagikan → Tambah ke Layar Utama" (Safari tidak punya tombol
+  pasang otomatis).
+- Halaman guru di HP menampilkan kartu ajakan "Pasang Proyek Guru di HP" yang bisa
+  ditutup. Admin: menu **Pasang aplikasi** di sidebar / "Lainnya".
+- Tombol pasang tidak tampil bila aplikasi sudah terpasang atau browser tidak mendukung.
+
+### Tampilan admin di HP
+
+- Sidebar diganti **menu bawah**: Ringkasan · Katalog · Log · Bayar · **Lainnya**.
+  Master & Proyek bulan baru (sebulan sekali, biasanya di laptop) ada di Lainnya, yang
+  muncul sebagai lembar dari bawah.
+- Pemilih bulan pindah ke bilah atas, hanya di halaman yang memang per bulan.
+- Tombol tambah (log, proyek, subtes, guru) jadi **tombol mengambang** di atas menu bawah.
+- **Tabel jadi kartu**: Log (guru, status, fee sekilas), Katalog, dan Master punya kartu
+  rancangan khusus; tabel lain berubah jadi kartu berlabel.
+- Form tambah/edit layar penuh; konfirmasi jadi lembar dari bawah; angka ringkasan dua
+  kolom; chip status bisa digeser ke samping.
+- Isian 16px di layar sentuh supaya iPhone tidak memperbesar halaman saat mengetik.
+
+### Perilaku aplikasi
+
+- **Tidak ada data yang disimpan di HP.** Service worker (`public/sw.js`) hanya
+  menampilkan halaman "Tidak ada koneksi" saat offline; katalog, sisa kuota, dan fee selalu
+  diambil langsung dari spreadsheet — angka basi bisa membuat proyek yang sudah habis tetap
+  diajukan.
+- Aplikasi yang dibuka lagi setelah >1 menit di latar belakang mengambil ulang sisa kuota
+  (halaman guru) atau menyegarkan papan (admin).
+- Warna bilah status HP mengikuti tema terang/gelap yang dipilih di aplikasi.
+- Jarak aman untuk notch & garis beranda iPhone di bilah atas, menu bawah, dan bilah
+  pengajuan guru.
+
+### Teknis
+
+- Favicon pindah dari `app/icon.svg` ke `public/icon.svg` + metadata: ikon berbasis berkas
+  menimpa ikon iPhone (apple-touch-icon) yang diset di layout guru/admin.
+- Tampilan desktop tidak berubah.
+
+---
+
 ## 1.2.0 — Slicer saat memilih subtes dari master (24 September 2026)
 
 Saat menambah proyek ke **Katalog bulan ini**, subtes dulu dipilih dari satu kotak

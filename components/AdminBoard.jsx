@@ -30,6 +30,7 @@ import MasterPanel from "./MasterPanel";
 import NewMonthPanel from "./NewMonthPanel";
 import AnalyticsPanel from "./AnalyticsPanel";
 import GuruPanel from "./GuruPanel";
+import PasangApp from "./PasangApp";
 
 const STATUS_KNOWN = ["Running Soal", "QC Soal", "Revisi Soal", "Approved", "Running Video", STATUS_BATAL];
 const SEMUA = "Semua";
@@ -203,10 +204,15 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
     if (expired) return undefined;
     const id = setInterval(refresh, POLL_MS);
     const onFocus = () => refresh();
+    // Di HP (terutama aplikasi terpasang) kembali ke aplikasi jarang memicu
+    // "focus"; yang pasti terpicu adalah perubahan visibilitas.
+    const onVisible = () => document.visibilityState === "visible" && refresh();
     window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       clearInterval(id);
       window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [refresh, expired]);
 
@@ -392,13 +398,22 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
 
   const info = PAGE[tab] || {};
   const namaBulan = (board.months || []).find((m) => m.tab === board.tab)?.bulan || "";
+  const months = board.months || [];
+  const bulanTab = bulanAktif || board.tab || "";
+  // Pindah halaman selalu mulai dari atas — di HP halaman sebelumnya
+  // biasanya sudah tergulir jauh.
+  const pilihTab = (k) => {
+    setTab(k);
+    setNavOpen(false);
+    window.scrollTo(0, 0);
+  };
 
   return (
     <>
       <div className="admin-shell">
         <SideNav
           tab={tab}
-          setTab={setTab}
+          setTab={pilihTab}
           counts={{
             log: assignments.length,
             katalog: projects.length,
@@ -407,8 +422,8 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
           }}
           open={navOpen}
           setOpen={setNavOpen}
-          months={board.months || []}
-          bulanTab={bulanAktif || board.tab || ""}
+          months={months}
+          bulanTab={bulanTab}
           setBulan={setBulanAktif}
           kunciBulan={syncing || busy}
           syncedAt={syncedAt}
@@ -417,12 +432,24 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
         />
 
         <div className="admin-col">
+          {/* Layar sempit (HP/tablet): bilah atas + menu bawah menggantikan
+              sidebar. Pemilih bulan pindah ke sini karena paling sering
+              diganti, dan hanya tampil di halaman yang memang per bulan. */}
           <div className="mobile-bar">
-            <button type="button" className="navburger" onClick={() => setNavOpen(true)} aria-label="Buka menu">
-              <Icon name="menu" size={20} />
-            </button>
-            <Brand size={28} row />
-            <span style={{ width: 40 }} />
+            <Brand size={28} row versi={APP_VERSION} />
+            {PERBULAN.has(tab) && months.length ? (
+              <label className="mb-month">
+                <span className="sr-only">Bulan yang dikelola</span>
+                <select value={bulanTab} onChange={(e) => setBulanAktif(e.target.value)} disabled={syncing || busy}>
+                  {months.map((m) => (
+                    <option key={m.tab} value={m.tab}>
+                      {m.bulan}
+                    </option>
+                  ))}
+                </select>
+                <Icon name="chevronDown" />
+              </label>
+            ) : null}
           </div>
 
           <main className="admin-main">
@@ -603,6 +630,8 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
         </div>
       </div>
 
+      <TabBar tab={tab} pilihTab={pilihTab} bukaMenu={() => setNavOpen(true)} menuTerbuka={navOpen} />
+
       {print ? <PrintArea groups={print.groups} mode={print.mode} brand={brand} periode={periode} /> : null}
     </>
   );
@@ -649,6 +678,40 @@ NAV.forEach((g) =>
   })
 );
 
+// Menu bawah di HP: halaman yang dipakai sehari-hari. Master & Proyek bulan
+// baru (dikerjakan sebulan sekali, di laptop) ada di "Lainnya" bersama
+// Analisis dan Database guru.
+const TABBAR = [
+  { k: "ringkasan", label: "Ringkasan", ikon: "home" },
+  { k: "katalog", label: "Katalog", ikon: "layers" },
+  { k: "log", label: "Log", ikon: "clipboard" },
+  { k: "bayar", label: "Bayar", ikon: "wallet" },
+];
+
+function TabBar({ tab, pilihTab, bukaMenu, menuTerbuka }) {
+  const lainnya = !TABBAR.some((t) => t.k === tab);
+  return (
+    <nav className="tabbar" aria-label="Menu utama">
+      {TABBAR.map((t) => (
+        <button
+          key={t.k}
+          type="button"
+          className={"tb-item" + (tab === t.k && !menuTerbuka ? " active" : "")}
+          aria-current={tab === t.k ? "page" : undefined}
+          onClick={() => pilihTab(t.k)}
+        >
+          <Icon name={t.ikon} size={22} />
+          <span>{t.label}</span>
+        </button>
+      ))}
+      <button type="button" className={"tb-item" + (lainnya || menuTerbuka ? " active" : "")} onClick={bukaMenu} aria-expanded={menuTerbuka}>
+        <Icon name="menu" size={22} />
+        <span>Lainnya</span>
+      </button>
+    </nav>
+  );
+}
+
 function SideNav({ tab, setTab, counts, open, setOpen, months, bulanTab, setBulan, kunciBulan, syncedAt, syncing, refresh }) {
   return (
     <>
@@ -689,10 +752,7 @@ function SideNav({ tab, setTab, counts, open, setOpen, months, bulanTab, setBula
                   type="button"
                   className={"side-item" + (tab === it.k ? " active" : "")}
                   aria-current={tab === it.k ? "page" : undefined}
-                  onClick={() => {
-                    setTab(it.k);
-                    setOpen(false);
-                  }}
+                  onClick={() => setTab(it.k)}
                 >
                   {it.langkah ? <span className="si-step">{it.langkah}</span> : <Icon name={it.ikon} size={18} />}
                   <span className="si-label">{it.label}</span>
@@ -700,10 +760,13 @@ function SideNav({ tab, setTab, counts, open, setOpen, months, bulanTab, setBula
                 </button>
               ))}
               {g.grup === "Data pendukung" ? (
-                <a className="side-item" href="/open" target="_blank" rel="noopener noreferrer">
-                  <Icon name="external" size={18} />
-                  <span className="si-label">Halaman guru</span>
-                </a>
+                <>
+                  <a className="side-item" href="/open" target="_blank" rel="noopener noreferrer">
+                    <Icon name="external" size={18} />
+                    <span className="si-label">Halaman guru</span>
+                  </a>
+                  <PasangApp className="side-item" labelClass="si-label" iconSize={18} nama="dashboard admin" />
+                </>
               ) : null}
             </div>
           ))}
@@ -925,7 +988,7 @@ function Filters({ f, set, setF, opts, reset, aktif, n, stat, total }) {
         ) : null}
       </div>
 
-      <div className="chips" role="group" aria-label="Saring status">
+      <div className="chips geser" role="group" aria-label="Saring status">
         <button type="button" className={"chip" + (f.status === SEMUA ? " active" : "")} aria-pressed={f.status === SEMUA} onClick={() => setF((p) => ({ ...p, status: SEMUA }))}>
           Semua <span className="n">{numberID(total)}</span>
         </button>
@@ -1350,7 +1413,7 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, m
         </span>
         <button
           type="button"
-          className="btn btn-blue"
+          className="btn btn-blue fab"
           disabled={readOnly || busy}
           onClick={() => {
             setDraft({ ...BLANK_A, tanggal: hariIni() });
@@ -1363,7 +1426,7 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, m
       </PageActions>
 
       <div className="table-wrap fixed">
-        <table className="grid-table">
+        <table className="grid-table t-log">
           <Cols widths={[10, 10, 14, 25, 6, 11, 12, 7, 5]} />
           <thead>
             <tr>
@@ -1392,8 +1455,8 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, m
               const p = projById.get(a.idProject);
               return (
                 <tr key={a.row} className={isBatal(a.status) ? "row-dim" : ""}>
-                  <td>{tglID(a.tanggal) || "—"}</td>
-                  <td>
+                  <td className="c-tgl" data-l="Tanggal">{tglID(a.tanggal) || "—"}</td>
+                  <td className="c-proyek" data-l="Proyek">
                     <span className="code">
                       <b>{a.idProject || "—"}</b>
                       {p?.idSubtes ? <span>{p.idSubtes}</span> : null}
@@ -1406,16 +1469,16 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, m
                       </div>
                     ) : null}
                   </td>
-                  <td>
+                  <td className="c-guru">
                     <b style={{ fontWeight: 600 }}>{a.guru || "—"}</b>
                     {a.idGuru ? <div className="muted xs2">ID {a.idGuru}</div> : null}
                   </td>
-                  <td className="wrap">
+                  <td className="wrap c-subtes">
                     {a.subtes || "—"}
                     {p?.output ? <div className="muted xs2">{p.output}</div> : null}
                   </td>
-                  <td className="num">{a.jumlah ? numberID(a.jumlah) : "—"}</td>
-                  <td className="num">
+                  <td className="num c-jml" data-l="Jumlah">{a.jumlah ? numberID(a.jumlah) : "—"}</td>
+                  <td className="num c-fee" data-l="Fee">
                     <b style={{ textDecoration: isBatal(a.status) ? "line-through" : "none" }}>{a.fee ? rupiah(a.fee) : "—"}</b>
                     {a.tarif ? (
                       <div className="tentatif xs2" title={`Tarif khusus ${rupiah(a.tarif)}/soal — ${a.ketTarif || "di luar tarif normal"}`}>
@@ -1423,8 +1486,8 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, m
                       </div>
                     ) : null}
                   </td>
-                  <td>{statusPill(a.status)}</td>
-                  <td className="xs2">
+                  <td className="c-status">{statusPill(a.status)}</td>
+                  <td className="xs2 c-pic" data-l="PIC QC">
                     {a.picSoal ? <div title="PIC QC soal">{a.picSoal}</div> : null}
                     {a.picVideo ? <div className="muted" title="PIC QC video">{a.picVideo} · video</div> : null}
                     {!a.picSoal && !a.picVideo ? "—" : null}
@@ -1563,7 +1626,7 @@ function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan
         </label>
         <button
           type="button"
-          className="btn btn-blue"
+          className="btn btn-blue fab"
           disabled={readOnly || busy}
           onClick={() => {
             setDraft(BLANK_P);
@@ -1576,7 +1639,7 @@ function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan
       </PageActions>
 
       <div className="table-wrap fixed">
-        <table className="grid-table">
+        <table className="grid-table t-kat">
           <Cols widths={[10, 10, 28, 13, 10, 11, 11, 7]} />
           <thead>
             <tr>
@@ -1602,21 +1665,21 @@ function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan
             ) : null}
             {list.map((p) => (
               <tr key={p.row} className={p.sisa <= 0 ? "row-dim" : ""}>
-                <td>
+                <td className="c-kode" data-l="Kode">
                   <span className="code">
                     <b>{p.id}</b>
                     {/* tautan ke katalog permanen supaya kaitannya terlihat */}
                     {p.idSubtes ? <span>{p.idSubtes}</span> : <span className="neg">tanpa master</span>}
                   </span>
                 </td>
-                <td className="wrap">{p.platform || "—"}</td>
-                <td className="wrap">
+                <td className="wrap c-plat" data-l="Platform">{p.platform || "—"}</td>
+                <td className="wrap c-subtes">
                   <b style={{ fontWeight: 600, color: "var(--text)" }}>{p.subtes}</b>
                 </td>
-                <td className="wrap">{p.output || "—"}</td>
-                <td className="num">{rupiah(p.harga)}</td>
-                <td className="num">{numberID(p.kebutuhan)}</td>
-                <td className={"num" + (p.sisa < 0 ? " neg" : "")}>
+                <td className="wrap c-output" data-l="Output">{p.output || "—"}</td>
+                <td className="num c-harga" data-l="Harga">{rupiah(p.harga)}</td>
+                <td className="num c-keb" data-l="Kebutuhan">{numberID(p.kebutuhan)}</td>
+                <td className={"num c-sisa" + (p.sisa < 0 ? " neg" : "")} data-l="Sisa">
                   <b>{numberID(p.sisa)}</b>
                   {/* Halaman guru hanya menampilkan yang sisanya > 0. Ditandai di
                       sini supaya admin tidak bingung kenapa proyeknya tak muncul. */}
@@ -1753,15 +1816,15 @@ function Bayar({ groups, periode, doPrint, rows, aksiEl }) {
             ) : null}
             {groups.map((g) => (
               <tr key={g.guru}>
-                <td className="wrap">
+                <td className="wrap c-title">
                   <b style={{ color: "var(--text)" }}>{g.teacher?.nama || g.guru}</b>
                   {g.teacher?.nama && g.teacher.nama !== g.guru ? <div className="muted xs2">di log: {g.guru}</div> : null}
                 </td>
-                <td className="mono wrap">{g.teacher?.rekening || <span className="neg">belum ada</span>}</td>
-                <td className="wrap">{g.teacher?.pemilikRekening || "—"}</td>
-                <td className="num">{numberID(g.items.length)}</td>
-                <td className="num">{numberID(g.soal)}</td>
-                <td className="num">
+                <td className="mono wrap" data-l="Nomor rekening">{g.teacher?.rekening || <span className="neg">belum ada</span>}</td>
+                <td className="wrap" data-l="Atas nama">{g.teacher?.pemilikRekening || "—"}</td>
+                <td className="num" data-l="Baris">{numberID(g.items.length)}</td>
+                <td className="num" data-l="Soal">{numberID(g.soal)}</td>
+                <td className="num" data-l="Total fee">
                   <b>{rupiah(g.total)}</b>
                 </td>
                 <td className="act">

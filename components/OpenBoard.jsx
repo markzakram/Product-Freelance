@@ -9,6 +9,7 @@
 // ============================================================================
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { rupiah, numberID } from "@/lib/format";
 import Brand from "./Brand";
 import Icon from "./Icon";
@@ -16,6 +17,7 @@ import ThemeToggle from "./ThemeToggle";
 import DataBanner from "./DataBanner";
 import GuideModal from "./GuideModal";
 import CartView from "./CartView";
+import PasangApp from "./PasangApp";
 
 const clamp = (n, min, max) => (Number.isNaN(n) ? min : Math.max(min, Math.min(max, n)));
 const JENIS_URUT = ["Soal", "Liveclass", "Laporan FR", "Editor", "Lainnya"];
@@ -130,13 +132,28 @@ export default function OpenBoard({ projects, source, bulan, waNumber, panduan =
   // Panduan muncul di setiap kunjungan — supaya guru baru selalu membacanya.
   useEffect(() => setGuideOpen(true), []);
 
+  // Aplikasi terpasang di HP tidak dimuat ulang saat dibuka lagi — ia
+  // melanjutkan tampilan terakhir, bisa berjam-jam lalu. Setelah >1 menit di
+  // latar belakang, sisa kuota diambil ulang dari spreadsheet (pilihan guru
+  // tetap tersimpan).
+  const router = useRouter();
+  useEffect(() => {
+    let sejak = 0;
+    const onVis = () => {
+      if (document.visibilityState === "hidden") sejak = Date.now();
+      else if (sejak && Date.now() - sejak > 60000) router.refresh();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [router]);
+
   const setQty = (p, n) => setQtyMap((m) => ({ ...m, [p.id]: clamp(n, 0, p.sisa) }));
 
   const cart = useMemo(
     () =>
       projects
         .filter((p) => (qty[p.id] || 0) > 0)
-        .map((p) => ({ id: p.id, subtes: p.subtes, output: p.output, harga: p.harga, sisa: p.sisa, qty: qty[p.id] })),
+        .map((p) => ({ id: p.id, subtes: p.subtes, output: p.output, harga: p.harga, sisa: p.sisa, qty: Math.min(qty[p.id], p.sisa) })),
     [projects, qty]
   );
   const soalCart = cart.reduce((s, it) => s + it.qty, 0);
@@ -184,13 +201,14 @@ export default function OpenBoard({ projects, source, bulan, waNumber, panduan =
         <div className="in">
           <Brand size={30} row />
           <div className="pub-actions">
+            <PasangApp className="btn btn-ghost" labelClass="lbl" label="Pasang" nama="Proyek Guru" />
             <button type="button" className="btn btn-ghost" onClick={() => setGuideOpen(true)}>
               <Icon name="book" />
               <span className="lbl">Panduan</span>
             </button>
             <ThemeToggle className="sq" />
             {cart.length && view === "catalog" ? (
-              <button type="button" className="btn btn-blue" onClick={keCart}>
+              <button type="button" className="btn btn-blue ke-pengajuan" onClick={keCart}>
                 <Icon name="bag" />
                 <span className="lbl">Pengajuan</span>
                 <span className="badge">{cart.length}</span>
@@ -202,6 +220,7 @@ export default function OpenBoard({ projects, source, bulan, waNumber, panduan =
 
       <main className="pub-body">
         {source !== "live" ? <DataBanner source={source} /> : null}
+        {view === "catalog" ? <PasangApp variant="banner" nama="Proyek Guru" ikon="/icons/guru-192.png" /> : null}
 
         {view === "cart" ? (
           <CartView
