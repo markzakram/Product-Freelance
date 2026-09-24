@@ -24,6 +24,7 @@ import Combobox from "./Combobox";
 import ThemeToggle from "./ThemeToggle";
 import PageActions from "./PageActions";
 import DataBanner from "./DataBanner";
+import { APP_VERSION } from "@/lib/versi";
 import MasterPanel from "./MasterPanel";
 import NewMonthPanel from "./NewMonthPanel";
 import AnalyticsPanel from "./AnalyticsPanel";
@@ -643,7 +644,7 @@ function SideNav({ tab, setTab, counts, open, setOpen, months, bulanTab, setBula
       <nav className={"admin-side" + (open ? " open" : "")} aria-label="Menu admin">
         <div className="side-scroll">
           <div className="side-brand">
-            <Brand size={34} />
+            <Brand size={34} versi={APP_VERSION} sub="Divisi Produk" />
             <button type="button" className="icon-x side-close" onClick={() => setOpen(false)} aria-label="Tutup menu">
               <Icon name="x" />
             </button>

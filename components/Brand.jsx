@@ -16,14 +16,28 @@ export function LogoMark({ size = 32 }) {
   );
 }
 
-export default function Brand({ size = 34, row = false }) {
+// `versi` & `sub` dipakai di sidebar admin, meniru ProductTrack: nomor versi
+// kecil di samping nama supaya jelas build mana yang sedang terpasang, dan
+// nama divisi di bawahnya.
+export default function Brand({ size = 34, row = false, versi, sub }) {
+  const kata = (
+    <span className={"brand-word" + (row || sub ? " row" : "")}>
+      <b>Product</b>
+      <i>Freelance</i>
+      {versi ? <span className="brand-ver">v{versi}</span> : null}
+    </span>
+  );
   return (
     <span className="brand">
       <LogoMark size={size} />
-      <span className={"brand-word" + (row ? " row" : "")}>
-        <b>Product</b>
-        <i>Freelance</i>
-      </span>
+      {sub ? (
+        <span className="brand-stack">
+          {kata}
+          <span className="brand-sub">{sub}</span>
+        </span>
+      ) : (
+        kata
+      )}
     </span>
   );
 }

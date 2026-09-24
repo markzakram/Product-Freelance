@@ -71,6 +71,11 @@ button{font-family:inherit}
 .brand-word b{color:var(--accent-strong);font-weight:800}
 .brand-word i{color:var(--violet-text);font-style:normal}
 .brand-word.row{flex-direction:row;gap:5px;font-size:14px}
+/* versi & divisi di bawah logo (sidebar admin), meniru ProductTrack */
+.brand-stack{display:flex;flex-direction:column;gap:3px;min-width:0}
+.brand-stack .brand-word.row{font-size:15px;align-items:flex-start}
+.brand-ver{font-size:9.5px;font-weight:600;letter-spacing:0;color:var(--text-faint);margin-left:1px;line-height:1.4}
+.brand-sub{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);line-height:1}
 
 /* ---- tombol --------------------------------------------------------------- */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:10px 16px;border:1px solid transparent;border-radius:var(--r);font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;transition:background-color .15s,border-color .15s,color .15s,box-shadow .15s;white-space:nowrap}
