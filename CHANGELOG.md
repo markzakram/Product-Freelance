@@ -12,6 +12,31 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 1.2.0 — Slicer saat memilih subtes dari master (24 September 2026)
+
+Saat menambah proyek ke **Katalog bulan ini**, subtes dulu dipilih dari satu kotak
+pencarian — admin harus menebak kata kuncinya. Sekarang pemilihnya dilengkapi slicer.
+
+### Pemilih subtes baru (`components/MasterPicker.jsx`)
+
+- **Slicer Jenis / Kategori / Platform** dengan jumlah di tiap chip. Jumlahnya dihitung
+  terhadap slicer lain yang aktif (seperti slicer Excel), jadi chip yang tak akan
+  menghasilkan apa-apa ikut hilang dan admin tidak buntu.
+- **Daftar hasil selalu tampil** (bukan dropdown tersembunyi): kode, nama, jenis ·
+  kategori · platform, dan harga — nama yang mirip bisa dibandingkan sebelum memilih.
+- Pencarian menyorot huruf yang cocok; "Hapus filter" mengembalikan semuanya.
+- **Termasuk arsip**: subtes bulan-bulan lalu (diarsipkan di 1.1.0) tetap bisa dipakai
+  lagi. Subtes itu **diaktifkan kembali** di master — setelah proyeknya tersimpan,
+  supaya gagal mengaktifkan tidak menggagalkan proyek.
+- Panel samping melebar saat memilih, lalu kembali normal setelah subtes dipilih.
+
+### Juga di Proyek bulan baru
+
+- Pemilih yang sama menggantikan kotak pencarian lama; subtes yang sudah masuk daftar
+  anggaran diberi tanda "sudah ditambahkan".
+
+---
+
 ## 1.1.0 — Dashboard dimulai dari September (24 September 2026)
 
 Revisi dari manajer: data dibersihkan, master hanya berisi yang relevan, katalog

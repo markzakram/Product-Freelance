@@ -9,7 +9,7 @@
 import { useMemo, useState } from "react";
 import { rupiah, numberID, parseHarga, formatHarga, cekHargaBulanan } from "@/lib/format";
 import Icon from "./Icon";
-import Combobox from "./Combobox";
+import MasterPicker, { aktifkanKembali } from "./MasterPicker";
 
 const BULAN = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 const OUTPUTS = ["Lengkap", "Video Pembahasan", "Soal & Pembahasan", "Liveclass"];
@@ -42,18 +42,7 @@ export default function NewMonthPanel({ master, months, semuaBulan = [], readOnl
   const [tabTarget, setTabTarget] = useState(months.length ? months[months.length - 1].tab : "");
   const [lines, setLines] = useState([]);
 
-  const aktif = useMemo(() => master.filter((m) => (m.status || "Aktif") !== "Arsip"), [master]);
-  const opsiMaster = useMemo(
-    () =>
-      aktif.map((m) => ({
-        value: m.id,
-        code: m.id,
-        label: m.subtes,
-        meta: `${m.jenis || "—"} · ${m.kategori || "tanpa kategori"} · ${m.output || "—"}`,
-        search: `${m.id} ${m.subtes} ${m.kategori} ${m.jenis} ${m.idLama}`,
-      })),
-    [aktif]
-  );
+
 
   const tambah = (m) => {
     const output = (m.output || "").split(",")[0].trim() || "Lengkap";
@@ -91,6 +80,9 @@ export default function NewMonthPanel({ master, months, semuaBulan = [], readOnl
       }));
       if (mode === "baru") await api({ action: "createMonth", bulan: bulanBaru, lines: payload });
       else await api({ action: "addLines", tab: tabTarget, lines: payload });
+      // Subtes arsip yang dianggarkan lagi diaktifkan kembali di master —
+      // setelah baris anggarannya tersimpan.
+      await aktifkanKembali(master.filter((m) => lines.some((l) => l.idSubtes === m.id)));
       setLines([]);
       await onDone();
     } catch (e) {
@@ -127,22 +119,10 @@ export default function NewMonthPanel({ master, months, semuaBulan = [], readOnl
               </select>
             </label>
           )}
-          <div className="fl grow">
-            <label htmlFor="nb-cari" style={{ fontSize: 12, fontWeight: 700, color: "var(--text-2)" }}>Tambah subtes dari master</label>
-            <Combobox
-              id="nb-cari"
-              icon="search"
-              value=""
-              allowFree={false}
-              onChange={(id) => {
-                const m = aktif.find((x) => x.id === id);
-                if (m) tambah(m);
-              }}
-              options={opsiMaster}
-              placeholder="ketik nama subtes, kategori, atau ID"
-              footNote="Pilih untuk menambah satu baris. Belum ada? Tambahkan dulu di Master subtes."
-            />
-          </div>
+        </div>
+        <div className="ffield">
+          <span>Tambah subtes dari master — klik untuk menambah satu baris anggaran</span>
+          <MasterPicker master={master} onPick={tambah} dipilih={lines.map((l) => l.idSubtes)} />
         </div>
       </div>
 

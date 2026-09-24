@@ -21,6 +21,7 @@ import Icon from "./Icon";
 import Brand from "./Brand";
 import Drawer, { Dialog } from "./Drawer";
 import Combobox from "./Combobox";
+import MasterPicker, { aktifkanKembali } from "./MasterPicker";
 import ThemeToggle from "./ThemeToggle";
 import PageActions from "./PageActions";
 import DataBanner from "./DataBanner";
@@ -528,7 +529,17 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
               />
             )}
             {tab === "katalog" && (
-              <KatalogTable projects={projects} run={run} busy={busy} readOnly={readOnly} master={master.rows || []} aksiEl={aksiEl} namaBulan={namaBulan} />
+              <KatalogTable
+                projects={projects}
+                run={run}
+                busy={busy}
+                readOnly={readOnly}
+                master={master.rows || []}
+                aksiEl={aksiEl}
+                namaBulan={namaBulan}
+                setErr={setErr}
+                onMasterChanged={refreshExtra}
+              />
             )}
 
             {tab === "master" &&
@@ -947,9 +958,10 @@ function Filters({ f, set, setF, opts, reset, aktif, n, stat, total }) {
 }
 
 /* ====================== PANEL SAMPING TAMBAH/EDIT ========================= */
-function FormDrawer({ title, sub, children, onCancel, onSave, busy, saveLabel = "Simpan", bisaSimpan = true, ringkasan }) {
+function FormDrawer({ title, sub, children, onCancel, onSave, busy, saveLabel = "Simpan", bisaSimpan = true, ringkasan, wide }) {
   return (
     <Drawer
+      wide={wide}
       title={title}
       sub={sub}
       onClose={onCancel}
@@ -1202,20 +1214,6 @@ function ProjectModal({ mode, draft, onDraft, onPilih, onSave, onCancel, busy, m
       : "Master belum punya harga untuk output ini — isi manual";
   const bolehSimpan = cekHarga.ok && Boolean(draft.idSubtes);
 
-  const opsiMaster = useMemo(
-    () =>
-      master
-        .filter((m) => (m.status || "Aktif") !== "Arsip")
-        .map((m) => ({
-          value: m.id,
-          code: m.id,
-          label: m.subtes,
-          meta: `${m.jenis || "—"} · ${m.kategori || "tanpa kategori"}`,
-          search: `${m.id} ${m.subtes} ${m.kategori} ${m.jenis} ${m.idLama}`,
-        })),
-    [master]
-  );
-
   return (
     <FormDrawer
       title={mode === "create" ? "Tambah proyek ke katalog" : "Edit proyek katalog"}
@@ -1224,6 +1222,7 @@ function ProjectModal({ mode, draft, onDraft, onPilih, onSave, onCancel, busy, m
       onSave={onSave}
       busy={busy}
       bisaSimpan={bolehSimpan}
+      wide={!draft.idSubtes}
       saveLabel={mode === "create" ? "Tambah proyek" : "Simpan perubahan"}
       ringkasan={
         draft.idSubtes ? (
@@ -1237,17 +1236,12 @@ function ProjectModal({ mode, draft, onDraft, onPilih, onSave, onCancel, busy, m
       }
     >
       {!draft.idSubtes ? (
-        <Field label="Subtes dari master" htmlFor="kat-master" hint="Ketik nama, kategori, atau ID. Belum ada? Tambahkan dulu di Master subtes.">
-          <Combobox
-            id="kat-master"
-            icon="search"
-            value=""
-            allowFree={false}
-            onChange={(v) => onPilih(master.find((m) => m.id === v) || null)}
-            options={opsiMaster}
-            placeholder="mis. Figural Analogi / SOL-001"
-          />
-        </Field>
+        <div className="ffield">
+          <span>Pilih subtes dari master</span>
+          {/* Slicer Jenis/Kategori/Platform + daftar yang selalu tampil: admin
+              tidak perlu menebak kata kunci untuk menemukan subtes. */}
+          <MasterPicker master={master} onPick={onPilih} autoFocus />
+        </div>
       ) : (
         <>
           <div className="picked">
@@ -1258,6 +1252,9 @@ function ProjectModal({ mode, draft, onDraft, onPilih, onSave, onCancel, busy, m
                 {terpilih?.jenis ? " · " + terpilih.jenis : ""}
                 {terpilih?.kategori ? " · " + terpilih.kategori : ""}
               </div>
+              {mode === "create" && terpilih?.status === "Arsip" ? (
+                <div className="xs2 warn-text">Subtes ini diarsipkan — akan diaktifkan kembali di master saat disimpan.</div>
+              ) : null}
             </div>
             {mode === "create" ? (
               <button type="button" className="btn btn-ghost xs" onClick={() => onPilih(null)}>
@@ -1497,7 +1494,7 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, m
 /* ============================== KATALOG ================================== */
 const BLANK_P = { id: "", idSubtes: "", platform: "", subtes: "", output: "", harga: "", kebutuhan: "" };
 
-function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan }) {
+function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan, setErr, onMasterChanged }) {
   const [edit, setEdit] = useState(null);
   const [draft, setDraft] = useState(BLANK_P);
   const [confirm, setConfirm] = useState(null);
@@ -1542,7 +1539,19 @@ function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan
         ? { table: "projects", action: "create", data: draft }
         : { table: "projects", action: "update", row: edit.row, data: draft }
     );
-    if (ok) setEdit(null);
+    if (!ok) return;
+    setEdit(null);
+    // Subtes arsip yang dipakai lagi diaktifkan kembali di master — SETELAH
+    // proyeknya tersimpan, supaya gagal mengaktifkan tidak menggagalkan proyek.
+    const m = master.find((x) => x.id === draft.idSubtes);
+    if (edit.mode === "create" && m?.status === "Arsip") {
+      try {
+        await aktifkanKembali([m]);
+        await onMasterChanged?.();
+      } catch (e) {
+        setErr?.(e.message);
+      }
+    }
   };
 
   return (
