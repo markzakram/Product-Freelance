@@ -120,7 +120,43 @@ function ProjectCard({ p, qty, setQty }) {
   );
 }
 
-export default function OpenBoard({ projects, source, bulan, waNumber, panduan = [], brand = "Cerebrum" }) {
+// Menu akun guru di header: siapa yang sedang masuk, ganti password, keluar.
+// <details> supaya tetap jalan tanpa state tambahan; tertutup sendiri saat
+// mengetuk di luar.
+function MenuAkun({ guru }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const tutup = (e) => ref.current && !ref.current.contains(e.target) && ref.current.removeAttribute("open");
+    document.addEventListener("click", tutup);
+    return () => document.removeEventListener("click", tutup);
+  }, []);
+  const inisial = (guru.nama || guru.email).trim().charAt(0).toUpperCase();
+  return (
+    <details className="akun-menu" ref={ref}>
+      <summary className="akun-btn" aria-label={`Akun ${guru.nama || guru.email}`}>
+        <span className="akun-av" aria-hidden="true">{inisial}</span>
+      </summary>
+      <div className="akun-pop" role="menu">
+        <div className="akun-siapa">
+          <b>{guru.nama || "Guru"}</b>
+          <span>{guru.email}</span>
+        </div>
+        <a href="/open/ganti-password" role="menuitem">
+          <Icon name="kunci" />
+          Ganti password
+        </a>
+        <form method="POST" action="/api/guru/keluar">
+          <button type="submit" role="menuitem">
+            <Icon name="logout" />
+            Keluar
+          </button>
+        </form>
+      </div>
+    </details>
+  );
+}
+
+export default function OpenBoard({ projects, source, bulan, waNumber, panduan = [], brand = "Cerebrum", guru = null, bisaMasuk = false, pesan = "" }) {
   const [q, setQ] = useState("");
   const [jenis, setJenis] = useState(SEMUA);
   const [output, setOutput] = useState(SEMUA);
@@ -207,6 +243,14 @@ export default function OpenBoard({ projects, source, bulan, waNumber, panduan =
               <span className="lbl">Panduan</span>
             </button>
             <ThemeToggle className="sq" />
+            {guru ? (
+              <MenuAkun guru={guru} />
+            ) : bisaMasuk ? (
+              <a className="btn btn-ghost" href="/open/masuk">
+                <Icon name="kunci" />
+                <span className="lbl">Masuk</span>
+              </a>
+            ) : null}
             {cart.length && view === "catalog" ? (
               <button type="button" className="btn btn-blue ke-pengajuan" onClick={keCart}>
                 <Icon name="bag" />
@@ -220,6 +264,12 @@ export default function OpenBoard({ projects, source, bulan, waNumber, panduan =
 
       <main className="pub-body">
         {source !== "live" ? <DataBanner source={source} /> : null}
+        {pesan ? (
+          <div className="banner live" role="status">
+            <Icon name="check" />
+            <div>{pesan}</div>
+          </div>
+        ) : null}
         {view === "catalog" ? <PasangApp variant="banner" nama="Proyek Guru" ikon="/icons/guru-192.png" /> : null}
 
         {view === "cart" ? (
@@ -234,6 +284,7 @@ export default function OpenBoard({ projects, source, bulan, waNumber, panduan =
             onBack={() => setView("catalog")}
             waNumber={waNumber}
             brand={brand}
+            guru={guru}
           />
         ) : (
           <>

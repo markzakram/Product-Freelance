@@ -1,5 +1,6 @@
 // API lintas bulan: data untuk Analisis + pembuatan proyek bulan baru.
 import { NextResponse } from "next/server";
+import { tolakBukanAdmin } from "@/lib/authServer";
 import { getAllMonths, createMonth, addLines } from "@/lib/months";
 import { canWrite } from "@/lib/gauth";
 
@@ -7,6 +8,8 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function GET() {
+  const bukan = await tolakBukanAdmin();
+  if (bukan) return bukan;
   const d = await getAllMonths();
   return NextResponse.json(
     { ...d, canWrite: d.source === "live" && canWrite() },
@@ -15,6 +18,8 @@ export async function GET() {
 }
 
 export async function POST(req) {
+  const bukan = await tolakBukanAdmin();
+  if (bukan) return bukan;
   if (!canWrite()) {
     return NextResponse.json({ error: "Mode baca-saja: butuh service account dengan akses Editor." }, { status: 403 });
   }

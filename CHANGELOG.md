@@ -12,6 +12,62 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 2.0.0 — Halaman depan, pendaftaran & login guru (26 September 2026)
+
+MAJOR karena cara guru masuk berubah: halaman proyek kini bisa dikunci dengan akun
+pribadi, dan alamat utama (`/`) bukan lagi langsung ke halaman proyek.
+
+### Halaman depan (`/`)
+
+- Pengenalan program guru freelance PT Cerebrum Edukanesia Nusantara (ringkasan dari
+  cerebrumcorp.id): angka perusahaan, jenis proyek (soal & pembahasan, video pembahasan,
+  live class, report FR & editor), alasan bergabung, empat langkah bergabung, berkas yang
+  perlu disiapkan, alur pengerjaan dari Panduan Proyek, dan FAQ.
+- Tombol **Daftar** menuju Google Form pendaftaran; **Masuk** untuk guru terverifikasi.
+- Papan "Proyek bulan ini" menampilkan jumlah proyek terbuka & soal tersedia langsung dari
+  sheet (disegarkan tiap 5 menit). Detail & harga proyek tetap hanya untuk guru yang login.
+
+### Pendaftaran & akun (admin → Data pendukung → Pendaftaran & akun)
+
+- Membaca jawaban form "Pendataan Guru Freelance PT.Cerebrum" (spreadsheet terpisah, hanya
+  dibaca). Status tiap pendaftar: Menunggu / Terverifikasi / Ditolak; satu kartu per email
+  (jawaban terbaru), lengkap dengan tautan CV, portofolio, dan video.
+- **Verifikasi & buat akun**: jawaban disalin ke "Data guru freelance" dengan ID guru baru
+  (kolom dicocokkan lewat judul; NIK, WA, rekening, NPWP ditulis sebagai teks), lalu akun
+  dibuat. **Tolak** bisa dibatalkan.
+- **Akun guru**: buat akun satuan atau sekaligus untuk semua guru ber-email, reset password,
+  nonaktifkan/aktifkan. Status: belum punya akun, tanpa email, belum ganti password, aktif,
+  terkunci, nonaktif.
+- Password sementara = 10 karakter acak (tanpa huruf yang mudah tertukar), tampil **sekali**
+  di panel kredensial dengan tombol "Kirim WhatsApp" berisi pesan siap kirim.
+- Saklar **Wajibkan login** untuk halaman proyek. Bawaannya terbuka (masa peralihan): akun
+  guru lama disiapkan dulu, baru dikunci.
+- Badge jumlah pendaftar baru di sidebar, titik merah di menu "Lainnya" (HP).
+
+### Login guru (`/open/masuk`)
+
+- Email + password; wajib membuat password sendiri saat pertama masuk dan setelah reset.
+- Password disimpan sebagai **hash scrypt bergaram** di tab baru **"Akun guru"** — tidak ada
+  password asli di spreadsheet. Pengaturan disimpan di tab **"Pengaturan"**. Keduanya
+  dibuat otomatis.
+- Sesi = cookie bertanda tangan HMAC (30 hari). Reset atau ganti password langsung
+  mematikan sesi lama di semua perangkat; akun nonaktif langsung keluar.
+- 5 kali salah → akun terkunci 15 menit. Pesan salah sama untuk email terdaftar maupun
+  tidak (tidak membocorkan siapa yang terdaftar).
+- Menu akun di header (ganti password, keluar); nama & WA terisi otomatis di pengajuan.
+- Admin yang sedang login tetap bisa membuka halaman guru tanpa akun guru.
+
+### Keamanan
+
+- Next.js 14.2.5 → **14.2.35**: menutup celah "authorization bypass" di middleware.
+- Setiap route API admin & halaman admin kini memeriksa sesi sendiri, tidak hanya lewat
+  middleware.
+- Env var baru **`GURU_SESSION_SECRET`** (acak, ≥32 karakter). Tanpa itu login guru tidak
+  aktif dan saklar "Wajibkan login" tidak bisa dinyalakan.
+- Keluar dari admin kini kembali ke halaman login admin, bukan ke halaman depan.
+
+---
+
 ## 1.3.0 — Aplikasi HP: bisa dipasang ke layar utama (24 September 2026)
 
 Halaman guru dan dashboard admin kini bisa **dipasang di HP seperti aplikasi** (PWA):

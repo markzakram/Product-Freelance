@@ -4,14 +4,12 @@ import { useState } from "react";
 import { rupiah, numberID } from "@/lib/format";
 import Icon from "./Icon";
 import { Dialog } from "./Drawer";
-
-const FORM_URL =
-  "https://docs.google.com/forms/d/e/1FAIpQLSdESBDdyAEaQfk7WllFk57qVb5_Kslm1zoi04wwL3OOLN1BJg/viewform";
+import { FORM_DAFTAR } from "@/lib/tautan";
 
 // Catatan: ID Project sengaja tetap ikut di pesan WhatsApp (walau tidak
 // ditampilkan di katalog). Ada beberapa submateri dengan NAMA SAMA pada proyek
 // berbeda, jadi tanpa ID admin tidak bisa memastikan baris mana yang dicatat.
-function buildWaMessage(cart, brand, nama, wa) {
+function buildWaMessage(cart, brand, nama, wa, email) {
   const lines = cart
     .map((it, i) => `${i + 1}. ${it.subtes} [${it.id}]\n   ${numberID(it.qty)} soal x ${rupiah(it.harga)} = ${rupiah(it.qty * it.harga)}`)
     .join("\n");
@@ -24,18 +22,21 @@ function buildWaMessage(cart, brand, nama, wa) {
     `Total fee: ${rupiah(fee)}`;
   if (nama) msg += `\n\nNama: ${nama}`;
   if (wa) msg += `\nWA: ${wa}`;
+  if (email) msg += `\nEmail akun: ${email}`;
   return msg;
 }
 
-export default function CartView({ cart = [], onQty, onRemove, onClear, onBack, waNumber, brand = "Cerebrum" }) {
-  const [nama, setNama] = useState("");
-  const [wa, setWa] = useState("");
+// `guru` = guru yang sedang login: nama & WA terisi dari Database guru, dan
+// langkah "belum terdaftar? isi form" dilewati — ia jelas sudah terdaftar.
+export default function CartView({ cart = [], onQty, onRemove, onClear, onBack, waNumber, brand = "Cerebrum", guru = null }) {
+  const [nama, setNama] = useState(guru?.nama || "");
+  const [wa, setWa] = useState(guru?.wa || "");
   const [showForm, setShowForm] = useState(false);
 
   const soal = cart.reduce((s, it) => s + it.qty, 0);
   const fee = cart.reduce((s, it) => s + it.qty * it.harga, 0);
   const base = waNumber ? `https://wa.me/${waNumber}` : "https://wa.me/";
-  const waHref = `${base}?text=${encodeURIComponent(buildWaMessage(cart, brand, nama, wa))}`;
+  const waHref = `${base}?text=${encodeURIComponent(buildWaMessage(cart, brand, nama, wa, guru?.email))}`;
   const lengkap = nama.trim() !== "" && wa.trim() !== "";
 
   return (
@@ -111,10 +112,17 @@ export default function CartView({ cart = [], onQty, onRemove, onClear, onBack, 
               <div className="sum-total"><span>Total fee</span><span>{rupiah(fee)}</span></div>
             </div>
 
-            <button type="button" className="btn btn-blue block" onClick={() => setShowForm(true)} disabled={!lengkap}>
-              <Icon name="send" />
-              Kirim pengajuan
-            </button>
+            {guru && lengkap ? (
+              <a className="btn btn-wa block" href={waHref} target="_blank" rel="noopener noreferrer">
+                <Icon name="send" />
+                Kirim pengajuan lewat WhatsApp
+              </a>
+            ) : (
+              <button type="button" className="btn btn-blue block" onClick={() => setShowForm(true)} disabled={!lengkap}>
+                <Icon name="send" />
+                Kirim pengajuan
+              </button>
+            )}
             {!lengkap ? <small className="muted" style={{ textAlign: "center" }}>Isi nama dan nomor WhatsApp dulu.</small> : null}
             <button type="button" className="btn-link" onClick={onClear}>Kosongkan pengajuan</button>
           </div>
@@ -127,7 +135,7 @@ export default function CartView({ cart = [], onQty, onRemove, onClear, onBack, 
             Belum terdaftar? Isi form pendataan dulu supaya kamu masuk database guru, dapat info proyek berikutnya, dan
             bisa dihubungi untuk pencairan fee.
           </p>
-          <a className="btn btn-ghost block" href={FORM_URL} target="_blank" rel="noopener noreferrer">
+          <a className="btn btn-ghost block" href={FORM_DAFTAR} target="_blank" rel="noopener noreferrer">
             <Icon name="file" />
             Isi form pendataan guru
           </a>

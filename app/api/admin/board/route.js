@@ -7,6 +7,7 @@
 // ============================================================================
 
 import { NextResponse } from "next/server";
+import { tolakBukanAdmin } from "@/lib/authServer";
 import {
   getBoard,
   createAssignment,
@@ -22,6 +23,8 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function GET(req) {
+  const bukan = await tolakBukanAdmin();
+  if (bukan) return bukan;
   const bulan = req.nextUrl.searchParams.get("bulan") || "";
   const board = await getBoard(bulan);
   const diag = board.source === "sample" ? await credsDiagnosis() : null;
@@ -54,6 +57,8 @@ const HANDLERS = {
 };
 
 export async function POST(req) {
+  const bukan = await tolakBukanAdmin();
+  if (bukan) return bukan;
   if (!canWrite()) {
     return NextResponse.json(
       { error: "Mode baca-saja: menyimpan butuh GOOGLE_SERVICE_ACCOUNT_JSON dengan akses Editor." },

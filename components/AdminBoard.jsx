@@ -31,6 +31,7 @@ import NewMonthPanel from "./NewMonthPanel";
 import AnalyticsPanel from "./AnalyticsPanel";
 import GuruPanel from "./GuruPanel";
 import PasangApp from "./PasangApp";
+import AksesPanel from "./AksesPanel";
 
 const STATUS_KNOWN = ["Running Soal", "QC Soal", "Revisi Soal", "Approved", "Running Video", STATUS_BATAL];
 const SEMUA = "Semua";
@@ -140,6 +141,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   const [master, setMaster] = useState({ rows: [] });
   const [allMonths, setAllMonths] = useState({ months: [], catalog: [], log: [] });
   const [guru, setGuru] = useState({ rows: [] });
+  const [akses, setAkses] = useState(null); // pendaftar & akun guru
   const [extraLoaded, setExtraLoaded] = useState(false);
 
   const { projects = [], assignments = [], teachers = [], source, canWrite, diag, sheetWritable, serviceAccount } = board;
@@ -169,15 +171,18 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   // setiap ada perubahan — supaya polling 45 detik tetap ringan.
   const refreshExtra = useCallback(async () => {
     try {
-      const [m, mo, gu] = await Promise.all([
+      const [m, mo, gu, ak] = await Promise.all([
         fetch("/api/admin/master", { cache: "no-store" }),
         fetch("/api/admin/months", { cache: "no-store" }),
         fetch("/api/admin/teachers", { cache: "no-store" }),
+        fetch("/api/admin/akun", { cache: "no-store" }),
       ]);
-      if (m.status === 401 || mo.status === 401 || gu.status === 401) return setExpired(true);
+      if ([m, mo, gu, ak].some((r) => r.status === 401)) return setExpired(true);
       if (m.ok) setMaster(await m.json());
       if (mo.ok) setAllMonths(await mo.json());
       if (gu.ok) setGuru(await gu.json());
+      if (ak.ok) setAkses(await ak.json());
+      else setErr("Gagal memuat pendaftaran & akun: " + ((await ak.json().catch(() => ({}))).error || "HTTP " + ak.status));
       setExtraLoaded(true);
     } catch (e) {
       setErr("Gagal memuat master/analisis: " + e.message);
@@ -400,6 +405,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   const namaBulan = (board.months || []).find((m) => m.tab === board.tab)?.bulan || "";
   const months = board.months || [];
   const bulanTab = bulanAktif || board.tab || "";
+  const pendaftarBaru = (akses?.pendaftar || []).filter((p) => p.status === "Menunggu").length;
   // Pindah halaman selalu mulai dari atas — di HP halaman sebelumnya
   // biasanya sudah tergulir jauh.
   const pilihTab = (k) => {
@@ -419,6 +425,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
             katalog: projects.length,
             master: master.rows?.length || 0,
             guru: (guru.rows || []).length || teachers.length,
+            pendaftar: pendaftarBaru || null,
           }}
           open={navOpen}
           setOpen={setNavOpen}
@@ -611,6 +618,21 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
               ))}
             {tab === "bayar" && <Bayar groups={groups} periode={periode} doPrint={doPrint} rows={rows} aksiEl={aksiEl} />}
 
+            {tab === "akses" &&
+              (extraLoaded ? (
+                <AksesPanel
+                  data={akses}
+                  busy={busy}
+                  setBusy={setBusy}
+                  setErr={setErr}
+                  onChanged={refreshExtra}
+                  aksiEl={aksiEl}
+                  keDatabaseGuru={() => pilihTab("guru")}
+                />
+              ) : (
+                <div className="card empty">Memuat pendaftaran & akun…</div>
+              ))}
+
             {tab === "guru" &&
               (extraLoaded ? (
                 <GuruPanel
@@ -630,7 +652,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
         </div>
       </div>
 
-      <TabBar tab={tab} pilihTab={pilihTab} bukaMenu={() => setNavOpen(true)} menuTerbuka={navOpen} />
+      <TabBar tab={tab} pilihTab={pilihTab} bukaMenu={() => setNavOpen(true)} menuTerbuka={navOpen} adaBaru={pendaftarBaru > 0} />
 
       {print ? <PrintArea groups={print.groups} mode={print.mode} brand={brand} periode={periode} /> : null}
     </>
@@ -662,7 +684,11 @@ const NAV = [
   },
   {
     grup: "Data pendukung",
-    item: [{ k: "guru", label: "Database guru", judul: "Database Guru", ikon: "users", hitung: "guru" }],
+    item: [
+      // hitungan = pendaftar yang menunggu verifikasi (kosong bila tidak ada)
+      { k: "akses", label: "Pendaftaran & akun", judul: "Pendaftaran & Akun Guru", ikon: "userCheck", hitung: "pendaftar" },
+      { k: "guru", label: "Database guru", judul: "Database Guru", ikon: "users", hitung: "guru" },
+    ],
   },
 ];
 const JUMLAH_LANGKAH = NAV[0].item.length;
@@ -688,7 +714,7 @@ const TABBAR = [
   { k: "bayar", label: "Bayar", ikon: "wallet" },
 ];
 
-function TabBar({ tab, pilihTab, bukaMenu, menuTerbuka }) {
+function TabBar({ tab, pilihTab, bukaMenu, menuTerbuka, adaBaru }) {
   const lainnya = !TABBAR.some((t) => t.k === tab);
   return (
     <nav className="tabbar" aria-label="Menu utama">
@@ -706,6 +732,7 @@ function TabBar({ tab, pilihTab, bukaMenu, menuTerbuka }) {
       ))}
       <button type="button" className={"tb-item" + (lainnya || menuTerbuka ? " active" : "")} onClick={bukaMenu} aria-expanded={menuTerbuka}>
         <Icon name="menu" size={22} />
+        {adaBaru ? <i className="tb-dot" aria-label="ada pendaftar baru" /> : null}
         <span>Lainnya</span>
       </button>
     </nav>
@@ -756,7 +783,9 @@ function SideNav({ tab, setTab, counts, open, setOpen, months, bulanTab, setBula
                 >
                   {it.langkah ? <span className="si-step">{it.langkah}</span> : <Icon name={it.ikon} size={18} />}
                   <span className="si-label">{it.label}</span>
-                  {it.hitung && counts[it.hitung] != null ? <span className="si-count">{numberID(counts[it.hitung])}</span> : null}
+                  {it.hitung && counts[it.hitung] != null ? (
+                    <span className={"si-count" + (it.hitung === "pendaftar" ? " baru" : "")}>{numberID(counts[it.hitung])}</span>
+                  ) : null}
                 </button>
               ))}
               {g.grup === "Data pendukung" ? (

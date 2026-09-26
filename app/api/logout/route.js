@@ -11,7 +11,7 @@ import { COOKIE } from "@/lib/auth";
 // mengubah state — prefetcher, antivirus, dan pembuat preview link bebas
 // memanggil GET kapan saja.
 export async function POST(req) {
-  const res = NextResponse.redirect(new URL("/", req.nextUrl.origin), { status: 303 });
+  const res = NextResponse.redirect(new URL("/admin/login", req.nextUrl.origin), { status: 303 });
   res.cookies.set(COOKIE, "", { path: "/", maxAge: 0 });
   return res;
 }
