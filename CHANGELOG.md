@@ -12,6 +12,17 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 2.1.3 — Isian WA berisi beberapa nomor (28 September 2026)
+
+- Sebagian pendaftar menulis lebih dari satu nomor di kolom WhatsApp, mis.
+  "+66935396803/+6285867…". Dulu semua digitnya tergabung jadi satu nomor yang tidak ada,
+  sehingga tombol **Kirim WhatsApp** (panel kredensial akun) dan kolom **NO TELEPON** di rekap
+  fee salah. Sekarang dipakai **nomor pertama** (pemisah: / , ; baris baru, "atau").
+- Nomor luar negeri di rekap ditulis dengan "+" (mis. +66935396803); nomor Indonesia tetap
+  08….
+
+---
+
 ## 2.1.2 — Judul rekap fee dipersingkat (28 September 2026)
 
 - Judul rekap (Unduh Excel & Salin rekap) kini **"REKAP FEE PROYEK BULAN {BULAN} {TAHUN}"**,
