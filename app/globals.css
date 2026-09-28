@@ -1067,3 +1067,13 @@ html{scroll-behavior:smooth}
 .ps-centang{display:flex;flex-wrap:wrap;gap:6px}
 .ps-centang .chip{white-space:normal;text-align:left}
 .ps-simpan{min-height:46px}
+
+/* ---- v2.4.0: dua verifikasi (Data guru -> akses proyek) ------------------- */
+.langkah-verif{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px 4px;align-items:center;font-size:12px;font-weight:600;color:var(--text-faint)}
+.langkah-verif li{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border-soft)}
+.langkah-verif li+li::before{content:"";width:10px;height:1px;background:var(--border-strong);margin:0 2px 0 -8px}
+.langkah-verif li>span{width:18px;height:18px;border-radius:999px;display:grid;place-items:center;background:var(--surface-inset);font-size:10.5px;font-weight:800}
+.langkah-verif li.selesai{color:var(--good);border-color:color-mix(in srgb,var(--good) 30%,transparent);background:var(--good-weak)}
+.langkah-verif li.selesai>span{background:var(--good);color:#fff}
+.langkah-verif li.kini{color:var(--accent-strong);border-color:var(--accent-weak-bd);background:var(--accent-weak)}
+.langkah-verif li.kini>span{background:var(--accent);color:var(--on-accent)}

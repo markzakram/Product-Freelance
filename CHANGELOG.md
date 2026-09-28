@@ -12,6 +12,41 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 2.4.0 — Dua verifikasi: masuk Data guru, lalu akses proyek (28 September 2026)
+
+Verifikasi pendaftar kini dipecah dua. Sebelumnya satu tombol "Verifikasi & buat akun"
+sekaligus memasukkan ke Data guru DAN memberi akses halaman proyek.
+
+1. **Verifikasi 1 — Masuk Data guru**: jawaban form disalin ke "Data guru freelance" dengan
+   ID guru baru. Calon sudah tercatat di sistem, tapi **belum** bisa membuka halaman proyek.
+   Dilakukan dari panel Tinjau (atau langsung di kartu).
+2. **Sampel** (guru baru saja): QC per sesi seperti di 2.3.0, sekarang SETELAH masuk Data
+   guru. Guru lama langsung berstatus **Siap akses**.
+3. **Verifikasi 2 — Akses proyek**: dibuatkan akun (email + password acak via WhatsApp).
+   Untuk guru baru yang sampelnya belum lolos, admin harus mengonfirmasi dengan peringatan
+   jelas; pendaftar yang ditolak tidak bisa diberi akses sama sekali; guru yang sudah punya
+   akses diarahkan ke Reset password.
+
+- Status pendaftar: Menunggu → Tinjau → Sampel → Lolos sampel / Siap akses → **Punya
+  akses**, atau Ditolak. Tiap kartu menampilkan penanda langkah (Form · Data guru ·
+  Sampel · Akses proyek).
+- Tab Akun guru: tombol "Buat akun" kini bernama **Beri akses** (verifikasi 2 untuk guru yang
+  sudah ada di Data guru).
+- Pendaftar yang sudah sampai tahap sampel lewat alur 2.3.0 (sebelum masuk Data guru) tetap
+  tampil di tahapnya dan mendapat tombol Verifikasi 1.
+
+### Kuota Google Sheets
+
+Batas Google 60 pembacaan per menit dipakai bersama admin, halaman guru, dan halaman depan.
+Satu muat halaman admin sempat membaca Data guru, akun, dan seleksi berulang kali.
+
+- Pembacaan yang terkena batas kuota (HTTP 429) diulang otomatis setelah 1, 2, lalu 4 detik.
+- Cache singkat: Data guru & seleksi 10 detik, jawaban form 30 detik — permintaan yang
+  datang bersamaan menunggu pembacaan yang sama. Cache dikosongkan setiap kali data itu
+  ditulis, jadi setelah menyimpan data langsung terbaru.
+
+---
+
 ## 2.3.0 — Tahap sampel, Profil guru, Profil saya, dan logo asli (28 September 2026)
 
 ### Seleksi pendaftar dengan tahap Sampel (admin → Pendaftaran & akun)

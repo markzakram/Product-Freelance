@@ -17,10 +17,10 @@ import Drawer from "./Drawer";
 import Combobox from "./Combobox";
 import Icon from "./Icon";
 
-const perluSampel = (p) => !/lama/i.test(p.statusForm || "");
+const perluSampel = (p) => p.perluSampel ?? !/lama/i.test(p.statusForm || "");
 
 export const kelasTahap = (s) =>
-  ({ Terverifikasi: "appr", "Lolos sampel": "appr", Sampel: "run", Tinjau: "qc", Menunggu: "qc", Ditolak: "batal plain" })[s] || "qc";
+  ({ "Punya akses": "appr", "Lolos sampel": "appr", "Siap akses": "run", Sampel: "run", Tinjau: "qc", Menunggu: "qc", Ditolak: "batal plain" })[s] || "qc";
 export const kelasHasil = (h) => (h === "Lolos" ? "appr" : h === "Tidak lolos" ? "rev" : "qc");
 
 export function pesanMintaSampel(p) {
@@ -85,11 +85,10 @@ export function TinjauDrawer({ p, busy, onClose, onSimpan }) {
       busy={busy}
       foot={
         <>
-          {wajib ? (
-            <small className="muted">Guru baru wajib membuat sampel sebelum produksi penuh (Panduan Proyek).</small>
-          ) : (
-            <small className="muted">Guru lama — boleh diverifikasi langsung tanpa sampel.</small>
-          )}
+          <small className="muted">
+            Verifikasi 1 memasukkan pendaftar ke Data guru. Akses ke halaman proyek diberikan terpisah di verifikasi 2
+            {wajib ? " — setelah sampelnya lolos QC (guru baru wajib sampel, Panduan Proyek)." : " (guru lama, tanpa sampel)."}
+          </small>
           <div className="drawer-actions tinjau-aksi">
             <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => simpan("tolak")}>
               Tolak
@@ -97,14 +96,9 @@ export function TinjauDrawer({ p, busy, onClose, onSimpan }) {
             <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => simpan("simpan")}>
               Simpan catatan
             </button>
-            <button type="button" className={"btn " + (wajib ? "btn-ghost" : "btn-blue")} disabled={busy} onClick={() => simpan("verifikasi")}>
-              Verifikasi langsung
+            <button type="button" className="btn btn-blue" disabled={busy} onClick={() => simpan("verifikasi1")}>
+              Verifikasi 1 · Masukkan ke Data guru
             </button>
-            {wajib ? (
-              <button type="button" className="btn btn-blue" disabled={busy} onClick={() => simpan("sampel")}>
-                Lanjut ke sampel
-              </button>
-            ) : null}
           </div>
         </>
       }

@@ -23,9 +23,34 @@ import PageActions from "./PageActions";
 import ProfilGuru from "./ProfilGuru";
 import { TinjauDrawer, QcDrawer, TombolWaSeleksi, kelasTahap, kelasHasil } from "./SeleksiDrawer";
 
-// Tahap pendaftar, berurutan sesuai alur seleksi.
-const TAHAP_TAMPIL = ["Menunggu", "Tinjau", "Sampel", "Lolos sampel", "Terverifikasi", "Ditolak"];
+// Tahap pendaftar, berurutan sesuai alur: form -> tinjau -> VERIFIKASI 1
+// (masuk Data guru) -> sampel (guru baru) -> VERIFIKASI 2 (akses proyek).
+const TAHAP_TAMPIL = ["Menunggu", "Tinjau", "Sampel", "Lolos sampel", "Siap akses", "Punya akses", "Ditolak"];
+// Dihitung di badge sidebar. "Siap akses" tidak ikut: di situ juga ada guru
+// lama yang sudah bekerja sebelum sistem akun ada (diurus di tab Akun guru).
 export const DALAM_PROSES = new Set(["Menunggu", "Tinjau", "Sampel", "Lolos sampel"]);
+
+// Penanda langkah di kartu pendaftar.
+function Langkah({ p }) {
+  const diDb = Boolean(p.idGuru);
+  const langkah = [
+    ["Form", true],
+    ["Data guru", diDb],
+    ...(p.perluSampel ? [["Sampel", (p.seleksi?.qc || []).some((q) => q.hasil === "Lolos")]] : []),
+    ["Akses proyek", p.status === "Punya akses"],
+  ];
+  const aktif = langkah.findIndex(([, selesai]) => !selesai);
+  return (
+    <ol className="langkah-verif" aria-label="Langkah verifikasi">
+      {langkah.map(([l, selesai], i) => (
+        <li key={l} className={selesai ? "selesai" : i === aktif && p.status !== "Ditolak" ? "kini" : ""}>
+          <span>{selesai ? <Icon name="check" size={11} stroke={3} /> : i + 1}</span>
+          {l}
+        </li>
+      ))}
+    </ol>
+  );
+}
 
 const lower = (s) => String(s ?? "").toLowerCase();
 
@@ -163,6 +188,7 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
   const [tinjau, setTinjau] = useState(null); // pendaftar yang sedang ditinjau
   const [qc, setQc] = useState(null); // pendaftar yang sampelnya sedang di-QC
   const [profil, setProfil] = useState(""); // ID guru
+  const [info, setInfo] = useState(""); // pesan berhasil (verifikasi 1)
 
   const pendaftar = data?.pendaftar || [];
   const akunByEmail = useMemo(() => new Map((data?.akun || []).map((a) => [a.email, a])), [data]);
@@ -210,38 +236,72 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
     }
   };
 
-  const verifikasi = (p) =>
+  // VERIFIKASI 1 — masuk Data guru (belum bisa membuka halaman proyek).
+  const verifikasi1 = (p) =>
     setKonfirmasi({
-      judul: `Verifikasi ${p.nama || p.email}?`,
+      judul: `Verifikasi 1: masukkan ${p.nama || p.email} ke Data guru?`,
       isi: (
         <>
           <p className="modal-sub">
-            Jawaban form-nya disalin ke <b>Database guru</b> dengan ID guru baru, lalu dibuatkan akun dengan password acak. Setelah itu Anda
-            tinggal mengirim email & password-nya lewat WhatsApp.
+            Jawaban form-nya disalin ke <b>Data guru freelance</b> dengan ID guru baru. Ia <b>belum</b> bisa membuka halaman proyek — akses
+            diberikan di verifikasi 2{p.perluSampel ? ", setelah sampelnya lolos QC" : ""}.
           </p>
           <p className="modal-sub xs2">
-            {p.email} · {p.wa || "WA kosong"}
+            {p.email} · {p.wa || "WA kosong"} · {p.statusForm || "status form kosong"}
           </p>
         </>
       ),
-      tombol: "Verifikasi & buat akun",
+      tombol: "Masukkan ke Data guru",
       jalan: () =>
         jalankan(async () => {
-          const j = await kirim({ action: "verifikasi", email: p.email });
-          setKred({ daftar: j.kredensial, reset: false });
+          const j = await kirim({ action: "verifikasi1", email: p.email });
+          setInfo(
+            `${j.nama || p.nama} masuk Data guru dengan ID ${j.idGuru}. Langkah berikutnya: ` +
+              (j.tahap === "Sampel" ? "minta dan QC sampelnya, lalu verifikasi 2 (akses proyek)." : "verifikasi 2 — beri akses proyek.")
+          );
         }),
     });
 
+  // VERIFIKASI 2 — akses halaman proyek (buat akun). Guru baru tanpa sampel
+  // yang lolos boleh, tapi dengan peringatan jelas.
+  const verifikasi2 = (p) => {
+    const tanpaSampel = p.perluSampel && p.status !== "Lolos sampel";
+    setKonfirmasi({
+      judul: `Verifikasi 2: beri ${p.nama || p.email} akses ke halaman proyek?`,
+      isi: (
+        <>
+          <p className="modal-sub">Dibuatkan akun dengan password acak. Kirim email & password-nya lewat WhatsApp; saat pertama masuk ia wajib membuat password sendiri.</p>
+          {tanpaSampel ? (
+            <div className="banner sample" style={{ margin: 0 }}>
+              <Icon name="alert" />
+              <div>
+                <b>Sampel guru baru ini belum lolos QC.</b> Panduan Proyek mewajibkan sampel sebelum produksi penuh — lanjutkan hanya bila memang
+                disengaja.
+              </div>
+            </div>
+          ) : null}
+        </>
+      ),
+      tombol: tanpaSampel ? "Tetap beri akses" : "Beri akses proyek",
+      bahaya: tanpaSampel,
+      jalan: () =>
+        jalankan(async () => {
+          const j = await kirim({ action: "verifikasi2", email: p.email, paksa: tanpaSampel });
+          setKred({ daftar: j.kredensial, reset: false });
+        }),
+    });
+  };
+
   const buatAkun = (idGuru, n) =>
     setKonfirmasi({
-      judul: n > 1 ? `Buat akun untuk ${numberID(n)} guru?` : "Buat akun untuk guru ini?",
+      judul: n > 1 ? `Beri akses proyek ke ${numberID(n)} guru?` : "Beri akses proyek ke guru ini?",
       isi: (
         <p className="modal-sub">
           Setiap guru mendapat password acak yang wajib diganti saat pertama masuk.
           {n > 1 ? ` Siapkan waktu untuk mengirim ${numberID(n)} pesan WhatsApp — password hanya tampil sekali.` : ""}
         </p>
       ),
-      tombol: n > 1 ? `Buat ${numberID(n)} akun` : "Buat akun",
+      tombol: n > 1 ? `Buat ${numberID(n)} akun` : "Beri akses",
       jalan: () =>
         jalankan(async () => {
           const j = await kirim({ action: "buatAkun", idGuru });
@@ -329,7 +389,7 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
         {tampil === "akun" && bisaDibuat ? (
           <button type="button" className="btn btn-blue fab" disabled={kunciTulis} onClick={() => buatAkun("semua", bisaDibuat)}>
             <Icon name="plus" stroke={2.2} />
-            Buat akun untuk {numberID(bisaDibuat)} guru
+            Beri akses ke {numberID(bisaDibuat)} guru
           </button>
         ) : null}
       </PageActions>
@@ -374,6 +434,15 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
         </div>
       </div>
 
+      {info ? (
+        <div className="banner live" role="status">
+          <Icon name="check" />
+          <div>{info}</div>
+          <button type="button" className="btn-link" onClick={() => setInfo("")}>
+            tutup
+          </button>
+        </div>
+      ) : null}
       {!data.loginSiap ? (
         <div className="banner err">
           <Icon name="alert" />
@@ -451,6 +520,7 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
                       <small>{p.kapasitas ? `Kapasitas ${p.kapasitas}` : ""}</small>
                     </div>
                   </div>
+                  <Langkah p={p} />
                   {p.seleksi?.skor?.bidang || (p.seleksi?.qc || []).length ? (
                     <div className="daftar-seleksi">
                       {p.seleksi.skor?.bidang ? (
@@ -488,35 +558,46 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
                           <Icon name="file" />
                           {p.status === "Tinjau" ? "Lanjutkan tinjauan" : "Tinjau"}
                         </button>
-                      ) : p.status === "Sampel" ? (
+                      ) : null}
+                      {p.status === "Sampel" ? (
                         <>
                           <button type="button" className="btn btn-ghost sm" disabled={kunciTulis} onClick={() => tolak(p)}>
                             Tolak
                           </button>
-                          <button type="button" className="btn btn-blue sm" disabled={kunciTulis} onClick={() => setQc(p)}>
+                          <button type="button" className={"btn sm " + (p.idGuru ? "btn-blue" : "btn-ghost")} disabled={kunciTulis} onClick={() => setQc(p)}>
                             <Icon name="check" />
                             QC sampel sesi {(p.seleksi?.qc || []).length + 1}
                           </button>
                         </>
-                      ) : p.status === "Lolos sampel" ? (
-                        <>
-                          <button type="button" className="btn btn-ghost sm" disabled={kunciTulis} onClick={() => setQc(p)}>
-                            QC lagi
-                          </button>
-                          <button type="button" className="btn btn-blue sm" disabled={kunciTulis} onClick={() => verifikasi(p)}>
-                            <Icon name="userCheck" />
-                            Verifikasi & buat akun
-                          </button>
-                        </>
-                      ) : p.status === "Ditolak" ? (
+                      ) : null}
+                      {p.status === "Lolos sampel" || (p.status === "Siap akses" && p.perluSampel) ? (
+                        <button type="button" className="btn btn-ghost sm" disabled={kunciTulis} onClick={() => setQc(p)}>
+                          {p.status === "Lolos sampel" ? "QC lagi" : "QC sampel"}
+                        </button>
+                      ) : null}
+                      {/* alur lama: sampel sudah jalan tapi belum masuk Data guru */}
+                      {!p.idGuru && (p.status === "Sampel" || p.status === "Lolos sampel") ? (
+                        <button type="button" className="btn btn-blue sm" disabled={kunciTulis} onClick={() => verifikasi1(p)}>
+                          <Icon name="userCheck" />
+                          Verifikasi 1 · Masuk Data guru
+                        </button>
+                      ) : null}
+                      {p.idGuru && (p.status === "Lolos sampel" || p.status === "Siap akses") ? (
+                        <button type="button" className="btn btn-blue sm" disabled={kunciTulis} onClick={() => verifikasi2(p)}>
+                          <Icon name="kunci" />
+                          Verifikasi 2 · Beri akses proyek
+                        </button>
+                      ) : null}
+                      {p.status === "Ditolak" ? (
                         <button type="button" className="btn btn-ghost sm" disabled={kunciTulis} onClick={() => jalankan(() => kirim({ action: "batalTolak", email: p.email }))}>
                           Batalkan penolakan
                         </button>
-                      ) : (
-                        <button type="button" className="btn btn-ghost sm" disabled={!p.idGuru} onClick={() => setProfil(p.idGuru)}>
-                          Lihat profil · ID {p.idGuru}
+                      ) : null}
+                      {p.idGuru ? (
+                        <button type="button" className="btn btn-ghost sm" onClick={() => setProfil(p.idGuru)}>
+                          Profil · ID {p.idGuru}
                         </button>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 </article>
@@ -600,8 +681,8 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
                     <td className="act">
                       <div className="rowmenu">
                         {g.st.k === "belum" ? (
-                          <button type="button" className="btn btn-ghost xs" disabled={kunciTulis} onClick={() => buatAkun(g.idGuru, 1)}>
-                            Buat akun
+                          <button type="button" className="btn btn-ghost xs" disabled={kunciTulis} onClick={() => buatAkun(g.idGuru, 1)} title="Verifikasi 2: buat akun login">
+                            Beri akses
                           </button>
                         ) : g.st.k === "tanpaEmail" ? (
                           <button type="button" className="btn btn-ghost xs" onClick={keDatabaseGuru}>
@@ -662,7 +743,7 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
           onClose={() => setTinjau(null)}
           onSimpan={async ({ skor, catatan, keputusan }) => {
             const p = tinjau;
-            const tahap = { simpan: "Tinjau", sampel: "Sampel", tolak: "Ditolak", verifikasi: p.status === "Menunggu" ? "Tinjau" : p.status }[keputusan];
+            const tahap = { simpan: "Tinjau", tolak: "Ditolak", verifikasi1: "Tinjau" }[keputusan];
             let berhasil = false;
             await jalankan(async () => {
               await kirim({ action: "tinjau", email: p.email, nama: p.nama, skor, catatan, tahap });
@@ -670,7 +751,7 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
             });
             if (!berhasil) return; // galat sudah tampil; panel tetap terbuka supaya isian tidak hilang
             setTinjau(null);
-            if (keputusan === "verifikasi") verifikasi(p);
+            if (keputusan === "verifikasi1") verifikasi1(p);
           }}
         />
       ) : null}

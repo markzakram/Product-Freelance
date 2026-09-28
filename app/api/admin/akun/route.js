@@ -8,7 +8,7 @@ import { getTeachers } from "@/lib/teachers";
 import { bacaAkun, akunPublik, buatAkun, resetPassword, setStatusAkun, simpanPengaturan, wajibLoginGuru, rapikanEmail, STATUS, TAB_AKUN } from "@/lib/akun";
 import { daftarPerubahan } from "@/lib/perubahanGuru";
 import { simpanSeleksi, catatQc } from "@/lib/seleksi";
-import { daftarPendaftar, verifikasiPendaftar } from "@/lib/pendaftaran";
+import { daftarPendaftar, masukkanDataGuru, beriAkses, perluSampel } from "@/lib/pendaftaran";
 import { loginGuruSiap } from "@/lib/sesiGuru";
 
 export const dynamic = "force-dynamic";
@@ -64,8 +64,19 @@ export async function POST(req) {
     };
 
     switch (body.action) {
-      case "verifikasi":
-        return NextResponse.json({ ok: true, kredensial: [await verifikasiPendaftar(body.email)] });
+      // VERIFIKASI 1 — masuk Data guru (tanpa akun). Guru baru lanjut ke tahap
+      // Sampel; guru lama langsung "Siap akses".
+      case "verifikasi1": {
+        const g = await masukkanDataGuru(body.email);
+        const tahap = perluSampel(g.statusForm) ? "Sampel" : "";
+        await simpanSeleksi(body.email, { nama: g.nama, tahap });
+        return NextResponse.json({ ok: true, idGuru: g.idGuru, nama: g.nama, tahap: tahap || "Siap akses" });
+      }
+
+      // VERIFIKASI 2 — akses halaman proyek: buat akun login. Guru baru yang
+      // sampelnya belum lolos butuh konfirmasi eksplisit (`paksa`).
+      case "verifikasi2":
+        return NextResponse.json({ ok: true, kredensial: await beriAkses(body.email, { paksa: Boolean(body.paksa) }) });
 
       case "tolak":
         await simpanSeleksi(body.email, { nama: body.nama, tahap: "Ditolak" });
@@ -115,7 +126,7 @@ export async function POST(req) {
         return NextResponse.json({ error: "Aksi tidak dikenal: " + body.action }, { status: 400 });
     }
   } catch (e) {
-    console.error("akun POST:", e);
-    return NextResponse.json({ error: e.message || "Gagal menyimpan." }, { status: 500 });
+    if (!e.status) console.error("akun POST:", e);
+    return NextResponse.json({ error: e.message || "Gagal menyimpan.", perluKonfirmasi: e.perluKonfirmasi }, { status: e.status || 500 });
   }
 }
