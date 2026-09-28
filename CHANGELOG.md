@@ -12,6 +12,14 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 2.1.2 — Judul rekap fee dipersingkat (28 September 2026)
+
+- Judul rekap (Unduh Excel & Salin rekap) kini **"REKAP FEE PROYEK BULAN {BULAN} {TAHUN}"**,
+  mis. "REKAP FEE PROYEK BULAN AGUSTUS 2026" — sebelumnya "REKAP FEE PROYEK SOAL DAN VIDEO
+  PEMBAHASAN BULAN …", padahal proyeknya juga mencakup live class dan laporan.
+
+---
+
 ## 2.1.1 — Perbaikan format saat "Salin rekap" ditempel (28 September 2026)
 
 - Kolom **NO** tertempel sebagai "Rp1", "Rp2": sel NO ikut memakai format Rp milik FEE.
