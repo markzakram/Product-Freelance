@@ -12,6 +12,19 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 2.1.1 — Perbaikan format saat "Salin rekap" ditempel (28 September 2026)
+
+- Kolom **NO** tertempel sebagai "Rp1", "Rp2": sel NO ikut memakai format Rp milik FEE.
+  Sekarang angka biasa.
+- **JUMLAH** tertempel sebagai "1710000": nilainya angka tapi tanpa format. Sekarang
+  berformat Rp dengan titik ribuan seperti kolom FEE (Rp1.710.000).
+- Lebar kolom ikut disalin supaya nama, NIK, dan NPWP tidak terpotong (bila tab tujuan
+  mempertahankan lebarnya sendiri: pilih kolom → *Ubah ukuran kolom → Sesuaikan dengan
+  data*).
+- File Excel (Unduh Excel) tidak terdampak — formatnya sudah benar sejak 2.1.0.
+
+---
+
 ## 2.1.0 — Rekap fee: unduh Excel & salin ke Google Sheets (28 September 2026)
 
 Di **Pembayaran & kwitansi** ada dua tombol baru yang menghasilkan rekap dengan format
