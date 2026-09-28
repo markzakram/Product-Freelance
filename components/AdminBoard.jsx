@@ -32,6 +32,7 @@ import AnalyticsPanel from "./AnalyticsPanel";
 import GuruPanel from "./GuruPanel";
 import PasangApp from "./PasangApp";
 import AksesPanel from "./AksesPanel";
+import CariGuru from "./CariGuru";
 import { barisRekap, bankDanRekening, judulRekap, unduhExcel, salinRekap } from "@/lib/rekapFee";
 
 const STATUS_KNOWN = ["Running Soal", "QC Soal", "Revisi Soal", "Approved", "Running Video", STATUS_BATAL];
@@ -574,6 +575,11 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
                 namaBulan={namaBulan}
                 setErr={setErr}
                 onMasterChanged={refreshExtra}
+                guruDb={guru.rows || []}
+                log={assignments}
+                riwayat={allMonths.log || []}
+                akun={akses?.akun || []}
+                wajibLogin={Boolean(akses?.wajibLogin)}
               />
             )}
 
@@ -1589,8 +1595,9 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, m
 /* ============================== KATALOG ================================== */
 const BLANK_P = { id: "", idSubtes: "", platform: "", subtes: "", output: "", harga: "", kebutuhan: "" };
 
-function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan, setErr, onMasterChanged }) {
+function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan, setErr, onMasterChanged, guruDb, log, riwayat, akun, wajibLogin }) {
   const [edit, setEdit] = useState(null);
+  const [cari, setCari] = useState(null); // proyek yang sedang dicarikan guru
   const [draft, setDraft] = useState(BLANK_P);
   const [confirm, setConfirm] = useState(null);
   const [q, setQ] = useState("");
@@ -1715,7 +1722,14 @@ function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan
                   <b>{numberID(p.sisa)}</b>
                   {/* Halaman guru hanya menampilkan yang sisanya > 0. Ditandai di
                       sini supaya admin tidak bingung kenapa proyeknya tak muncul. */}
-                  {p.sisa <= 0 ? <div className="muted xs2">tak tampil di halaman guru</div> : null}
+                  {p.sisa <= 0 ? (
+                    <div className="muted xs2">tak tampil di halaman guru</div>
+                  ) : (
+                    <button type="button" className="cari-guru" onClick={() => setCari(p)} disabled={!guruDb.length} title="Cari guru yang cocok untuk proyek ini">
+                      <Icon name="users" size={13} />
+                      Cari guru
+                    </button>
+                  )}
                 </td>
                 <td className="act">
                   <RowMenu
@@ -1755,6 +1769,8 @@ function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan
           namaBulan={namaBulan}
         />
       ) : null}
+
+      {cari ? <CariGuru proyek={cari} master={master} guru={guruDb} log={log} riwayat={riwayat} akun={akun} wajibLogin={wajibLogin} onClose={() => setCari(null)} /> : null}
 
       {confirm ? (
         <ConfirmDelete

@@ -12,6 +12,33 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 2.2.0 — Cari guru untuk proyek (28 September 2026)
+
+Di **Katalog bulan ini**, setiap proyek yang masih punya sisa kuota kini punya tombol
+**"Cari guru"**. Panel yang terbuka memakai jawaban form pendataan di Database guru untuk
+menunjukkan siapa yang paling pas ditawari, lengkap dengan tombol **Tawarkan via WA**.
+
+- **Bidang**: ditebak dari nama subtes, kategori Master, dan platform (mis. Fisika →
+  IPA/Saintek, Matematika → Matematika & Kuantitatif, LPDP → Beasiswa & wawancara), lalu
+  dicocokkan dengan kolom "Bidang materi yang dikuasai". Tebakan hanya pilihan awal — bidang
+  bisa ditambah/dikurangi lewat chip. Istilah form memang beda dengan kategori Master
+  ("Matematika & Kuantitatif" vs Numerik/Hitung Berhitung/…), jadi padanannya diatur di
+  `lib/cocokGuru.js`.
+- **Minat**: dicocokkan dengan "Jenis proyek yang ingin diambil" sesuai output proyek (soal &
+  pembahasan, video, paket lengkap, live class, proyek lainnya). Proyek live class juga
+  memakai kesediaan dan **jadwal** live class (filter per slot).
+- **Beban**: soal yang masih berjalan (bukan Approved/Cancel) di log bulan ini; guru yang
+  paling longgar tampil lebih dulu. Juga ditandai: pernah mengerjakan subtes yang sama,
+  sudah mengambil proyek ini, guru baru (perlu sampel), kapasitas per minggu.
+- **Tawarkan via WA**: pesan siap kirim berisi subtes, output, fee per soal, sisa kuota, dan
+  tautan halaman proyek. Tombol berubah jadi "Ditawari" (tanda tersimpan di browser admin).
+- Label "belum punya akun" hanya muncul bila halaman proyek sudah wajib login.
+- 14 guru lama belum punya data bidang di form — bisa disertakan lewat centang "Sertakan guru
+  tanpa data bidang".
+- Data guru kini juga membawa kesediaan & jadwal live class (kolom S/T Database guru).
+
+---
+
 ## 2.1.3 — Isian WA berisi beberapa nomor (28 September 2026)
 
 - Sebagian pendaftar menulis lebih dari satu nomor di kolom WhatsApp, mis.

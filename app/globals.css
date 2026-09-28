@@ -973,3 +973,28 @@ html{scroll-behavior:smooth}
 .flag.ambil{color:var(--violet-text)}
 /* tombol "Maks" di stepper bukan tombol ikon: jangan ikut lebar 32/40px tombol +/− */
 .stepper button.btn{width:auto;min-width:0;padding:0 10px}
+
+/* ---- v2.2.0: cari guru untuk proyek -------------------------------------- */
+.cari-guru{display:inline-flex;align-items:center;gap:4px;margin-top:4px;padding:3px 8px;border:1px solid var(--accent-weak-bd);border-radius:999px;background:var(--accent-weak);color:var(--accent-strong);font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+.cari-guru:hover:not(:disabled){background:var(--accent-weak-2)}
+.cari-guru:disabled{opacity:.5;cursor:wait}
+.grid-table td.num .cari-guru{float:right;clear:both}
+@media(max-width:760px){.grid-table td.num .cari-guru{float:none}}
+.cg-saring{display:grid;grid-template-columns:62px minmax(0,1fr);gap:8px;align-items:start}
+.cg-saring .mpick-lbl{padding-top:6px}
+@media(max-width:520px){.cg-saring{grid-template-columns:minmax(0,1fr)}.cg-saring .mpick-lbl{padding-top:0}}
+.cg-opsi{display:flex;flex-wrap:wrap;gap:8px 16px}
+.cg-list{display:flex;flex-direction:column;gap:8px}
+.cg-item{border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
+.cg-item.ditawari{background:var(--surface-2)}
+.cg-atas{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.cg-nama{display:flex;flex-direction:column;min-width:0;line-height:1.35}
+.cg-nama b{font-size:14px}
+.cg-nama span{font-size:12px;color:var(--text-muted)}
+.cg-atas .btn{flex:none}
+.cg-lencana{display:flex;flex-wrap:wrap;gap:6px}
+.cg-lencana .pill{font-size:11.5px;padding:2px 8px}
+.cg-info{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--text-muted)}
+.cg-info b{color:var(--text)}
+/* chip geser di dalam panel samping: jarak tepi = padding panel */
+@media(max-width:560px){.drawer-body .chips.geser{margin:0 -16px;padding:0 16px 2px}}
