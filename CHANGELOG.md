@@ -12,6 +12,34 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 2.1.0 — Rekap fee: unduh Excel & salin ke Google Sheets (28 September 2026)
+
+Di **Pembayaran & kwitansi** ada dua tombol baru yang menghasilkan rekap dengan format
+"Rekapitulasi Fee Freelance Produk": judul *REKAP FEE PROYEK SOAL DAN VIDEO PEMBAHASAN
+BULAN …*, kolom NO · NAMA GURU · FEE · NO TELEPON · NIK · FOTO KTP · NO REKENING · BANK ·
+NPWP, dan baris JUMLAH.
+
+- **Unduh Excel** — file `.xlsx` dengan tab "Freelance {Bulan}" (sama seperti nama tab di
+  rekap), judul & kepala berwarna gelap, FEE berformat Rp, foto KTP sebagai tautan.
+  Bisa diimpor ke Google Sheets lewat *File → Impor → Sisipkan sheet baru*.
+- **Salin rekap** — tabel lengkap ke papan klip untuk ditempel (Ctrl+V) di sel A1 tab
+  kosong Google Sheets.
+- NIK, telepon, rekening, dan NPWP selalu **teks**: sebagai angka, "0856…" kehilangan nol di
+  depan dan NIK 16 digit bisa berubah digit terakhirnya. Telepon dirapikan ke format 08….
+- **Bank** dibaca dari isian rekening di Database guru: angka saja = BSI (form hanya
+  menanyakan rekening BSI); bank lain ditulis bersama nomornya, mis. "BCA 2332597583".
+  Kolom rekening di tabel pembayaran kini menampilkan banknya.
+- Peringatan bila guru di log tidak cocok dengan Database guru, bank tidak dikenali, atau
+  NIK belum ada. Filter yang aktif ikut berlaku; bila ada filter tanggal, periode ditulis di
+  judul.
+- Data guru di papan admin kini ikut membawa NIK, tautan foto KTP, dan NPWP (hanya di
+  area admin).
+- ExcelJS dimuat hanya saat tombol Unduh diklik, jadi dashboard tidak bertambah berat.
+- Isian nomor rekening di form guru tidak lagi memaksa papan ketik angka di HP (supaya nama
+  bank bisa diketik).
+
+---
+
 ## 2.0.1 — Sisa kuota ikut berkurang saat guru mengambil (28 September 2026)
 
 - Di kartu proyek halaman guru, **Sisa kuota** kini dikurangi jumlah yang sedang diambil

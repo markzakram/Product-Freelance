@@ -32,6 +32,7 @@ import AnalyticsPanel from "./AnalyticsPanel";
 import GuruPanel from "./GuruPanel";
 import PasangApp from "./PasangApp";
 import AksesPanel from "./AksesPanel";
+import { barisRekap, bankDanRekening, judulRekap, unduhExcel, salinRekap } from "@/lib/rekapFee";
 
 const STATUS_KNOWN = ["Running Soal", "QC Soal", "Revisi Soal", "Approved", "Running Video", STATUS_BATAL];
 const SEMUA = "Semua";
@@ -616,7 +617,9 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
               ) : (
                 <div className="card empty">Memuat analisis…</div>
               ))}
-            {tab === "bayar" && <Bayar groups={groups} periode={periode} doPrint={doPrint} rows={rows} aksiEl={aksiEl} />}
+            {tab === "bayar" && (
+              <Bayar groups={groups} periode={periode} doPrint={doPrint} rows={rows} aksiEl={aksiEl} namaBulan={namaBulan} filterTanggal={Boolean(f.from || f.to)} setErr={setErr} />
+            )}
 
             {tab === "akses" &&
               (extraLoaded ? (
@@ -1771,13 +1774,60 @@ function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan
 }
 
 /* ====================== PEMBAYARAN & KWITANSI ============================= */
-function Bayar({ groups, periode, doPrint, rows, aksiEl }) {
+function Bayar({ groups, periode, doPrint, rows, aksiEl, namaBulan, filterTanggal, setErr }) {
   const total = groups.reduce((a, g) => a + g.total, 0);
   const tanpaRek = groups.filter((g) => !g.teacher?.rekening);
+  const [proses, setProses] = useState(""); // "salin" | "excel" | "tersalin"
+  const sibuk = proses === "salin" || proses === "excel";
+
+  // Rekap format "Rekapitulasi Fee Freelance Produk" (lib/rekapFee.js).
+  const rekap = useMemo(() => barisRekap(groups), [groups]);
+  const tahun = useMemo(() => {
+    const c = {};
+    rows.forEach((r) => {
+      const y = String(r.tanggal || "").slice(0, 4);
+      if (/^\d{4}$/.test(y)) c[y] = (c[y] || 0) + 1;
+    });
+    return Object.keys(c).sort((a, b) => c[b] - c[a])[0] || String(new Date().getFullYear());
+  }, [rows]);
+  const judul = judulRekap(namaBulan, tahun, filterTanggal ? periode : "");
+  const tidakCocok = rekap.filter((r) => !r.cocok);
+  const bankTakDikenal = rekap.filter((r) => r.cocok && r.bank === "?");
+  const tanpaNik = rekap.filter((r) => r.cocok && r.nik === "-");
+
+  const salin = async () => {
+    setProses("salin");
+    try {
+      await salinRekap(rekap, judul);
+      setProses("tersalin");
+      setTimeout(() => setProses(""), 2500);
+    } catch (e) {
+      setErr("Gagal menyalin: " + e.message);
+      setProses("");
+    }
+  };
+  const excel = async () => {
+    setProses("excel");
+    try {
+      await unduhExcel(rekap, { judul, namaTab: `Freelance ${namaBulan}`, namaFile: `Rekap Fee Freelance ${namaBulan} ${tahun}${filterTanggal ? " (sebagian)" : ""}.xlsx` });
+    } catch (e) {
+      setErr("Gagal membuat file Excel: " + e.message);
+    } finally {
+      setProses("");
+    }
+  };
 
   return (
     <>
       <PageActions el={aksiEl}>
+        <button type="button" className="btn btn-ghost" onClick={salin} disabled={!groups.length || sibuk} title="Salin tabel rekap untuk ditempel ke Google Sheets">
+          <Icon name={proses === "tersalin" ? "check" : "salin"} />
+          {proses === "tersalin" ? "Tersalin" : "Salin rekap"}
+        </button>
+        <button type="button" className="btn btn-ghost" onClick={excel} disabled={!groups.length || sibuk}>
+          <Icon name="download" />
+          {proses === "excel" ? "Menyiapkan…" : "Unduh Excel"}
+        </button>
         <button type="button" className="btn btn-ghost" onClick={() => doPrint(groups, "summary")} disabled={!groups.length}>
           <Icon name="printer" />
           Cetak rekap
@@ -1820,6 +1870,31 @@ function Bayar({ groups, periode, doPrint, rows, aksiEl }) {
           </div>
         </div>
       ) : null}
+      {tidakCocok.length || bankTakDikenal.length || tanpaNik.length ? (
+        <div className="banner info">
+          <Icon name="info" />
+          <div>
+            Untuk rekap Excel:{" "}
+            {tidakCocok.length ? (
+              <>
+                <b>{tidakCocok.map((r) => r.nama).join(", ")}</b> tidak ditemukan di Database guru (nama di log berbeda), jadi telepon, NIK, dan
+                rekeningnya kosong.{" "}
+              </>
+            ) : null}
+            {bankTakDikenal.length ? (
+              <>
+                nama bank <b>{bankTakDikenal.map((r) => r.nama).join(", ")}</b> tidak dikenali dari isian rekeningnya (tertulis "?").{" "}
+              </>
+            ) : null}
+            {tanpaNik.length ? (
+              <>
+                NIK <b>{tanpaNik.map((r) => r.nama).join(", ")}</b> belum ada.{" "}
+              </>
+            ) : null}
+            Lengkapi di Database guru — rekening berisi angka saja dianggap BSI; bank lain ditulis bersama nomornya, mis. "Muamalat 1035867526".
+          </div>
+        </div>
+      ) : null}
 
       <div className="table-wrap fixed">
         <table className="grid-table">
@@ -1849,7 +1924,20 @@ function Bayar({ groups, periode, doPrint, rows, aksiEl }) {
                   <b style={{ color: "var(--text)" }}>{g.teacher?.nama || g.guru}</b>
                   {g.teacher?.nama && g.teacher.nama !== g.guru ? <div className="muted xs2">di log: {g.guru}</div> : null}
                 </td>
-                <td className="mono wrap" data-l="Nomor rekening">{g.teacher?.rekening || <span className="neg">belum ada</span>}</td>
+                <td className="mono wrap" data-l="Nomor rekening">
+                  {(() => {
+                    const { bank, nomor } = bankDanRekening(g.teacher?.rekening);
+                    if (!nomor) return <span className="neg">belum ada</span>;
+                    return (
+                      <>
+                        {nomor}
+                        <div className={"xs2 " + (bank ? "muted" : "warn-text")} style={{ fontFamily: "var(--font)" }}>
+                          {bank || "bank tidak dikenali"}
+                        </div>
+                      </>
+                    );
+                  })()}
+                </td>
                 <td className="wrap" data-l="Atas nama">{g.teacher?.pemilikRekening || "—"}</td>
                 <td className="num" data-l="Baris">{numberID(g.items.length)}</td>
                 <td className="num" data-l="Soal">{numberID(g.soal)}</td>

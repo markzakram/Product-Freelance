@@ -306,8 +306,8 @@ export default function GuruPanel({ rows, feeByGuru, readOnly, busy, setBusy, se
           <div className="form-grid">
             <label className="ffield">
               <span>Nomor rekening</span>
-              <input className="input" inputMode="numeric" value={draft.rekening} onChange={d("rekening")} placeholder="tanpa spasi" />
-              <small>Bank selain BSI? Tulis banknya, mis. “123456 (BCA)”.</small>
+              <input className="input" value={draft.rekening} onChange={d("rekening")} placeholder="tanpa spasi" />
+              <small>Angka saja = BSI. Bank lain? Tulis banknya, mis. “BCA 123456” — dipakai di rekap fee.</small>
             </label>
             <label className="ffield">
               <span>Nama pemilik rekening</span>
