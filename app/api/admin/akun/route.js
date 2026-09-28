@@ -5,43 +5,35 @@ import { NextResponse } from "next/server";
 import { tolakBukanAdmin } from "@/lib/authServer";
 import { canWrite } from "@/lib/gauth";
 import { getTeachers } from "@/lib/teachers";
-import { bacaAkun, buatAkun, resetPassword, setStatusAkun, setDitolak, simpanPengaturan, wajibLoginGuru, rapikanEmail, STATUS, TAB_AKUN } from "@/lib/akun";
+import { bacaAkun, akunPublik, buatAkun, resetPassword, setStatusAkun, simpanPengaturan, wajibLoginGuru, rapikanEmail, STATUS, TAB_AKUN } from "@/lib/akun";
+import { daftarPerubahan } from "@/lib/perubahanGuru";
+import { simpanSeleksi, catatQc } from "@/lib/seleksi";
 import { daftarPendaftar, verifikasiPendaftar } from "@/lib/pendaftaran";
 import { loginGuruSiap } from "@/lib/sesiGuru";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const tanpaRahasia = (a) => ({
-  email: a.email,
-  idGuru: a.idGuru,
-  nama: a.nama,
-  status: a.status,
-  punyaPassword: Boolean(a.hash),
-  wajibGanti: a.wajibGanti,
-  dibuat: a.dibuat,
-  diubah: a.diubah,
-  loginTerakhir: a.loginTerakhir,
-  terkunci: Boolean(a.terkunciSampai && Date.parse(a.terkunciSampai) > Date.now()),
-});
 
 export async function GET() {
   const bukan = await tolakBukanAdmin();
   if (bukan) return bukan;
   try {
-    const [pendaftar, akun, guru, wajib] = await Promise.all([
+    const [pendaftar, akun, guru, wajib, perubahan] = await Promise.all([
       daftarPendaftar().catch((e) => ({ error: e.message })),
       bacaAkun({ segar: true }),
       getTeachers(),
       wajibLoginGuru(),
+      daftarPerubahan({ status: "Menunggu" }).catch(() => []),
     ]);
     return NextResponse.json(
       {
         pendaftar: Array.isArray(pendaftar) ? pendaftar : [],
         errorPendaftar: pendaftar.error || "",
-        akun: akun.map(tanpaRahasia),
+        akun: akun.map(akunPublik),
         guru: (guru.rows || []).map((g) => ({ row: g.row, idGuru: g.idGuru, nama: g.nama, email: g.email, wa: g.wa, status: g.status })),
         wajibLogin: wajib,
+        perubahan, // ajuan "Profil saya" yang menunggu persetujuan
         loginSiap: loginGuruSiap(),
         tabAkun: TAB_AKUN,
         canWrite: canWrite(),
@@ -76,12 +68,21 @@ export async function POST(req) {
         return NextResponse.json({ ok: true, kredensial: [await verifikasiPendaftar(body.email)] });
 
       case "tolak":
-        await setDitolak(body.email, { nama: body.nama });
+        await simpanSeleksi(body.email, { nama: body.nama, tahap: "Ditolak" });
         return NextResponse.json({ ok: true });
 
       case "batalTolak":
-        await setDitolak(body.email, { batal: true });
+        await simpanSeleksi(body.email, { tahap: "" });
         return NextResponse.json({ ok: true });
+
+      // Tinjauan berkas: rubrik + catatan, dan (opsional) pindah tahap.
+      case "tinjau":
+        await simpanSeleksi(body.email, { nama: body.nama, tahap: body.tahap, skor: body.skor, catatan: body.catatan });
+        return NextResponse.json({ ok: true });
+
+      // Satu sesi QC sampel.
+      case "qc":
+        return NextResponse.json({ ok: true, ...(await catatQc(body.email, body.qc || {})) });
 
       case "buatAkun": {
         // body.idGuru: satu ID, daftar ID, atau "semua" (semua guru ber-email yang belum punya akun)

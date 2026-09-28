@@ -5,7 +5,7 @@ export const metadata = {
   manifest: "/manifest-guru.webmanifest",
   appleWebApp: { capable: true, title: "Proyek Guru", statusBarStyle: "default" },
   // `icons` di layout anak menggantikan milik induk — favicon ikut disebut.
-  icons: { icon: { url: "/icon.svg", type: "image/svg+xml" }, apple: "/icons/guru-180.png" },
+  icons: { icon: { url: "/icons/favicon-64.png", type: "image/png", sizes: "64x64" }, apple: "/icons/guru-180.png" },
 };
 
 // Warna bilah status HP = warna header halaman guru.

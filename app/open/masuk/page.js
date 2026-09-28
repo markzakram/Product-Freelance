@@ -70,7 +70,7 @@ export default async function MasukGuru({ searchParams }) {
         </div>
 
         <div className="auth-daftar">
-          <span>Belum terdaftar sebagai guru freelance?</span>
+          <span>Belum terdaftar sebagai freelance?</span>
           <a className="btn btn-ghost block" href={FORM_DAFTAR} target="_blank" rel="noopener noreferrer">
             <Icon name="file" />
             Daftar lewat form pendaftaran

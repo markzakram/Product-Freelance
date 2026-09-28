@@ -12,6 +12,7 @@ import Icon from "./Icon";
 import Combobox from "./Combobox";
 import Drawer from "./Drawer";
 import PageActions from "./PageActions";
+import ProfilGuru, { putuskan } from "./ProfilGuru";
 
 const BLANK = {
   nama: "", status: "Guru Baru", email: "", wa: "",
@@ -35,7 +36,20 @@ async function api(payload) {
   return j;
 }
 
-export default function GuruPanel({ rows, feeByGuru, readOnly, busy, setBusy, setErr, onChanged, aksiEl }) {
+export default function GuruPanel({ rows, feeByGuru, readOnly, busy, setBusy, setErr, onChanged, aksiEl, perubahan = [] }) {
+  const [profil, setProfil] = useState(""); // ID guru yang profilnya dibuka
+  const putus = async (p, setuju) => {
+    setBusy(true);
+    setErr("");
+    try {
+      await putuskan(p.row, setuju);
+      await onChanged();
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("Semua");
   const [saring, setSaring] = useState("Semua");
@@ -165,6 +179,39 @@ export default function GuruPanel({ rows, feeByGuru, readOnly, busy, setBusy, se
         </div>
       </div>
 
+      {perubahan.length ? (
+        <div className="card card-p ajuan-kotak">
+          <div className="section-head">
+            <h2>
+              <Icon name="alert" /> {numberID(perubahan.length)} perubahan data menunggu persetujuan
+            </h2>
+            <span className="muted">diajukan guru dari halaman Profil saya</span>
+          </div>
+          {perubahan.map((p) => (
+            <div key={p.row} className="pg-ajuan-item">
+              <div>
+                <button type="button" className="nama-link" onClick={() => setProfil(p.idGuru)}>
+                  {p.nama || p.email}
+                </button>
+                <span> · {p.label}</span>
+                <div>
+                  <s>{p.lama || "(kosong)"}</s> → <b>{p.baru}</b>
+                </div>
+                <small>diajukan {p.waktu}</small>
+              </div>
+              <div className="rowmenu">
+                <button type="button" className="btn btn-ghost xs" disabled={readOnly || busy} onClick={() => putus(p, false)}>
+                  Tolak
+                </button>
+                <button type="button" className="btn btn-blue xs" disabled={readOnly || busy} onClick={() => putus(p, true)}>
+                  Setujui
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       <div className="table-wrap fixed">
         <table className="grid-table">
           <colgroup>
@@ -198,7 +245,9 @@ export default function GuruPanel({ rows, feeByGuru, readOnly, busy, setBusy, se
               <tr key={t.row}>
                 <td className="mono" data-l="ID">{t.idGuru}</td>
                 <td className="wrap c-title">
-                  <b style={{ fontWeight: 600, color: "var(--text)" }}>{t.nama}</b>
+                  <button type="button" className="nama-link" onClick={() => setProfil(t.idGuru)} title="Buka profil guru">
+                    {t.nama}
+                  </button>
                   {t.bidang ? <div className="muted xs2">{t.bidang.slice(0, 60)}</div> : null}
                 </td>
                 <td className="wrap" data-l="Status">{t.status || "—"}</td>
@@ -340,6 +389,7 @@ export default function GuruPanel({ rows, feeByGuru, readOnly, busy, setBusy, se
           </label>
         </Drawer>
       ) : null}
+      {profil ? <ProfilGuru idGuru={profil} onClose={() => setProfil("")} onChanged={onChanged} /> : null}
     </>
   );
 }

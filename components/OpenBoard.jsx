@@ -159,6 +159,10 @@ function MenuAkun({ guru }) {
           <b>{guru.nama || "Guru"}</b>
           <span>{guru.email}</span>
         </div>
+        <a href="/open/profil" role="menuitem">
+          <Icon name="userCheck" />
+          Profil saya · riwayat & fee
+        </a>
         <a href="/open/ganti-password" role="menuitem">
           <Icon name="kunci" />
           Ganti password

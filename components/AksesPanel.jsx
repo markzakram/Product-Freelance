@@ -20,6 +20,12 @@ import { tautanWa } from "@/lib/tautan";
 import Icon from "./Icon";
 import Drawer, { Dialog } from "./Drawer";
 import PageActions from "./PageActions";
+import ProfilGuru from "./ProfilGuru";
+import { TinjauDrawer, QcDrawer, TombolWaSeleksi, kelasTahap, kelasHasil } from "./SeleksiDrawer";
+
+// Tahap pendaftar, berurutan sesuai alur seleksi.
+const TAHAP_TAMPIL = ["Menunggu", "Tinjau", "Sampel", "Lolos sampel", "Terverifikasi", "Ditolak"];
+export const DALAM_PROSES = new Set(["Menunggu", "Tinjau", "Sampel", "Lolos sampel"]);
 
 const lower = (s) => String(s ?? "").toLowerCase();
 
@@ -147,13 +153,16 @@ function Kredensial({ daftar, reset, onClose }) {
 }
 
 /* ------------------------------------------------------------------ panel */
-export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aksiEl, keDatabaseGuru }) {
+export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aksiEl, keDatabaseGuru, picList = [] }) {
   const [tampil, setTampil] = useState("pendaftar");
   const [saringP, setSaringP] = useState("Menunggu");
   const [saringA, setSaringA] = useState("semua");
   const [q, setQ] = useState("");
   const [konfirmasi, setKonfirmasi] = useState(null); // { judul, isi, tombol, bahaya, jalan }
   const [kred, setKred] = useState(null); // { daftar, reset }
+  const [tinjau, setTinjau] = useState(null); // pendaftar yang sedang ditinjau
+  const [qc, setQc] = useState(null); // pendaftar yang sampelnya sedang di-QC
+  const [profil, setProfil] = useState(""); // ID guru
 
   const pendaftar = data?.pendaftar || [];
   const akunByEmail = useMemo(() => new Map((data?.akun || []).map((a) => [a.email, a])), [data]);
@@ -167,7 +176,7 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
   );
 
   const hitungP = useMemo(() => {
-    const c = { Menunggu: 0, Terverifikasi: 0, Ditolak: 0 };
+    const c = { Menunggu: 0 };
     pendaftar.forEach((p) => (c[p.status] = (c[p.status] || 0) + 1));
     return c;
   }, [pendaftar]);
@@ -177,6 +186,7 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
     return c;
   }, [guru]);
   const punyaAkun = guru.length - (hitungA.belum || 0) - (hitungA.tanpaEmail || 0);
+  const dalamProses = pendaftar.filter((p) => DALAM_PROSES.has(p.status)).length;
   const bisaDibuat = hitungA.belum || 0;
 
   const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
@@ -385,7 +395,7 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
       <div className="seg-tab" role="tablist" aria-label="Tampilan">
         <button type="button" role="tab" aria-selected={tampil === "pendaftar"} className={tampil === "pendaftar" ? "on" : ""} onClick={() => setTampil("pendaftar")}>
           Pendaftar
-          {hitungP.Menunggu ? <span className="badge-n">{numberID(hitungP.Menunggu)}</span> : null}
+          {dalamProses ? <span className="badge-n">{numberID(dalamProses)}</span> : null}
         </button>
         <button type="button" role="tab" aria-selected={tampil === "akun"} className={tampil === "akun" ? "on" : ""} onClick={() => setTampil("akun")}>
           Akun guru
@@ -396,7 +406,7 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
       {tampil === "pendaftar" ? (
         <>
           <div className="chips geser" role="group" aria-label="Saring status pendaftar">
-            {["Menunggu", "Terverifikasi", "Ditolak"].map((s) => chip(saringP === s, s, hitungP[s] || 0, () => setSaringP(s)))}
+            {TAHAP_TAMPIL.filter((s) => s === "Menunggu" || hitungP[s] || saringP === s).map((s) => chip(saringP === s, s, hitungP[s] || 0, () => setSaringP(s)))}
             {chip(saringP === "Semua", "Semua", pendaftar.length, () => setSaringP("Semua"))}
           </div>
           {listP.length === 0 ? (
@@ -415,7 +425,10 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
                         {p.jumlahKirim > 1 ? ` · mengisi form ${p.jumlahKirim}×, yang tampil jawaban terbaru` : ""}
                       </span>
                     </div>
-                    <span className={"pill " + (p.status === "Terverifikasi" ? "appr" : p.status === "Ditolak" ? "batal plain" : "qc")}>{p.status}</span>
+                    <div className="daftar-lencana">
+                      <span className={"pill " + (/lama/i.test(p.statusForm) ? "run" : "batal plain")}>{p.statusForm || "status form kosong"}</span>
+                      <span className={"pill " + kelasTahap(p.status)}>{p.status}</span>
+                    </div>
                   </div>
                   <div className="daftar-grid">
                     <div>
@@ -438,6 +451,23 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
                       <small>{p.kapasitas ? `Kapasitas ${p.kapasitas}` : ""}</small>
                     </div>
                   </div>
+                  {p.seleksi?.skor?.bidang || (p.seleksi?.qc || []).length ? (
+                    <div className="daftar-seleksi">
+                      {p.seleksi.skor?.bidang ? (
+                        <span>
+                          Tinjauan: bidang {p.seleksi.skor.bidang}/5 · pengalaman {p.seleksi.skor.pengalaman || "–"}/5 · berkas {p.seleksi.skor.berkas || "–"}/5
+                          {p.seleksi.catatan ? ` — ${p.seleksi.catatan}` : ""}
+                        </span>
+                      ) : null}
+                      {(p.seleksi.qc || []).map((q) => (
+                        <span key={q.sesi}>
+                          QC sesi {q.sesi}: <span className={"pill " + kelasHasil(q.hasil)}>{q.hasil}</span>
+                          {q.pic ? ` · ${q.pic}` : ""}
+                          {q.catatan ? ` — ${q.catatan}` : ""}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
                   <div className="daftar-bawah">
                     <div className="berkas">
                       {p.berkas.length ? (
@@ -452,10 +482,26 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
                       )}
                     </div>
                     <div className="daftar-aksi">
-                      {p.status === "Menunggu" ? (
+                      <TombolWaSeleksi p={p} />
+                      {p.status === "Menunggu" || p.status === "Tinjau" ? (
+                        <button type="button" className="btn btn-blue sm" disabled={kunciTulis} onClick={() => setTinjau(p)}>
+                          <Icon name="file" />
+                          {p.status === "Tinjau" ? "Lanjutkan tinjauan" : "Tinjau"}
+                        </button>
+                      ) : p.status === "Sampel" ? (
                         <>
                           <button type="button" className="btn btn-ghost sm" disabled={kunciTulis} onClick={() => tolak(p)}>
                             Tolak
+                          </button>
+                          <button type="button" className="btn btn-blue sm" disabled={kunciTulis} onClick={() => setQc(p)}>
+                            <Icon name="check" />
+                            QC sampel sesi {(p.seleksi?.qc || []).length + 1}
+                          </button>
+                        </>
+                      ) : p.status === "Lolos sampel" ? (
+                        <>
+                          <button type="button" className="btn btn-ghost sm" disabled={kunciTulis} onClick={() => setQc(p)}>
+                            QC lagi
                           </button>
                           <button type="button" className="btn btn-blue sm" disabled={kunciTulis} onClick={() => verifikasi(p)}>
                             <Icon name="userCheck" />
@@ -467,7 +513,9 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
                           Batalkan penolakan
                         </button>
                       ) : (
-                        <span className="muted xs2">ID guru {p.idGuru}</span>
+                        <button type="button" className="btn btn-ghost sm" disabled={!p.idGuru} onClick={() => setProfil(p.idGuru)}>
+                          Lihat profil · ID {p.idGuru}
+                        </button>
                       )}
                     </div>
                   </div>
@@ -536,7 +584,9 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
                       {g.idGuru}
                     </td>
                     <td className="wrap c-title">
-                      <b style={{ fontWeight: 600, color: "var(--text)" }}>{g.nama}</b>
+                      <button type="button" className="nama-link" onClick={() => setProfil(g.idGuru)}>
+                        {g.nama}
+                      </button>
                     </td>
                     <td className="wrap" data-l="Email login">
                       {g.email || <span className="neg">belum ada</span>}
@@ -604,6 +654,46 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
       ) : null}
 
       {kred ? <Kredensial daftar={kred.daftar} reset={kred.reset} onClose={() => setKred(null)} /> : null}
+
+      {tinjau ? (
+        <TinjauDrawer
+          p={tinjau}
+          busy={busy}
+          onClose={() => setTinjau(null)}
+          onSimpan={async ({ skor, catatan, keputusan }) => {
+            const p = tinjau;
+            const tahap = { simpan: "Tinjau", sampel: "Sampel", tolak: "Ditolak", verifikasi: p.status === "Menunggu" ? "Tinjau" : p.status }[keputusan];
+            let berhasil = false;
+            await jalankan(async () => {
+              await kirim({ action: "tinjau", email: p.email, nama: p.nama, skor, catatan, tahap });
+              berhasil = true;
+            });
+            if (!berhasil) return; // galat sudah tampil; panel tetap terbuka supaya isian tidak hilang
+            setTinjau(null);
+            if (keputusan === "verifikasi") verifikasi(p);
+          }}
+        />
+      ) : null}
+
+      {qc ? (
+        <QcDrawer
+          p={qc}
+          picList={picList}
+          busy={busy}
+          onClose={() => setQc(null)}
+          onSimpan={async (isi) => {
+            const p = qc;
+            let berhasil = false;
+            await jalankan(async () => {
+              await kirim({ action: "qc", email: p.email, qc: isi });
+              berhasil = true;
+            });
+            if (berhasil) setQc(null);
+          }}
+        />
+      ) : null}
+
+      {profil ? <ProfilGuru idGuru={profil} onClose={() => setProfil("")} onChanged={onChanged} /> : null}
     </>
   );
 }

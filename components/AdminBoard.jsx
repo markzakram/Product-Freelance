@@ -31,7 +31,7 @@ import NewMonthPanel from "./NewMonthPanel";
 import AnalyticsPanel from "./AnalyticsPanel";
 import GuruPanel from "./GuruPanel";
 import PasangApp from "./PasangApp";
-import AksesPanel from "./AksesPanel";
+import AksesPanel, { DALAM_PROSES } from "./AksesPanel";
 import CariGuru from "./CariGuru";
 import { barisRekap, bankDanRekening, judulRekap, unduhExcel, salinRekap } from "@/lib/rekapFee";
 
@@ -407,7 +407,9 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   const namaBulan = (board.months || []).find((m) => m.tab === board.tab)?.bulan || "";
   const months = board.months || [];
   const bulanTab = bulanAktif || board.tab || "";
-  const pendaftarBaru = (akses?.pendaftar || []).filter((p) => p.status === "Menunggu").length;
+  // pendaftar yang masih perlu ditindaklanjuti (menunggu, ditinjau, sampel, lolos sampel)
+  const pendaftarBaru = (akses?.pendaftar || []).filter((p) => DALAM_PROSES.has(p.status)).length;
+  const ajuanData = (akses?.perubahan || []).length;
   // Pindah halaman selalu mulai dari atas — di HP halaman sebelumnya
   // biasanya sudah tergulir jauh.
   const pilihTab = (k) => {
@@ -428,6 +430,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
             master: master.rows?.length || 0,
             guru: (guru.rows || []).length || teachers.length,
             pendaftar: pendaftarBaru || null,
+            guruAjuan: ajuanData,
           }}
           open={navOpen}
           setOpen={setNavOpen}
@@ -637,6 +640,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
                   onChanged={refreshExtra}
                   aksiEl={aksiEl}
                   keDatabaseGuru={() => pilihTab("guru")}
+                  picList={opts.picSemua || []}
                 />
               ) : (
                 <div className="card empty">Memuat pendaftaran & akun…</div>
@@ -653,6 +657,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
                   setErr={setErr}
                   onChanged={refreshExtra}
                   aksiEl={aksiEl}
+                  perubahan={akses?.perubahan || []}
                 />
               ) : (
                 <div className="card empty">Memuat data guru…</div>
@@ -661,7 +666,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
         </div>
       </div>
 
-      <TabBar tab={tab} pilihTab={pilihTab} bukaMenu={() => setNavOpen(true)} menuTerbuka={navOpen} adaBaru={pendaftarBaru > 0} />
+      <TabBar tab={tab} pilihTab={pilihTab} bukaMenu={() => setNavOpen(true)} menuTerbuka={navOpen} adaBaru={pendaftarBaru > 0 || ajuanData > 0} />
 
       {print ? <PrintArea groups={print.groups} mode={print.mode} brand={brand} periode={periode} /> : null}
     </>
@@ -792,7 +797,11 @@ function SideNav({ tab, setTab, counts, open, setOpen, months, bulanTab, setBula
                 >
                   {it.langkah ? <span className="si-step">{it.langkah}</span> : <Icon name={it.ikon} size={18} />}
                   <span className="si-label">{it.label}</span>
-                  {it.hitung && counts[it.hitung] != null ? (
+                  {it.k === "guru" && counts.guruAjuan ? (
+                    <span className="si-count baru" title="ajuan perubahan data menunggu persetujuan">
+                      {numberID(counts.guruAjuan)}
+                    </span>
+                  ) : it.hitung && counts[it.hitung] != null ? (
                     <span className={"si-count" + (it.hitung === "pendaftar" ? " baru" : "")}>{numberID(counts[it.hitung])}</span>
                   ) : null}
                 </button>

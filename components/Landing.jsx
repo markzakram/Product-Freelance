@@ -1,5 +1,5 @@
 // ============================================================================
-//  HALAMAN DEPAN (/) — pintu masuk publik program guru freelance.
+//  HALAMAN DEPAN (/) — pintu masuk publik program freelance.
 //  Server component: tanpa JavaScript di browser selain tombol tema.
 //
 //  Isi perusahaan diringkas dari cerebrumcorp.id; isi program dari Panduan
@@ -79,7 +79,7 @@ const FAQ = [
   { t: "Lupa password?", j: "Hubungi admin lewat WhatsApp. Admin akan mereset akun Anda dan mengirim password sementara yang baru." },
 ];
 
-function TombolDaftar({ besar, teks = "Daftar jadi guru freelance" }) {
+function TombolDaftar({ besar, teks = "Daftar jadi freelance" }) {
   return (
     <a className={"btn btn-blue" + (besar ? " lg" : "")} href={FORM_DAFTAR} target="_blank" rel="noopener noreferrer">
       {teks}
@@ -89,7 +89,7 @@ function TombolDaftar({ besar, teks = "Daftar jadi guru freelance" }) {
 }
 
 export default function Landing({ papan }) {
-  const tanyaAdmin = tautanWa(WA_ADMIN, "Halo kak, saya mau tanya tentang program guru freelance Cerebrum.");
+  const tanyaAdmin = tautanWa(WA_ADMIN, "Halo kak, saya mau tanya tentang program freelance Cerebrum.");
   return (
     <div className="pub ld">
       <header className="pub-head ld-head">
@@ -122,13 +122,13 @@ export default function Landing({ papan }) {
             <div className="ld-hero-teks">
               <span className="ld-eyebrow">
                 <i />
-                Program Guru Freelance · PT Cerebrum Edukanesia Nusantara
+                Program Freelance · PT Cerebrum Edukanesia Nusantara
               </span>
               <h1>
                 Jadikan keahlian Anda <em>soal & kelas</em> yang dipakai jutaan pejuang seleksi.
               </h1>
               <p>
-                Bergabung sebagai guru freelance Cerebrum: susun soal dan pembahasan, rekam video pembahasan, isi live class, atau kerjakan
+                Bergabung sebagai freelance Cerebrum: susun soal dan pembahasan, rekam video pembahasan, isi live class, atau kerjakan
                 laporan — dari mana saja, dengan fee per soal yang jelas.
               </p>
               <div className="ld-cta">
@@ -227,7 +227,7 @@ export default function Landing({ papan }) {
               pembahasan, dan live class — supaya masyarakat Indonesia bisa mempersiapkan pendidikan dan seleksi dengan lebih terarah.
             </p>
             <p>
-              Soal, pembahasan, dan kelas yang Anda buat sebagai guru freelance dipakai langsung oleh pengguna aplikasi-aplikasi ini.
+              Soal, pembahasan, dan kelas yang Anda buat sebagai freelance dipakai langsung oleh pengguna aplikasi-aplikasi ini.
             </p>
             <a className="ld-tautan" href="https://cerebrumcorp.id/" target="_blank" rel="noopener noreferrer">
               Kenali Cerebrum lebih jauh

@@ -4,9 +4,9 @@ import { getBoard } from "@/lib/juli";
 import { jenisDariId } from "@/lib/jenis";
 
 export const metadata = {
-  title: { absolute: "Guru Freelance Cerebrum — buat soal, live class & konten belajar" },
+  title: { absolute: "Freelance Cerebrum — buat soal, live class & konten belajar" },
   description:
-    "Bergabung sebagai guru freelance PT Cerebrum Edukanesia Nusantara: susun soal & pembahasan, video pembahasan, live class, dan laporan untuk 3 juta+ pengguna bimbel online. Daftar lewat form, masuk setelah diverifikasi.",
+    "Bergabung sebagai freelance PT Cerebrum Edukanesia Nusantara: susun soal & pembahasan, video pembahasan, live class, dan laporan untuk 3 juta+ pengguna bimbel online. Daftar lewat form, masuk setelah diverifikasi.",
 };
 
 // Halaman depan cukup disegarkan tiap 5 menit — angkanya hanya ringkasan.

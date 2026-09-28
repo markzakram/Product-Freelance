@@ -4,10 +4,10 @@ import SecretAccess from "@/components/SecretAccess";
 export const metadata = {
   title: { default: "Product Freelance", template: "%s · Product Freelance" },
   description: "Proyek guru freelance: katalog soal terbuka dan dashboard internal tim akademik.",
-  // Favicon lewat metadata, BUKAN berkas app/icon.svg: ikon berbasis berkas
+  // Favicon lewat metadata, BUKAN berkas app/icon.*: ikon berbasis berkas
   // menimpa `icons` di layout anak, sehingga ikon iPhone (apple-touch-icon)
   // halaman guru & admin tidak pernah terpasang.
-  icons: { icon: { url: "/icon.svg", type: "image/svg+xml" } },
+  icons: { icon: { url: "/icons/favicon-64.png", type: "image/png", sizes: "64x64" } },
 };
 
 export const viewport = {

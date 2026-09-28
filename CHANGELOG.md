@@ -12,6 +12,68 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 2.3.0 — Tahap sampel, Profil guru, Profil saya, dan logo asli (28 September 2026)
+
+### Seleksi pendaftar dengan tahap Sampel (admin → Pendaftaran & akun)
+
+Panduan Proyek mewajibkan guru baru membuat sampel sebelum produksi penuh. Pendaftar kini
+melewati: **Menunggu → Tinjau → Sampel → Lolos sampel → Verifikasi** (Ditolak bisa dari
+tahap mana pun; bisa dibatalkan).
+
+- **Tinjau**: semua jawaban form + berkas (CV, portofolio, video) dalam satu panel, rubrik
+  1–5 (kesesuaian bidang, pendidikan & pengalaman, berkas) dan catatan. Keputusan: lanjut ke
+  sampel, verifikasi langsung (disarankan hanya untuk "Guru Lama"), atau tolak.
+- **QC sampel per sesi**: tiap sesi mencatat subtes, tautan sampel, PIC QC, **checklist 8
+  aspek** dari Panduan (kesesuaian materi, bentuk soal, tingkat kesulitan, pilihan jawaban,
+  kunci, pembahasan, template, karakter soal), hasil (Lolos / Perlu revisi / Tidak lolos)
+  dan catatan. Hasil disarankan otomatis dari checklist. Revisi = sesi baru; riwayat semua
+  sesi terlihat di kartu. "Lolos" → tahap Lolos sampel → tombol Verifikasi & buat akun.
+- Tombol WA sesuai tahap: **Minta sampel** dan **Kirim hasil QC** (berisi hasil, aspek yang
+  perlu diperbaiki, dan catatan).
+- Status form (Guru Lama / Guru Baru) tampil di kartu; badge sidebar menghitung semua
+  pendaftar yang masih dalam proses.
+- Tab baru di spreadsheet (dibuat otomatis): **"Seleksi guru"** dan **"QC sampel"**.
+  Penolakan kini dicatat di sini (dulu di tab Akun guru).
+
+### Profil guru (admin)
+
+- Klik nama guru di **Database guru** atau di tab Akun guru, atau "Lihat profil" pada
+  pendaftar terverifikasi.
+- Isi: kontak (tombol WA), status akun, total soal & fee, bulan aktif, soal yang sedang
+  berjalan vs kapasitas, rekap status pekerjaan, **riwayat proyek semua bulan termasuk
+  Juni–Agustus**, data form (bidang, minat, live class), rekening + bank, NPWP, NIK
+  (tersamar, bisa ditampilkan), tautan KTP/CV/portofolio, hasil seleksi & sesi QC, riwayat
+  perubahan data.
+
+### Profil saya (guru yang login — menu akun → "Profil saya")
+
+- **Riwayat & fee saya**: fee dan soal bulan terakhir, total semua bulan, daftar pekerjaan
+  per bulan dengan statusnya.
+- **Ubah data**: kapasitas, kesediaan & jadwal live class, bidang, dan minat **langsung
+  tersimpan** (format sama persis dengan form, jadi "Cari guru" ikut memakainya). **WA,
+  bank + rekening, pemilik rekening, NPWP menunggu persetujuan admin** — kalau akun guru
+  dibobol, rekeningnya tidak bisa diganti diam-diam.
+- Ajuan tampil di Database guru (kotak kuning, Setujui/Tolak) dan di Profil guru; badge di
+  sidebar. Tab baru: **"Perubahan data guru"**.
+- NIK, KTP, dan catatan admin tidak pernah dikirim ke halaman guru.
+
+### Logo & halaman depan
+
+- Logo memakai berkas **asli** dari folder `logo/`, dibersihkan otomatis dari sisa hapus
+  latar (tepi magenta & bintik biru) dan dipaksa ke dua warna logo. Ikon aplikasi HP (guru &
+  admin), ikon iPhone, dan favicon dibuat ulang dari logo ini (`public/icon.svg` dihapus).
+- Halaman depan & halaman masuk: "guru freelance" → **"freelance"** (mis. "Program
+  Freelance", "Daftar jadi freelance").
+
+### Teknis
+
+- `lib/tabSheet.js`: pembuat/pembaca tab kecil dashboard (dipakai Akun guru, Seleksi guru,
+  QC sampel, Perubahan data guru). Nama tab bisa diarahkan ke tab uji hanya di luar
+  produksi.
+- Data guru kini membawa NIK, tautan KTP, CV, portofolio (area admin saja).
+
+---
+
 ## 2.2.0 — Cari guru untuk proyek (28 September 2026)
 
 Di **Katalog bulan ini**, setiap proyek yang masih punya sisa kuota kini punya tombol
