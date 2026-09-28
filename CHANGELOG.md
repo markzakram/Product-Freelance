@@ -12,6 +12,18 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 2.4.1 — Chat WA di panel Tinjau; nama dari pertanyaan kembar (28 September 2026)
+
+- Panel **Tinjau** punya tombol **Chat via WhatsApp** (dengan sapaan awal siap dilanjutkan)
+  dan tombol Email di bagian atas.
+- Perbaikan: form pendaftaran punya pertanyaan kembar ("Nama Lengkap (beserta gelar)",
+  "Jenis Kelamin", "Tanggal Lahir" di kolom E–G **dan** AD–AF, dari bagian form yang
+  ditambahkan belakangan). Pendaftar yang hanya mengisi salinannya tampil "(tanpa nama)", dan
+  verifikasi 1 akan menyalin nama kosong ke Data guru. Sekarang diambil isian pertama yang
+  terisi dari semua kolom berjudul sama (1 nama, 3 jenis kelamin, 3 tanggal lahir terselamatkan).
+
+---
+
 ## 2.4.0 — Dua verifikasi: masuk Data guru, lalu akses proyek (28 September 2026)
 
 Verifikasi pendaftar kini dipecah dua. Sebelumnya satu tombol "Verifikasi & buat akun"

@@ -23,6 +23,10 @@ export const kelasTahap = (s) =>
   ({ "Punya akses": "appr", "Lolos sampel": "appr", "Siap akses": "run", Sampel: "run", Tinjau: "qc", Menunggu: "qc", Ditolak: "batal plain" })[s] || "qc";
 export const kelasHasil = (h) => (h === "Lolos" ? "appr" : h === "Tidak lolos" ? "rev" : "qc");
 
+export function pesanSapa(p) {
+  return `Halo ${p.nama || ""}, saya dari tim Product Freelance PT Cerebrum. Terima kasih sudah mendaftar sebagai freelance. `;
+}
+
 export function pesanMintaSampel(p) {
   return (
     `Halo ${p.nama || ""}, terima kasih sudah mendaftar sebagai guru freelance Cerebrum.\n\n` +
@@ -103,8 +107,20 @@ export function TinjauDrawer({ p, busy, onClose, onSimpan }) {
         </>
       }
     >
+      <div className="tinjau-kontak">
+        {p.wa ? (
+          <a className="btn btn-wa sm" href={tautanWa(p.wa, pesanSapa(p))} target="_blank" rel="noopener noreferrer">
+            <Icon name="send" /> Chat via WhatsApp
+          </a>
+        ) : (
+          <span className="pill rev">nomor WA kosong</span>
+        )}
+        <a className="btn btn-ghost sm" href={"mailto:" + p.email}>
+          Email
+        </a>
+        <span className="muted xs2">{[p.wa, p.email].filter(Boolean).join(" · ")}</span>
+      </div>
       <div className="pg-grid">
-        <Isian label="Kontak">{[p.email, p.wa].filter(Boolean).join(" · ")}</Isian>
         <Isian label="Pendidikan">{[p.pendidikan, p.jurusan, p.universitas].filter(Boolean).join(" · ")}</Isian>
         <Isian label="Pekerjaan">{[p.pekerjaan, p.instansi].filter(Boolean).join(" · ")}</Isian>
         <Isian label="Pengalaman">{p.pengalaman}</Isian>

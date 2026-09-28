@@ -1077,3 +1077,4 @@ html{scroll-behavior:smooth}
 .langkah-verif li.selesai>span{background:var(--good);color:#fff}
 .langkah-verif li.kini{color:var(--accent-strong);border-color:var(--accent-weak-bd);background:var(--accent-weak)}
 .langkah-verif li.kini>span{background:var(--accent);color:var(--on-accent)}
+.tinjau-kontak{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
