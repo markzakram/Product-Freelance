@@ -12,6 +12,19 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 2.0.1 — Sisa kuota ikut berkurang saat guru mengambil (28 September 2026)
+
+- Di kartu proyek halaman guru, **Sisa kuota** kini dikurangi jumlah yang sedang diambil
+  guru itu (mis. 60/150 → ambil 20 → 40/150), dengan bagian yang diambil tampil bergaris
+  ungu di bilah kuota dan baris "Kamu ambil −20 soal". Diambil semua → "SEMUA KAMU AMBIL".
+- Angka "soal masih tersedia" di atas ikut berkurang.
+- Ini hanya tampilan di layar guru tersebut — spreadsheet baru berubah setelah admin
+  mencatat pengajuannya di Log. Urutan "Sisa terbanyak" tetap memakai sisa asli supaya
+  kartu tidak melompat-lompat saat jumlahnya diubah.
+- Perbaikan: tombol "Maks" di HP tidak lagi terjepit selebar tombol +/−.
+
+---
+
 ## 2.0.0 — Halaman depan, pendaftaran & login guru (26 September 2026)
 
 MAJOR karena cara guru masuk berubah: halaman proyek kini bisa dikunci dengan akun

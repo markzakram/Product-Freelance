@@ -27,8 +27,14 @@ function ProjectCard({ p, qty, setQty }) {
   const input = useRef(null);
   const [baruDiambil, setBaruDiambil] = useState(false);
   const dipilih = qty > 0;
-  const pct = p.kebutuhan > 0 ? Math.round((p.sisa / p.kebutuhan) * 100) : 100;
-  const menipis = p.kebutuhan > 0 && p.sisa / p.kebutuhan < 0.25;
+  // Sisa yang TAMPIL = sisa di sheet dikurangi jumlah yang sedang diambil guru
+  // ini. Hanya tampilan di layarnya sendiri — spreadsheet baru berubah setelah
+  // admin mencatat pengajuannya di Log.
+  const diambil = Math.min(qty, p.sisa);
+  const sisaTampil = p.sisa - diambil;
+  const persen = (n) => (p.kebutuhan > 0 ? Math.round((n / p.kebutuhan) * 100) : 0);
+  const pct = p.kebutuhan > 0 ? persen(sisaTampil) : sisaTampil > 0 ? 100 : 0;
+  const menipis = p.kebutuhan > 0 && sisaTampil / p.kebutuhan < 0.25;
   const set = (v) => setQty(p, clamp(parseInt(v, 10), 0, p.sisa));
 
   // Tepat setelah "Ambil", fokus pindah ke jumlah dengan isi terpilih: guru
@@ -49,7 +55,11 @@ function ProjectCard({ p, qty, setQty }) {
           <span className="mini brand">{p.jenis}</span>
           {p.output ? <span className="mini">{p.output}</span> : null}
         </div>
-        {menipis ? <span className="flag">HAMPIR HABIS</span> : null}
+        {dipilih && sisaTampil === 0 ? (
+          <span className="flag ambil">SEMUA KAMU AMBIL</span>
+        ) : menipis ? (
+          <span className="flag">HAMPIR HABIS</span>
+        ) : null}
       </div>
 
       <h3>{p.subtes}</h3>
@@ -60,16 +70,24 @@ function ProjectCard({ p, qty, setQty }) {
       </div>
 
       <div className="pc-stock">
-        <div className={"meter" + (menipis ? " warn" : "")} aria-hidden="true">
+        <div className={"meter dua" + (menipis ? " warn" : "")} aria-hidden="true">
           <i style={{ width: pct + "%" }} />
+          {/* bagian yang sedang diambil: tampil terpisah, bergaris */}
+          {diambil ? <i className="bagianmu" style={{ width: Math.max(2, persen(diambil)) + "%" }} /> : null}
         </div>
         <div className="row">
           <span>Sisa kuota</span>
           <b className={menipis ? "low" : ""}>
-            {numberID(p.sisa)}
+            {numberID(sisaTampil)}
             {p.kebutuhan > 0 ? ` / ${numberID(p.kebutuhan)}` : ""} soal
           </b>
         </div>
+        {diambil ? (
+          <div className="row ambilmu">
+            <span>Kamu ambil</span>
+            <b>−{numberID(diambil)} soal</b>
+          </div>
+        ) : null}
       </div>
 
       <div className="pc-foot">
@@ -303,8 +321,8 @@ export default function OpenBoard({ projects, source, bulan, waNumber, panduan =
                 <span className="kpi-ico i1">
                   <Icon name="layers" size={18} />
                 </span>
-                <b>{numberID(totalSisa)}</b>
-                <span>soal masih tersedia</span>
+                <b>{numberID(Math.max(0, totalSisa - soalCart))}</b>
+                <span>{soalCart ? `soal masih tersedia · ${numberID(soalCart)} kamu ambil` : "soal masih tersedia"}</span>
               </div>
               <div className="kpi">
                 <span className="kpi-ico i2">
