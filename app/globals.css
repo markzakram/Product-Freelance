@@ -1078,3 +1078,28 @@ html{scroll-behavior:smooth}
 .langkah-verif li.kini{color:var(--accent-strong);border-color:var(--accent-weak-bd);background:var(--accent-weak)}
 .langkah-verif li.kini>span{background:var(--accent);color:var(--on-accent)}
 .tinjau-kontak{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+
+/* ---- v2.5.0: ketersediaan guru per keahlian ------------------------------- */
+.ksd{display:flex;flex-direction:column;gap:12px;padding:16px 18px}
+.ksd-kepala{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.ksd-kepala>div{display:flex;flex-direction:column;gap:2px}
+.ksd-kepala b{font-size:15px}
+.ksd-angka{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media(max-width:760px){.ksd-angka{grid-template-columns:minmax(0,1fr)}}
+.ksd-angka>div{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2)}
+.ksd-angka>div.siap{border-color:color-mix(in srgb,var(--good) 35%,transparent);background:var(--good-weak)}
+.ksd-angka span{font-size:12px;font-weight:700;color:var(--text-muted)}
+.ksd-angka b{font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+.ksd-angka .siap b{color:var(--good)}
+.ksd-angka small{font-size:12px;color:var(--text-muted)}
+.ksd-angka .btn{margin-top:6px}
+.ksd-sub{display:block;margin-top:2px;font-size:12px;color:var(--text-muted);font-weight:500}
+@media(max-width:760px){
+  .ksd{padding:14px}
+  .ksd-angka{gap:8px}
+  .ksd-angka>div{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;align-items:center;padding:10px 12px}
+  .ksd-angka span{grid-column:1;grid-row:1}
+  .ksd-angka small{grid-column:1;grid-row:2}
+  .ksd-angka b{grid-column:2;grid-row:1/span 2;font-size:22px}
+  .ksd-angka .btn{grid-column:1/-1;justify-self:start}
+}

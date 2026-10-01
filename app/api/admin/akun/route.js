@@ -31,7 +31,19 @@ export async function GET() {
         pendaftar: Array.isArray(pendaftar) ? pendaftar : [],
         errorPendaftar: pendaftar.error || "",
         akun: akun.map(akunPublik),
-        guru: (guru.rows || []).map((g) => ({ row: g.row, idGuru: g.idGuru, nama: g.nama, email: g.email, wa: g.wa, status: g.status })),
+        // + keahlian untuk saringan "Ketersediaan guru" (bidang, jenjang, jurusan, universitas)
+        guru: (guru.rows || []).map((g) => ({
+          row: g.row,
+          idGuru: g.idGuru,
+          nama: g.nama,
+          email: g.email,
+          wa: g.wa,
+          status: g.status,
+          pendidikan: g.pendidikan,
+          jurusan: g.jurusan,
+          universitas: g.universitas,
+          bidang: g.bidang,
+        })),
         wajibLogin: wajib,
         perubahan, // ajuan "Profil saya" yang menunggu persetujuan
         loginSiap: loginGuruSiap(),

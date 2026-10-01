@@ -22,6 +22,14 @@ import Drawer, { Dialog } from "./Drawer";
 import PageActions from "./PageActions";
 import ProfilGuru from "./ProfilGuru";
 import { TinjauDrawer, QcDrawer, TombolWaSeleksi, kelasTahap, kelasHasil } from "./SeleksiDrawer";
+import { BIDANG } from "@/lib/cocokGuru";
+
+// Jenjang dari jawaban form ("D3/D4/S1 lulus", "S2 sedang ditempuh", "S3", …).
+const JENJANG = ["D3–S1", "S2", "S3"];
+const jenjangDari = (p) => (/s3|doktor/i.test(p || "") ? "S3" : /s2|magister/i.test(p || "") ? "S2" : /s1|d3|d4|sarjana|diploma/i.test(p || "") ? "D3–S1" : "");
+// Pendaftar yang belum masuk Data guru & tidak ditolak = cadangan bila guru siap kurang.
+const CADANGAN = "Cadangan";
+const LABEL_BIDANG = Object.fromEntries(BIDANG.map((b) => [b.k, b.label.replace(/\s*\(.*\)$/, "")]));
 
 // Tahap pendaftar, berurutan sesuai alur: form -> tinjau -> VERIFIKASI 1
 // (masuk Data guru) -> sampel (guru baru) -> VERIFIKASI 2 (akses proyek).
@@ -189,6 +197,10 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
   const [qc, setQc] = useState(null); // pendaftar yang sampelnya sedang di-QC
   const [profil, setProfil] = useState(""); // ID guru
   const [info, setInfo] = useState(""); // pesan berhasil (verifikasi 1)
+  // Saringan keahlian — berlaku untuk ringkasan ketersediaan DAN kedua daftar.
+  const [fBidang, setFBidang] = useState(() => new Set());
+  const [fJenjang, setFJenjang] = useState(() => new Set());
+  const [fTeks, setFTeks] = useState("");
 
   const pendaftar = data?.pendaftar || [];
   const akunByEmail = useMemo(() => new Map((data?.akun || []).map((a) => [a.email, a])), [data]);
@@ -201,24 +213,61 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
     [data, akunByEmail]
   );
 
+  const kataK = fTeks.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const adaSaringK = fBidang.size > 0 || fJenjang.size > 0 || kataK.length > 0;
+  const cocokK = (x) => {
+    if (fBidang.size && !BIDANG.some((b) => fBidang.has(b.k) && b.guru.test(x.bidang || ""))) return false;
+    if (fJenjang.size && !fJenjang.has(jenjangDari(x.pendidikan))) return false;
+    if (kataK.length && !kataK.every((w) => lower(`${x.bidang} ${x.jurusan} ${x.universitas} ${x.pendidikan}`).includes(w))) return false;
+    return true;
+  };
+  const guruK = adaSaringK ? guru.filter(cocokK) : guru;
+  const pendaftarK = adaSaringK ? pendaftar.filter(cocokK) : pendaftar;
+  // Ketersediaan untuk saringan ini
+  const siap = guruK.filter((g) => g.st.k === "aktif" || g.st.k === "ganti");
+  const bisaAktif = guruK.filter((g) => g.st.k === "belum");
+  const tanpaEmailK = guruK.filter((g) => g.st.k === "tanpaEmail");
+  const cadangan = pendaftarK.filter((p) => !p.idGuru && p.status !== "Ditolak");
+  const tanpaBidang = guru.filter((g) => !BIDANG.some((b) => b.guru.test(g.bidang || ""))).length;
+  const jumlahBidang = useMemo(() => {
+    const c = {};
+    guru.forEach((g) => BIDANG.forEach((b) => b.guru.test(g.bidang || "") && (c[b.k] = (c[b.k] || 0) + 1)));
+    return c;
+  }, [guru]);
+  const ubahSet = (set, setter, k) => {
+    const n = new Set(set);
+    n.has(k) ? n.delete(k) : n.add(k);
+    setter(n);
+  };
+  const hapusSaringK = () => {
+    setFBidang(new Set());
+    setFJenjang(new Set());
+    setFTeks("");
+  };
+
   const hitungP = useMemo(() => {
     const c = { Menunggu: 0 };
-    pendaftar.forEach((p) => (c[p.status] = (c[p.status] || 0) + 1));
+    pendaftarK.forEach((p) => (c[p.status] = (c[p.status] || 0) + 1));
     return c;
-  }, [pendaftar]);
+  }, [pendaftarK]);
   const hitungA = useMemo(() => {
     const c = {};
     guru.forEach((g) => (c[g.st.k] = (c[g.st.k] || 0) + 1));
     return c;
   }, [guru]);
+  const hitungAK = useMemo(() => {
+    const c = {};
+    guruK.forEach((g) => (c[g.st.k] = (c[g.st.k] || 0) + 1));
+    return c;
+  }, [guruK]);
   const punyaAkun = guru.length - (hitungA.belum || 0) - (hitungA.tanpaEmail || 0);
-  const dalamProses = pendaftar.filter((p) => DALAM_PROSES.has(p.status)).length;
+  const dalamProses = pendaftarK.filter((p) => DALAM_PROSES.has(p.status)).length;
   const bisaDibuat = hitungA.belum || 0;
 
   const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const cocok = (...xs) => words.every((w) => lower(xs.join(" ")).includes(w));
-  const listP = pendaftar.filter((p) => (saringP === "Semua" || p.status === saringP) && cocok(p.nama, p.email, p.wa, p.bidang, p.universitas));
-  const listA = guru.filter(
+  const listP = pendaftarK.filter((p) => (saringP === "Semua" || p.status === saringP || (saringP === CADANGAN && !p.idGuru && p.status !== "Ditolak")) && cocok(p.nama, p.email, p.wa, p.bidang, p.universitas));
+  const listA = guruK.filter(
     (g) => (saringA === "semua" || g.st.k === saringA || (saringA === "belum" && g.st.k === "belum")) && cocok(g.nama, g.email, g.idGuru, g.wa)
   );
 
@@ -386,10 +435,15 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
           <Icon name="search" />
           <input type="search" placeholder="Cari nama, email, WA" aria-label="Cari pendaftar atau guru" value={q} onChange={(e) => setQ(e.target.value)} />
         </label>
-        {tampil === "akun" && bisaDibuat ? (
-          <button type="button" className="btn btn-blue fab" disabled={kunciTulis} onClick={() => buatAkun("semua", bisaDibuat)}>
+        {tampil === "akun" && (adaSaringK ? bisaAktif.length : bisaDibuat) ? (
+          <button
+            type="button"
+            className="btn btn-blue fab"
+            disabled={kunciTulis}
+            onClick={() => (adaSaringK ? buatAkun(bisaAktif.map((g) => g.idGuru), bisaAktif.length) : buatAkun("semua", bisaDibuat))}
+          >
             <Icon name="plus" stroke={2.2} />
-            Beri akses ke {numberID(bisaDibuat)} guru
+            Beri akses ke {numberID(adaSaringK ? bisaAktif.length : bisaDibuat)} guru{adaSaringK ? " (sesuai saringan)" : ""}
           </button>
         ) : null}
       </PageActions>
@@ -461,6 +515,82 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
         </div>
       ) : null}
 
+      {/* ------------------------------------------ ketersediaan per keahlian */}
+      <section className="card ksd" aria-label="Ketersediaan guru per keahlian">
+        <div className="ksd-kepala">
+          <div>
+            <b>Ketersediaan guru per keahlian</b>
+            <span className="muted">Saring bidang, jenjang, atau ketik jurusan/universitas — daftar di bawah ikut tersaring.</span>
+          </div>
+          {adaSaringK ? (
+            <button type="button" className="btn-link" onClick={hapusSaringK}>
+              Hapus saringan
+            </button>
+          ) : null}
+        </div>
+        <label className="search sm">
+          <Icon name="search" />
+          <input type="search" placeholder="Cari jurusan / universitas, mis. matematika UPI" aria-label="Cari jurusan atau universitas" value={fTeks} onChange={(e) => setFTeks(e.target.value)} />
+        </label>
+        <div className="cg-saring">
+          <span className="mpick-lbl">Bidang</span>
+          <div className="chips geser">
+            {BIDANG.filter((b) => jumlahBidang[b.k] || fBidang.has(b.k)).map((b) => (
+              <button key={b.k} type="button" className={"chip sm" + (fBidang.has(b.k) ? " active" : "")} aria-pressed={fBidang.has(b.k)} onClick={() => ubahSet(fBidang, setFBidang, b.k)}>
+                {LABEL_BIDANG[b.k]} <span className="n">{numberID(jumlahBidang[b.k] || 0)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="cg-saring">
+          <span className="mpick-lbl">Jenjang</span>
+          <div className="chips">
+            {JENJANG.map((j) => (
+              <button key={j} type="button" className={"chip sm" + (fJenjang.has(j) ? " active" : "")} aria-pressed={fJenjang.has(j)} onClick={() => ubahSet(fJenjang, setFJenjang, j)}>
+                {j}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="ksd-angka">
+          <div className="siap">
+            <span>Siap mengerjakan</span>
+            <b>{numberID(siap.length)}</b>
+            <small>{siap.length ? `punya akses${hitungAK.ganti ? ` · ${numberID(hitungAK.ganti)} belum ganti password` : ""}` : "belum ada yang punya akses"}</small>
+          </div>
+          <div>
+            <span>Di Data guru, belum diberi akses</span>
+            <b>{numberID(bisaAktif.length)}</b>
+            <small>{tanpaEmailK.length ? `+ ${numberID(tanpaEmailK.length)} tanpa email (lengkapi dulu)` : bisaAktif.length ? "bisa langsung diaktifkan" : "tidak ada"}</small>
+            {bisaAktif.length ? (
+              <button type="button" className="btn btn-ghost xs" disabled={kunciTulis} onClick={() => buatAkun(bisaAktif.map((g) => g.idGuru), bisaAktif.length)}>
+                Beri akses ke {numberID(bisaAktif.length)}
+              </button>
+            ) : null}
+          </div>
+          <div>
+            <span>Cadangan dari pendaftar</span>
+            <b>{numberID(cadangan.length)}</b>
+            <small>belum masuk Data guru</small>
+            {cadangan.length ? (
+              <button
+                type="button"
+                className="btn btn-ghost xs"
+                onClick={() => {
+                  setTampil("pendaftar");
+                  setSaringP(CADANGAN);
+                }}
+              >
+                Lihat {numberID(cadangan.length)} pendaftar
+              </button>
+            ) : null}
+          </div>
+        </div>
+        {fBidang.size && tanpaBidang ? (
+          <small className="muted">{numberID(tanpaBidang)} guru di Data guru belum mengisi bidang, jadi tidak ikut saringan bidang (bisa dicari lewat jurusan).</small>
+        ) : null}
+      </section>
+
       <div className="seg-tab" role="tablist" aria-label="Tampilan">
         <button type="button" role="tab" aria-selected={tampil === "pendaftar"} className={tampil === "pendaftar" ? "on" : ""} onClick={() => setTampil("pendaftar")}>
           Pendaftar
@@ -468,7 +598,7 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
         </button>
         <button type="button" role="tab" aria-selected={tampil === "akun"} className={tampil === "akun" ? "on" : ""} onClick={() => setTampil("akun")}>
           Akun guru
-          <span className="n">{numberID(guru.length)}</span>
+          <span className="n">{numberID(guruK.length)}</span>
         </button>
       </div>
 
@@ -476,7 +606,8 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
         <>
           <div className="chips geser" role="group" aria-label="Saring status pendaftar">
             {TAHAP_TAMPIL.filter((s) => s === "Menunggu" || hitungP[s] || saringP === s).map((s) => chip(saringP === s, s, hitungP[s] || 0, () => setSaringP(s)))}
-            {chip(saringP === "Semua", "Semua", pendaftar.length, () => setSaringP("Semua"))}
+            {chip(saringP === CADANGAN, CADANGAN, cadangan.length, () => setSaringP(CADANGAN))}
+            {chip(saringP === "Semua", "Semua", pendaftarK.length, () => setSaringP("Semua"))}
           </div>
           {listP.length === 0 ? (
             <div className="card empty">
@@ -608,7 +739,7 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
       ) : (
         <>
           <div className="chips geser" role="group" aria-label="Saring status akun">
-            {chip(saringA === "semua", "Semua", guru.length, () => setSaringA("semua"))}
+            {chip(saringA === "semua", "Semua", guruK.length, () => setSaringA("semua"))}
             {[
               ["belum", "Belum punya akun"],
               ["tanpaEmail", "Tanpa email"],
@@ -617,8 +748,8 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
               ["terkunci", "Terkunci"],
               ["nonaktif", "Nonaktif"],
             ]
-              .filter(([k]) => hitungA[k] || saringA === k)
-              .map(([k, l]) => chip(saringA === k, l, hitungA[k] || 0, () => setSaringA(k)))}
+              .filter(([k]) => hitungAK[k] || saringA === k)
+              .map(([k, l]) => chip(saringA === k, l, hitungAK[k] || 0, () => setSaringA(k)))}
           </div>
           {saringA === "tanpaEmail" && hitungA.tanpaEmail ? (
             <div className="banner info">
@@ -668,6 +799,7 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
                       <button type="button" className="nama-link" onClick={() => setProfil(g.idGuru)}>
                         {g.nama}
                       </button>
+                      {adaSaringK && (g.jurusan || g.universitas) ? <small className="ksd-sub">{[g.pendidikan && jenjangDari(g.pendidikan), g.jurusan, g.universitas].filter(Boolean).join(" · ")}</small> : null}
                     </td>
                     <td className="wrap" data-l="Email login">
                       {g.email || <span className="neg">belum ada</span>}

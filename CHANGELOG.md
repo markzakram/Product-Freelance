@@ -12,6 +12,26 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 2.5.0 — Ketersediaan guru per keahlian (1 Oktober 2026)
+
+- Di **Pendaftaran & akun** ada panel baru **Ketersediaan guru per keahlian**: saring
+  per **bidang** (Matematika & Kuantitatif, Bahasa Inggris, Psikotes, …; angka di tiap
+  chip = jumlah guru di Data guru), **jenjang** (D3–S1 / S2 / S3), atau ketik
+  **jurusan / universitas** (mis. "matematika UPI").
+- Untuk saringan itu langsung terlihat tiga angka:
+  - **Siap mengerjakan** — sudah punya akses proyek;
+  - **Di Data guru, belum diberi akses** — bisa diaktifkan saat itu juga lewat tombol
+    **Beri akses ke N** (hanya guru yang tersaring; yang belum punya email ikut dihitung
+    terpisah supaya dilengkapi dulu);
+  - **Cadangan dari pendaftar** — pendaftar yang belum masuk Data guru dan tidak ditolak;
+    tombol **Lihat N pendaftar** membuka daftar itu (chip baru **Cadangan**) untuk
+    ditinjau dan diverifikasi.
+- Saringan keahlian ikut berlaku di daftar Pendaftar dan Akun guru (termasuk angka di tab,
+  chip status, dan tombol massal "Beri akses ke N guru (sesuai saringan)"). Saat saringan
+  aktif, baris Akun guru menampilkan jenjang · jurusan · universitas di bawah nama.
+- Guru yang belum mengisi bidang tidak ikut saringan bidang — jumlahnya ditampilkan agar
+  bisa dicari lewat jurusan.
+
 ## 2.4.1 — Chat WA di panel Tinjau; nama dari pertanyaan kembar (28 September 2026)
 
 - Panel **Tinjau** punya tombol **Chat via WhatsApp** (dengan sapaan awal siap dilanjutkan)
