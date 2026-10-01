@@ -34,6 +34,7 @@ import PasangApp from "./PasangApp";
 import AksesPanel, { DALAM_PROSES } from "./AksesPanel";
 import CariGuru from "./CariGuru";
 import PantauReachout from "./PantauReachout";
+import CorongRekrutmen from "./CorongRekrutmen";
 import { EVENT_REACHOUT } from "@/lib/kontakWa";
 import { barisRekap, bankDanRekening, judulRekap, unduhExcel, salinRekap } from "@/lib/rekapFee";
 
@@ -147,6 +148,8 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   const [guru, setGuru] = useState({ rows: [] });
   const [akses, setAkses] = useState(null); // pendaftar & akun guru
   const [reachout, setReachout] = useState(null); // kontak WA admin -> guru (tab Reachout)
+  // Lompatan dari halaman lain ke Pendaftaran & akun: { email?, tampil, saringA?, tinjau? }
+  const [fokusAkses, setFokusAkses] = useState(null);
   const [extraLoaded, setExtraLoaded] = useState(false);
 
   const { projects = [], assignments = [], teachers = [], source, canWrite, diag, sheetWritable, serviceAccount } = board;
@@ -645,6 +648,22 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
                 <div className="card empty">Memuat reachout…</div>
               ))}
 
+            {tab === "corong" &&
+              (extraLoaded ? (
+                <CorongRekrutmen
+                  akses={akses}
+                  log={allMonths.log || []}
+                  kontak={reachout?.kontak || []}
+                  projects={projects}
+                  bukaAkses={(f) => {
+                    setFokusAkses(f);
+                    pilihTab("akses");
+                  }}
+                />
+              ) : (
+                <div className="card empty">Memuat corong…</div>
+              ))}
+
             {tab === "master" &&
               (extraLoaded ? (
                 <MasterPanel
@@ -700,6 +719,8 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
                   aksiEl={aksiEl}
                   keDatabaseGuru={() => pilihTab("guru")}
                   picList={opts.picSemua || []}
+                  fokus={fokusAkses}
+                  fokusDipakai={() => setFokusAkses(null)}
                 />
               ) : (
                 <div className="card empty">Memuat pendaftaran & akun…</div>
@@ -754,6 +775,7 @@ const NAV = [
       { k: "ringkasan", label: "Ringkasan", judul: "Ringkasan", ikon: "home" },
       { k: "analisis", label: "Analisis lintas bulan", judul: "Analisis Lintas Bulan", ikon: "chart" },
       { k: "reachout", label: "Pantau reachout", judul: "Pantau Reachout", ikon: "send" },
+      { k: "corong", label: "Corong rekrutmen", judul: "Corong Rekrutmen & Aktivasi", ikon: "filter" },
     ],
   },
   {

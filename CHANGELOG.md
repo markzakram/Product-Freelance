@@ -12,6 +12,33 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 2.7.0 — Corong rekrutmen & aktivasi (1 Oktober 2026)
+
+- Menu baru **Pantauan → Corong rekrutmen**:
+  - **Corong rekrutmen** (bisa disaring pendaftar 30 hari / 90 hari / semua):
+    mendaftar → ditinjau → masuk Data guru → lolos sampel → punya akses → mengambil
+    proyek, dengan jumlah dan **% dari tahap sebelumnya**, plus ringkasan sampel (berapa
+    yang masuk tahap sampel, mengirim, lolos, dan median sesi QC sampai lolos).
+  - **Corong aktivasi akun** (seluruh Data guru): punya email → akun dibuat → pernah
+    login → sudah ganti password → mengambil proyek sejak punya akun.
+  - Angka utama: jumlah pendaftar, % daftar → punya akses, **median lama daftar →
+    akses** (hari), dan % akun yang pernah dipakai login.
+  - **Pendaftar tertahan**: belum ditinjau > 3 hari, belum diputuskan > 3 hari, belum
+    mengirim sampel / revisi > 5 hari, lolos sampel atau siap akses tapi belum diberi
+    akses > 2 hari. Tombol **Tinjau / Putuskan / Beri akses** langsung membuka orang itu
+    di Pendaftaran & akun (panel Tinjau terbuka otomatis); **Ingatkan sampel/revisi**
+    lewat WA.
+  - **Akun belum aktif dipakai**: terkunci, belum login > 3 hari setelah akun dibuat,
+    login tapi belum ganti password, atau belum mengambil proyek 14 hari sejak punya
+    akun — dengan tombol **Ingatkan login / Ingatkan / Ajak ambil proyek** dan **Reset
+    password**.
+  - Setiap baris menampilkan kapan terakhir orang itu dihubungi (dari tab Reachout).
+    Pengingat WA menunda baris itu sampai batas harinya lewat lagi, jadi daftar tidak
+    mendorong untuk mengirim pesan berulang.
+- Tujuan kontak baru di tab Reachout: **Ingatkan aktivasi**.
+- Guru yang sudah ada di Data guru sebelum alur seleksi dibuat tidak dihitung sebagai
+  pendaftar tertahan — mereka masuk corong aktivasi ("belum punya akun").
+
 ## 2.6.0 — Pantau reachout (1 Oktober 2026)
 
 - Menu baru **Pantauan → Pantau reachout** (per bulan, ikut pemilih bulan):

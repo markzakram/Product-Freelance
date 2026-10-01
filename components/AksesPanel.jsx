@@ -14,7 +14,7 @@
 //  lewat WhatsApp. Yang tersimpan di spreadsheet hanya hash-nya.
 // ============================================================================
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { numberID } from "@/lib/format";
 import { tautanWa } from "@/lib/tautan";
 import Icon from "./Icon";
@@ -191,7 +191,9 @@ function Kredensial({ daftar, reset, onClose }) {
 }
 
 /* ------------------------------------------------------------------ panel */
-export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aksiEl, keDatabaseGuru, picList = [] }) {
+// `fokus`: lompatan dari halaman lain (Corong rekrutmen) — tampilkan satu orang/saringan,
+// lalu `fokusDipakai()` supaya tidak terpasang lagi saat halaman ini dibuka berikutnya.
+export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aksiEl, keDatabaseGuru, picList = [], fokus = null, fokusDipakai }) {
   const [tampil, setTampil] = useState("pendaftar");
   const [saringP, setSaringP] = useState("Menunggu");
   const [saringA, setSaringA] = useState("semua");
@@ -206,6 +208,22 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
   const [fBidang, setFBidang] = useState(() => new Set());
   const [fJenjang, setFJenjang] = useState(() => new Set());
   const [fTeks, setFTeks] = useState("");
+
+  useEffect(() => {
+    if (!fokus) return;
+    setTampil(fokus.tampil || "pendaftar");
+    setQ(fokus.email || "");
+    setSaringP("Semua");
+    setSaringA(fokus.saringA || "semua");
+    setFBidang(new Set());
+    setFJenjang(new Set());
+    setFTeks("");
+    if (fokus.tinjau) {
+      const p = (data?.pendaftar || []).find((x) => x.email === fokus.email);
+      if (p) setTinjau(p);
+    }
+    fokusDipakai?.();
+  }, [fokus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pendaftar = data?.pendaftar || [];
   const akunByEmail = useMemo(() => new Map((data?.akun || []).map((a) => [a.email, a])), [data]);
