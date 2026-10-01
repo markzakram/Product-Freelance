@@ -13,11 +13,14 @@ import { useMemo, useState } from "react";
 import { numberID } from "@/lib/format";
 import { tautanWa } from "@/lib/tautan";
 import { RUBRIK, CHECKLIST, HASIL_QC } from "@/lib/seleksiOpsi";
+import { catatWa } from "@/lib/kontakWa";
 import Drawer from "./Drawer";
 import Combobox from "./Combobox";
 import Icon from "./Icon";
 
 const perluSampel = (p) => p.perluSampel ?? !/lama/i.test(p.statusForm || "");
+// Kontak WA ke pendaftar tercatat di tab Reachout (Pantau reachout).
+const catat = (p, tujuan) => catatWa({ tujuan, idGuru: p.idGuru || "", nama: p.nama, email: p.email, wa: p.wa });
 
 export const kelasTahap = (s) =>
   ({ "Punya akses": "appr", "Lolos sampel": "appr", "Siap akses": "run", Sampel: "run", Tinjau: "qc", Menunggu: "qc", Ditolak: "batal plain" })[s] || "qc";
@@ -109,7 +112,7 @@ export function TinjauDrawer({ p, busy, onClose, onSimpan }) {
     >
       <div className="tinjau-kontak">
         {p.wa ? (
-          <a className="btn btn-wa sm" href={tautanWa(p.wa, pesanSapa(p))} target="_blank" rel="noopener noreferrer">
+          <a className="btn btn-wa sm" href={tautanWa(p.wa, pesanSapa(p))} target="_blank" rel="noopener noreferrer" onClick={() => catat(p, "Sapa pendaftar")}>
             <Icon name="send" /> Chat via WhatsApp
           </a>
         ) : (
@@ -280,13 +283,13 @@ export function TombolWaSeleksi({ p }) {
   const qc = (p.seleksi?.qc || []).slice(-1)[0];
   if (p.status === "Sampel" && !qc)
     return (
-      <a className="btn btn-ghost sm" href={tautanWa(p.wa, pesanMintaSampel(p))} target="_blank" rel="noopener noreferrer">
+      <a className="btn btn-ghost sm" href={tautanWa(p.wa, pesanMintaSampel(p))} target="_blank" rel="noopener noreferrer" onClick={() => catat(p, "Minta sampel")}>
         <Icon name="send" /> Minta sampel
       </a>
     );
   if ((p.status === "Sampel" || p.status === "Lolos sampel") && qc)
     return (
-      <a className="btn btn-ghost sm" href={tautanWa(p.wa, pesanHasilQc(p, qc))} target="_blank" rel="noopener noreferrer">
+      <a className="btn btn-ghost sm" href={tautanWa(p.wa, pesanHasilQc(p, qc))} target="_blank" rel="noopener noreferrer" onClick={() => catat(p, "Hasil QC")}>
         <Icon name="send" /> Kirim hasil QC
       </a>
     );

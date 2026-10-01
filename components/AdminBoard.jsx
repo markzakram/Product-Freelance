@@ -33,6 +33,8 @@ import GuruPanel from "./GuruPanel";
 import PasangApp from "./PasangApp";
 import AksesPanel, { DALAM_PROSES } from "./AksesPanel";
 import CariGuru from "./CariGuru";
+import PantauReachout from "./PantauReachout";
+import { EVENT_REACHOUT } from "@/lib/kontakWa";
 import { barisRekap, bankDanRekening, judulRekap, unduhExcel, salinRekap } from "@/lib/rekapFee";
 
 const STATUS_KNOWN = ["Running Soal", "QC Soal", "Revisi Soal", "Approved", "Running Video", STATUS_BATAL];
@@ -45,7 +47,7 @@ const F0 = { q: "", from: "", to: "", platform: SEMUA, guru: SEMUA, subtes: SEMU
 // Halaman yang isinya terikat satu bulan -> perlu pemilih bulan.
 // (Master, Proyek Baru, dan Analisis tidak: master bersifat lintas bulan dan
 // Analisis punya filter bulannya sendiri.)
-const PERBULAN = new Set(["ringkasan", "katalog", "log", "bayar"]);
+const PERBULAN = new Set(["ringkasan", "katalog", "log", "bayar", "reachout"]);
 
 const tglID = (iso) => {
   const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -144,6 +146,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   const [allMonths, setAllMonths] = useState({ months: [], catalog: [], log: [] });
   const [guru, setGuru] = useState({ rows: [] });
   const [akses, setAkses] = useState(null); // pendaftar & akun guru
+  const [reachout, setReachout] = useState(null); // kontak WA admin -> guru (tab Reachout)
   const [extraLoaded, setExtraLoaded] = useState(false);
 
   const { projects = [], assignments = [], teachers = [], source, canWrite, diag, sheetWritable, serviceAccount } = board;
@@ -194,6 +197,39 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   useEffect(() => {
     if (!expired) refreshExtra();
   }, [refreshExtra, expired]);
+
+  const muatReachout = useCallback(async () => {
+    try {
+      const r = await fetch("/api/admin/reachout", { cache: "no-store" });
+      if (r.status === 401) return setExpired(true);
+      const j = await r.json().catch(() => ({}));
+      setReachout(r.ok ? j : { kontak: [], error: j.error || "HTTP " + r.status });
+    } catch (e) {
+      setReachout({ kontak: [], error: e.message });
+    }
+  }, []);
+  useEffect(() => {
+    if (!expired) muatReachout();
+  }, [muatReachout, expired]);
+
+  // Tombol WA di mana pun (Cari guru, Tinjau, kirim akun, profil) mengumumkan
+  // kontak barunya lewat event — lihat lib/kontakWa.js.
+  useEffect(() => {
+    const dengar = (e) => {
+      const d = e.detail || {};
+      if (d.jenis === "gagal" || d.jenis === "galat") setErr(d.pesan);
+      setReachout((r) => {
+        const kontak = r?.kontak || [];
+        if (d.jenis === "tambah") return { ...r, kontak: [...kontak, d.kontak] };
+        if (d.jenis === "tersimpan") return { ...r, kontak: kontak.map((k) => (k.kid === d.kid ? { ...k, sementara: false } : k)) };
+        if (d.jenis === "gagal") return { ...r, kontak: kontak.filter((k) => k.kid !== d.kid) };
+        if (d.jenis === "hasil") return { ...r, kontak: kontak.map((k) => (k.kid === d.kid ? { ...k, hasil: d.hasil, tHasil: d.tHasil } : k)) };
+        return r;
+      });
+    };
+    window.addEventListener(EVENT_REACHOUT, dengar);
+    return () => window.removeEventListener(EVENT_REACHOUT, dengar);
+  }, []);
 
   // Data sudah dibaca server saat halaman dibuka — itu sinkron pertama. Diset
   // setelah mount, bukan nilai awal state, supaya jam server & browser tidak
@@ -583,8 +619,31 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
                 riwayat={allMonths.log || []}
                 akun={akses?.akun || []}
                 wajibLogin={Boolean(akses?.wajibLogin)}
+                bulan={board.tab}
+                kontak={reachout?.kontak || []}
               />
             )}
+
+            {tab === "reachout" &&
+              (extraLoaded ? (
+                <PantauReachout
+                  data={reachout}
+                  projects={projects}
+                  assignments={assignments}
+                  bulan={board.tab}
+                  namaBulan={namaBulan}
+                  guruDb={guru.rows || []}
+                  master={master.rows || []}
+                  riwayat={allMonths.log || []}
+                  akun={akses?.akun || []}
+                  wajibLogin={Boolean(akses?.wajibLogin)}
+                  picList={opts.picSemua || []}
+                  aksiEl={aksiEl}
+                  muatUlang={muatReachout}
+                />
+              ) : (
+                <div className="card empty">Memuat reachout…</div>
+              ))}
 
             {tab === "master" &&
               (extraLoaded ? (
@@ -694,6 +753,7 @@ const NAV = [
     item: [
       { k: "ringkasan", label: "Ringkasan", judul: "Ringkasan", ikon: "home" },
       { k: "analisis", label: "Analisis lintas bulan", judul: "Analisis Lintas Bulan", ikon: "chart" },
+      { k: "reachout", label: "Pantau reachout", judul: "Pantau Reachout", ikon: "send" },
     ],
   },
   {
@@ -1604,7 +1664,7 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, m
 /* ============================== KATALOG ================================== */
 const BLANK_P = { id: "", idSubtes: "", platform: "", subtes: "", output: "", harga: "", kebutuhan: "" };
 
-function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan, setErr, onMasterChanged, guruDb, log, riwayat, akun, wajibLogin }) {
+function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan, setErr, onMasterChanged, guruDb, log, riwayat, akun, wajibLogin, bulan, kontak }) {
   const [edit, setEdit] = useState(null);
   const [cari, setCari] = useState(null); // proyek yang sedang dicarikan guru
   const [draft, setDraft] = useState(BLANK_P);
@@ -1779,7 +1839,9 @@ function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan
         />
       ) : null}
 
-      {cari ? <CariGuru proyek={cari} master={master} guru={guruDb} log={log} riwayat={riwayat} akun={akun} wajibLogin={wajibLogin} onClose={() => setCari(null)} /> : null}
+      {cari ? (
+        <CariGuru proyek={cari} bulan={bulan} kontak={kontak} master={master} guru={guruDb} log={log} riwayat={riwayat} akun={akun} wajibLogin={wajibLogin} onClose={() => setCari(null)} />
+      ) : null}
 
       {confirm ? (
         <ConfirmDelete

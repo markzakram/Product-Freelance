@@ -4,12 +4,16 @@
 //  Panel "Cari guru" untuk satu proyek katalog: guru yang bidangnya cocok,
 //  berminat pada jenis proyeknya, dan tidak sedang kebanjiran pekerjaan —
 //  lengkap dengan tombol "Tawarkan via WA". Logika pencocokan: lib/cocokGuru.js.
+//  Setiap tawaran tercatat di tab Reachout (lib/kontakWa.js), jadi tanda
+//  "ditawari" sama di semua perangkat admin dan masuk Pantau reachout.
 // ============================================================================
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { rupiah, numberID } from "@/lib/format";
 import { tautanWa } from "@/lib/tautan";
 import { BIDANG, JADWAL, bidangProyek, kandidatGuru, minatDibutuhkan, labelMinat, pesanTawaran } from "@/lib/cocokGuru";
+import { TAWARAN, MENUNGGU, kelasHasil, kelompokkan, kunciTawaran, sejak } from "@/lib/reachoutOpsi";
+import { catatWa } from "@/lib/kontakWa";
 import Drawer from "./Drawer";
 import Icon from "./Icon";
 
@@ -17,7 +21,8 @@ const low = (s) => String(s ?? "").toLowerCase();
 const LABEL_PENDEK = Object.fromEntries(BIDANG.map((b) => [b.k, b.label.replace(/\s*\(.*\)$/, "")]));
 
 // `wajibLogin`: label "belum punya akun" hanya berarti bila halaman proyek sudah dikunci.
-export default function CariGuru({ proyek: p, master, guru, log, riwayat, akun, wajibLogin, onClose }) {
+// `bulan` = tab bulan katalog; `kontak` = catatan Reachout (untuk tanda "ditawari").
+export default function CariGuru({ proyek: p, bulan, kontak = [], master, guru, log, riwayat, akun, wajibLogin, onClose }) {
   const m = master.find((x) => x.id === p.idSubtes);
   const tebakan = useMemo(() => bidangProyek(p, m), [p, m]);
   const perlu = minatDibutuhkan(p, m);
@@ -30,22 +35,11 @@ export default function CariGuru({ proyek: p, master, guru, log, riwayat, akun, 
   const [jadwal, setJadwal] = useState(() => new Set());
   const [q, setQ] = useState("");
 
-  // Tanda "sudah ditawari" per proyek — hanya kemudahan di browser admin ini.
-  const kunciSimpan = `gf_tawar_${p.id}`;
-  const [ditawari, setDitawari] = useState(() => new Set());
-  useEffect(() => {
-    try {
-      setDitawari(new Set(JSON.parse(localStorage.getItem(kunciSimpan) || "[]")));
-    } catch (_) {}
-  }, [kunciSimpan]);
-  const tandai = (k) =>
-    setDitawari((s) => {
-      const n = new Set(s).add(k);
-      try {
-        localStorage.setItem(kunciSimpan, JSON.stringify([...n]));
-      } catch (_) {}
-      return n;
-    });
+  // Tawaran proyek ini yang sudah tercatat: kunci pasangan -> { kontak, hasil, terakhir }
+  const ditawari = useMemo(
+    () => new Map(kelompokkan(kontak.filter((k) => k.tujuan === TAWARAN && k.bulan === bulan && k.idProyek === p.id)).map((x) => [x.key, x])),
+    [kontak, bulan, p.id]
+  );
 
   const akunMap = useMemo(() => new Map((akun || []).map((a) => [low(a.email), a])), [akun]);
   const semua = useMemo(
@@ -82,7 +76,8 @@ export default function CariGuru({ proyek: p, master, guru, log, riwayat, akun, 
   };
   const asal = typeof window !== "undefined" ? window.location.origin : "";
   const kunci = (x) => x.g.idGuru || x.g.nama;
-  const nDitawari = daftar.filter((x) => ditawari.has(kunci(x))).length;
+  const tawaranKe = (x) => ditawari.get(kunciTawaran(bulan, p.id, x.g));
+  const nDitawari = daftar.filter(tawaranKe).length;
 
   return (
     <Drawer
@@ -93,8 +88,8 @@ export default function CariGuru({ proyek: p, master, guru, log, riwayat, akun, 
       foot={
         <>
           <small className="muted">
-            {numberID(daftar.length)} guru ditampilkan{nDitawari ? ` · ${numberID(nDitawari)} sudah ditawari` : ""}. Tanda "ditawari" hanya
-            tersimpan di browser ini.
+            {numberID(daftar.length)} guru ditampilkan{nDitawari ? ` · ${numberID(nDitawari)} sudah ditawari` : ""}. Setiap tawaran tercatat di Pantau
+            reachout.
           </small>
           <div className="drawer-actions">
             <button type="button" className="btn btn-ghost" onClick={onClose}>
@@ -169,7 +164,8 @@ export default function CariGuru({ proyek: p, master, guru, log, riwayat, akun, 
         <div className="cg-list">
           {daftar.map((x) => {
             const k = kunci(x);
-            const sudah = ditawari.has(k);
+            const tw = tawaranKe(x);
+            const sudah = Boolean(tw);
             return (
               <article key={k} className={"cg-item" + (sudah ? " ditawari" : "")}>
                 <div className="cg-atas">
@@ -186,10 +182,13 @@ export default function CariGuru({ proyek: p, master, guru, log, riwayat, akun, 
                       href={tautanWa(x.g.wa, pesanTawaran(x, p, asal))}
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={() => tandai(k)}
+                      onClick={() =>
+                        catatWa({ tujuan: TAWARAN, bulan, idProyek: p.id, subtes: p.subtes, idGuru: x.g.idGuru, nama: x.g.nama, email: x.g.email, wa: x.g.wa })
+                      }
+                      title={sudah ? "Kirim lagi — tercatat sebagai kontak berikutnya" : undefined}
                     >
                       <Icon name={sudah ? "check" : "send"} />
-                      {sudah ? "Ditawari" : "Tawarkan via WA"}
+                      {sudah ? `Ditawari ${tw.kontak.length > 1 ? tw.kontak.length + "×" : ""}`.trim() : "Tawarkan via WA"}
                     </a>
                   ) : (
                     <span className="muted xs2">WA belum ada</span>
@@ -201,6 +200,11 @@ export default function CariGuru({ proyek: p, master, guru, log, riwayat, akun, 
                   {x.sudahAmbil ? <span className="pill qc">sudah ambil {numberID(x.sudahAmbil)} soal</span> : null}
                   {x.baru ? <span className="pill qc">guru baru · perlu sampel</span> : null}
                   {wajibLogin && !x.punyaAkun ? <span className="pill rev">belum punya akun</span> : null}
+                  {tw ? (
+                    <span className={"pill " + kelasHasil(tw.hasil)}>
+                      {(tw.hasil || MENUNGGU).toLowerCase()} · ditawari {sejak(tw.terakhir)}
+                    </span>
+                  ) : null}
                 </div>
                 <div className="cg-info">
                   <span>

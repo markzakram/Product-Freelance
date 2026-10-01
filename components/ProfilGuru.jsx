@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { rupiah, numberID } from "@/lib/format";
 import { tautanWa } from "@/lib/tautan";
 import { bankDanRekening } from "@/lib/rekapFee";
+import { catatWa } from "@/lib/kontakWa";
 import Drawer from "./Drawer";
 import Icon from "./Icon";
 
@@ -118,7 +119,13 @@ export default function ProfilGuru({ idGuru, onClose, onChanged }) {
         <>
           <div className="pg-kontak">
             {g.wa ? (
-              <a className="btn btn-wa sm" href={tautanWa(g.wa)} target="_blank" rel="noopener noreferrer">
+              <a
+                className="btn btn-wa sm"
+                href={tautanWa(g.wa)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => catatWa({ tujuan: "Chat langsung", idGuru: g.idGuru, nama: g.nama, email: g.email, wa: g.wa })}
+              >
                 <Icon name="send" /> WhatsApp
               </a>
             ) : null}

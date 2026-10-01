@@ -12,6 +12,32 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 2.6.0 — Pantau reachout (1 Oktober 2026)
+
+- Menu baru **Pantauan → Pantau reachout** (per bulan, ikut pemilih bulan):
+  - **Kuota terisi** bulan itu (soal terisi ÷ kebutuhan), **guru ditawari** dan berapa
+    yang berakhir mengambil, **tingkat balasan**, dan jumlah yang **perlu tindak lanjut**.
+  - **Tindak lanjut**: guru yang belum membalas ≥ 2 hari (tombol **Chat ulang** dengan
+    pesan susulan), yang sudah 3× dihubungi tanpa balasan (sarankan **Tandai tak ada
+    kabar**), yang **bersedia tapi belum mengambil** (tombol **Ingatkan ambil**), proyek
+    yang semua calonnya menolak, dan ringkasan proyek yang belum ditawarkan sama sekali.
+  - **Progres per proyek**: bar kuota + corong *ditawari → dibalas → bersedia →
+    mengambil*, status (Terpenuhi / Kurang N soal / Perlu calon baru / Belum
+    ditawarkan), daftar guru yang ditawari, dan tombol **Cari guru**.
+  - **Aktivitas terbaru**: semua kontak WA dari dashboard, bisa disaring per tujuan.
+- **Setiap tombol WhatsApp admin kini tercatat otomatis** di tab baru **Reachout**
+  (spreadsheet PROYEK GURU FREELANCE, dibuat otomatis): Tawarkan via WA (Cari guru),
+  Chat via WhatsApp di Tinjau, Minta sampel, Kirim hasil QC, Kirim akun (password TIDAK
+  ikut dicatat), dan WhatsApp di profil guru. Hasilnya ditandai satu ketukan: Dibalas,
+  Bersedia, Menolak, Tak ada kabar. **Mengambil** dihitung otomatis dari Log pengambilan.
+- **Cari guru**: tanda "Ditawari" sekarang dari tab Reachout (sama di semua perangkat
+  admin, bukan lagi hanya di browser ini), lengkap dengan status balasan dan kapan
+  terakhir ditawari.
+- Pilihan **Dicatat atas nama** (PIC) di halaman Pantau reachout — tersimpan di perangkat
+  itu dan ikut tercatat di setiap kontak.
+- Catatan: dashboard hanya tahu admin membuka WhatsApp, bukan apakah pesannya terkirim
+  atau dibaca; karena itu balasan ditandai manual.
+
 ## 2.5.0 — Ketersediaan guru per keahlian (1 Oktober 2026)
 
 - Di **Pendaftaran & akun** ada panel baru **Ketersediaan guru per keahlian**: saring

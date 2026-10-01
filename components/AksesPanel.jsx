@@ -23,6 +23,7 @@ import PageActions from "./PageActions";
 import ProfilGuru from "./ProfilGuru";
 import { TinjauDrawer, QcDrawer, TombolWaSeleksi, kelasTahap, kelasHasil } from "./SeleksiDrawer";
 import { BIDANG } from "@/lib/cocokGuru";
+import { catatWa } from "@/lib/kontakWa";
 
 // Jenjang dari jawaban form ("D3/D4/S1 lulus", "S2 sedang ditempuh", "S3", …).
 const JENJANG = ["D3–S1", "S2", "S3"];
@@ -170,7 +171,11 @@ function Kredensial({ daftar, reset, onClose }) {
                 {disalin === k.email ? "Pesan disalin" : "Salin pesan"}
               </button>
               {k.wa ? (
-                <a className="btn btn-wa sm" href={tautanWa(k.wa, pesanWa(k, reset))} target="_blank" rel="noopener noreferrer" onClick={() => setTerkirim((t) => ({ ...t, [k.email]: true }))}>
+                <a className="btn btn-wa sm" href={tautanWa(k.wa, pesanWa(k, reset))} target="_blank" rel="noopener noreferrer" onClick={() => {
+                    setTerkirim((t) => ({ ...t, [k.email]: true }));
+                    // hanya data kontak — password TIDAK ikut dicatat
+                    catatWa({ tujuan: "Kirim akun", idGuru: k.idGuru, nama: k.nama, email: k.email, wa: k.wa });
+                  }}>
                   <Icon name="send" />
                   Kirim WhatsApp
                 </a>
