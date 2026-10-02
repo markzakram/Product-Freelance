@@ -43,7 +43,8 @@ Di halaman import (atau **Project → Settings → Environment Variables**), tam
 
 | Nama | Wajib | Isi |
 |------|:---:|-----|
-| `INTERNAL_PASSWORD` | ✅ | Password login area `/admin` |
+| `INTERNAL_PASSWORD` | ✅ | Password **pemilik** untuk `/admin` (masuk dengan email dikosongkan). Anggota tim seleksi/akademik masuk dengan akun masing-masing yang dibuat pemilik di menu **Akun tim** |
+| `GURU_SESSION_SECRET` | ✅ | Rahasia acak ≥ 32 karakter untuk menandatangani sesi login guru (`/open`) **dan** anggota tim (`/admin`) |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | ✅* | Isi file JSON service account (satu baris) — **cara disarankan** |
 | `GOOGLE_SHEETS_API_KEY` | ✅* | Alternatif service account (lihat Cara B) |
 | `NEXT_PUBLIC_WA_NUMBER` | ⬜ | Nomor WhatsApp tim, format `62812xxxx` |

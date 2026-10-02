@@ -35,7 +35,8 @@ import AksesPanel, { DALAM_PROSES } from "./AksesPanel";
 import CariGuru from "./CariGuru";
 import PantauReachout from "./PantauReachout";
 import CorongRekrutmen from "./CorongRekrutmen";
-import { EVENT_REACHOUT } from "@/lib/kontakWa";
+import { EVENT_REACHOUT, aturPelaku } from "@/lib/kontakWa";
+import TimPanel from "./TimPanel";
 import { barisRekap, bankDanRekening, judulRekap, unduhExcel, salinRekap } from "@/lib/rekapFee";
 
 const STATUS_KNOWN = ["Running Soal", "QC Soal", "Revisi Soal", "Approved", "Running Video", STATUS_BATAL];
@@ -127,9 +128,15 @@ const Cols = ({ widths }) => (
 );
 
 // ============================================================================
-export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPassword = false }) {
+const PENGGUNA_BAWAAN = { nama: "Admin", email: "", peran: ["Pemilik"], pemilik: true, akunTim: false };
+// Sama dengan bolehPeran di lib/authServer (server tetap memeriksa ulang).
+export const bolehP = (pg, peran = []) => pg.pemilik || !peran.length || peran.some((x) => pg.peran.includes(x));
+
+export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPassword = false, pengguna = PENGGUNA_BAWAAN }) {
+  const akademik = bolehP(pengguna, ["Akademik"]);
   const [board, setBoard] = useState(initial);
-  const [tab, setTab] = useState("ringkasan");
+  // Tim seleksi langsung ke pendaftar; tim akademik & pemilik ke ringkasan.
+  const [tab, setTab] = useState(akademik ? "ringkasan" : "akses");
   const [f, setF] = useState(F0);
   const [err, setErr] = useState("");
   const [expired, setExpired] = useState(false);
@@ -215,6 +222,10 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
     if (!expired) muatReachout();
   }, [muatReachout, expired]);
 
+  useEffect(() => {
+    aturPelaku(pengguna.nama);
+  }, [pengguna.nama]);
+
   // Tombol WA di mana pun (Cari guru, Tinjau, kirim akun, profil) mengumumkan
   // kontak barunya lewat event — lihat lib/kontakWa.js.
   useEffect(() => {
@@ -247,7 +258,8 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   }, [bulanAktif]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (expired) return undefined;
+    // Tim seleksi tidak membuka katalog/log: jangan habiskan kuota baca Sheets.
+    if (expired || !akademik) return undefined;
     const id = setInterval(refresh, POLL_MS);
     const onFocus = () => refresh();
     // Di HP (terutama aplikasi terpasang) kembali ke aplikasi jarang memicu
@@ -260,7 +272,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [refresh, expired]);
+  }, [refresh, expired, akademik]);
 
   const run = useCallback(
     async (payload) => {
@@ -447,8 +459,10 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   const months = board.months || [];
   const bulanTab = bulanAktif || board.tab || "";
   // pendaftar yang masih perlu ditindaklanjuti (menunggu, ditinjau, sampel, lolos sampel)
-  const pendaftarBaru = (akses?.pendaftar || []).filter((p) => DALAM_PROSES.has(p.status)).length;
-  const ajuanData = (akses?.perubahan || []).length;
+  // Penanda "ada yang perlu dikerjakan" hanya untuk tim yang berwenang:
+  // pendaftar -> tim seleksi; ajuan perubahan data (rekening dll.) -> tim akademik.
+  const pendaftarBaru = bolehP(pengguna, ["Seleksi"]) ? (akses?.pendaftar || []).filter((p) => DALAM_PROSES.has(p.status)).length : 0;
+  const ajuanData = akademik ? (akses?.perubahan || []).length : 0;
   // Pindah halaman selalu mulai dari atas — di HP halaman sebelumnya
   // biasanya sudah tergulir jauh.
   const pilihTab = (k) => {
@@ -480,6 +494,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
           syncedAt={syncedAt}
           syncing={syncing}
           refresh={refresh}
+          pengguna={pengguna}
         />
 
         <div className="admin-col">
@@ -640,13 +655,15 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
                   riwayat={allMonths.log || []}
                   akun={akses?.akun || []}
                   wajibLogin={Boolean(akses?.wajibLogin)}
-                  picList={opts.picSemua || []}
+                  namaSaya={pengguna.nama}
                   aksiEl={aksiEl}
                   muatUlang={muatReachout}
                 />
               ) : (
                 <div className="card empty">Memuat reachout…</div>
               ))}
+
+            {tab === "tim" && pengguna.pemilik && <TimPanel aksiEl={aksiEl} setErr={setErr} emailSaya={pengguna.email} />}
 
             {tab === "corong" &&
               (extraLoaded ? (
@@ -737,7 +754,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
                   setErr={setErr}
                   onChanged={refreshExtra}
                   aksiEl={aksiEl}
-                  perubahan={akses?.perubahan || []}
+                  perubahan={akademik ? akses?.perubahan || [] : []}
                 />
               ) : (
                 <div className="card empty">Memuat data guru…</div>
@@ -746,7 +763,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
         </div>
       </div>
 
-      <TabBar tab={tab} pilihTab={pilihTab} bukaMenu={() => setNavOpen(true)} menuTerbuka={navOpen} adaBaru={pendaftarBaru > 0 || ajuanData > 0} />
+      <TabBar tab={tab} pilihTab={pilihTab} bukaMenu={() => setNavOpen(true)} menuTerbuka={navOpen} adaBaru={pendaftarBaru > 0 || ajuanData > 0} item={akademik ? TABBAR : TABBAR_SELEKSI} />
 
       {print ? <PrintArea groups={print.groups} mode={print.mode} brand={brand} periode={periode} /> : null}
     </>
@@ -762,28 +779,29 @@ const NAV = [
   {
     grup: "Alur kerja",
     item: [
-      { k: "master", label: "Master subtes", judul: "Master Subtes", langkah: 1, hitung: "master" },
-      { k: "baru", label: "Proyek bulan baru", judul: "Proyek Bulan Baru", langkah: 2 },
-      { k: "katalog", label: "Katalog bulan ini", judul: "Katalog Bulan Ini", langkah: 3, hitung: "katalog" },
-      { k: "log", label: "Log pengambilan", judul: "Log Pengambilan", langkah: 4, hitung: "log" },
-      { k: "bayar", label: "Pembayaran & kwitansi", judul: "Pembayaran & Kwitansi", langkah: 5 },
+      { k: "master", label: "Master subtes", judul: "Master Subtes", langkah: 1, hitung: "master", peran: ["Akademik"] },
+      { k: "baru", label: "Proyek bulan baru", judul: "Proyek Bulan Baru", langkah: 2, peran: ["Akademik"] },
+      { k: "katalog", label: "Katalog bulan ini", judul: "Katalog Bulan Ini", langkah: 3, hitung: "katalog", peran: ["Akademik"] },
+      { k: "log", label: "Log pengambilan", judul: "Log Pengambilan", langkah: 4, hitung: "log", peran: ["Akademik"] },
+      { k: "bayar", label: "Pembayaran & kwitansi", judul: "Pembayaran & Kwitansi", langkah: 5, peran: ["Akademik"] },
     ],
   },
   {
     grup: "Pantauan",
     item: [
-      { k: "ringkasan", label: "Ringkasan", judul: "Ringkasan", ikon: "home" },
-      { k: "analisis", label: "Analisis lintas bulan", judul: "Analisis Lintas Bulan", ikon: "chart" },
-      { k: "reachout", label: "Pantau reachout", judul: "Pantau Reachout", ikon: "send" },
-      { k: "corong", label: "Corong rekrutmen", judul: "Corong Rekrutmen & Aktivasi", ikon: "filter" },
+      { k: "ringkasan", label: "Ringkasan", judul: "Ringkasan", ikon: "home", peran: ["Akademik"] },
+      { k: "analisis", label: "Analisis lintas bulan", judul: "Analisis Lintas Bulan", ikon: "chart", peran: ["Akademik"] },
+      { k: "reachout", label: "Pantau reachout", judul: "Pantau Reachout", ikon: "send", peran: ["Akademik"] },
+      { k: "corong", label: "Corong rekrutmen", judul: "Corong Rekrutmen & Aktivasi", ikon: "filter", peran: ["Seleksi"] },
     ],
   },
   {
     grup: "Data pendukung",
     item: [
       // hitungan = pendaftar yang menunggu verifikasi (kosong bila tidak ada)
-      { k: "akses", label: "Pendaftaran & akun", judul: "Pendaftaran & Akun Guru", ikon: "userCheck", hitung: "pendaftar" },
+      { k: "akses", label: "Pendaftaran & akun", judul: "Pendaftaran & Akun Guru", ikon: "userCheck", hitung: "pendaftar", peran: ["Seleksi"] },
       { k: "guru", label: "Database guru", judul: "Database Guru", ikon: "users", hitung: "guru" },
+      { k: "tim", label: "Akun tim", judul: "Akun Tim", ikon: "kunci", peran: ["Pemilik"] },
     ],
   },
 ];
@@ -810,11 +828,18 @@ const TABBAR = [
   { k: "bayar", label: "Bayar", ikon: "wallet" },
 ];
 
-function TabBar({ tab, pilihTab, bukaMenu, menuTerbuka, adaBaru }) {
-  const lainnya = !TABBAR.some((t) => t.k === tab);
+// Tim seleksi tidak memakai katalog/log/bayar — menu bawahnya sendiri.
+const TABBAR_SELEKSI = [
+  { k: "akses", label: "Pendaftar", ikon: "userCheck" },
+  { k: "corong", label: "Corong", ikon: "filter" },
+  { k: "guru", label: "Guru", ikon: "users" },
+];
+
+function TabBar({ tab, pilihTab, bukaMenu, menuTerbuka, adaBaru, item = TABBAR }) {
+  const lainnya = !item.some((t) => t.k === tab);
   return (
     <nav className="tabbar" aria-label="Menu utama">
-      {TABBAR.map((t) => (
+      {item.map((t) => (
         <button
           key={t.k}
           type="button"
@@ -835,20 +860,32 @@ function TabBar({ tab, pilihTab, bukaMenu, menuTerbuka, adaBaru }) {
   );
 }
 
-function SideNav({ tab, setTab, counts, open, setOpen, months, bulanTab, setBulan, kunciBulan, syncedAt, syncing, refresh }) {
+const inisial = (n) =>
+  String(n || "?")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
+const labelTim = (pg) =>
+  pg.pemilik ? "Divisi Produk" : pg.peran.includes("Seleksi") && pg.peran.includes("Akademik") ? "Tim Seleksi & Akademik" : pg.peran.includes("Seleksi") ? "Tim Seleksi" : "Tim Akademik";
+
+function SideNav({ tab, setTab, counts, open, setOpen, months, bulanTab, setBulan, kunciBulan, syncedAt, syncing, refresh, pengguna = PENGGUNA_BAWAAN }) {
+  const grup = NAV.map((g) => ({ ...g, item: g.item.filter((it) => bolehP(pengguna, it.peran)) })).filter((g) => g.item.length);
+  const adaPerBulan = grup.some((g) => g.item.some((it) => PERBULAN.has(it.k)));
   return (
     <>
       {open ? <div className="nav-scrim" onClick={() => setOpen(false)} /> : null}
       <nav className={"admin-side" + (open ? " open" : "")} aria-label="Menu admin">
         <div className="side-scroll">
           <div className="side-brand">
-            <Brand size={34} versi={APP_VERSION} sub="Divisi Produk" />
+            <Brand size={34} versi={APP_VERSION} sub={labelTim(pengguna)} />
             <button type="button" className="icon-x side-close" onClick={() => setOpen(false)} aria-label="Tutup menu">
               <Icon name="x" />
             </button>
           </div>
 
-          {months.length ? (
+          {months.length && adaPerBulan ? (
             <div className="side-month">
               <label>
                 <Icon name="calendar" />
@@ -866,7 +903,7 @@ function SideNav({ tab, setTab, counts, open, setOpen, months, bulanTab, setBula
             </div>
           ) : null}
 
-          {NAV.map((g) => (
+          {grup.map((g) => (
             <div className="side-group" key={g.grup}>
               <div className="side-label">{g.grup}</div>
               {g.item.map((it) => (
@@ -902,14 +939,28 @@ function SideNav({ tab, setTab, counts, open, setOpen, months, bulanTab, setBula
         </div>
 
         <div className="side-foot">
-          <span className="avatar" aria-hidden="true">AD</span>
+          <span className="avatar" aria-hidden="true">{inisial(pengguna.nama)}</span>
           <div className="who">
-            <b>Admin</b>
-            <span>{syncing ? "Menyinkronkan…" : syncedAt ? `Sinkron ${syncedAt.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}` : "Tersambung"}</span>
+            <b title={pengguna.email || "masuk dengan password internal"}>{pengguna.nama}</b>
+            <span>
+              {pengguna.akunTim ? (
+                <a href="/admin/ganti-password" className="who-link" title="Ganti password">
+                  Ganti sandi
+                </a>
+              ) : syncing ? (
+                "Menyinkronkan…"
+              ) : syncedAt ? (
+                `Sinkron ${syncedAt.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}`
+              ) : (
+                "Tersambung"
+              )}
+            </span>
           </div>
-          <button type="button" className="ibtn" onClick={refresh} disabled={syncing} aria-label="Segarkan data" title="Segarkan data">
-            <Icon name="refresh" />
-          </button>
+          {bolehP(pengguna, ["Akademik"]) ? (
+            <button type="button" className="ibtn" onClick={refresh} disabled={syncing} aria-label="Segarkan data" title="Segarkan data">
+              <Icon name="refresh" />
+            </button>
+          ) : null}
           <ThemeToggle />
           {/* Logout lewat form POST, bukan <Link>: Next.js mem-prefetch <Link>
               di production begitu terlihat, dan user jadi ter-logout sendiri. */}

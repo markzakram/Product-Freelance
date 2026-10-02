@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { COOKIE } from "@/lib/auth";
+import { COOKIE, COOKIE_TIM } from "@/lib/auth";
 
 // WAJIB POST — jangan pernah dikembalikan ke GET.
 //
@@ -13,5 +13,6 @@ import { COOKIE } from "@/lib/auth";
 export async function POST(req) {
   const res = NextResponse.redirect(new URL("/admin/login", req.nextUrl.origin), { status: 303 });
   res.cookies.set(COOKIE, "", { path: "/", maxAge: 0 });
+  res.cookies.set(COOKIE_TIM, "", { path: "/", maxAge: 0 });
   return res;
 }

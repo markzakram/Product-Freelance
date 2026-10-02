@@ -12,6 +12,39 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.0.0 — Akun tim & dua dashboard: Seleksi dan Akademik (2 Oktober 2026)
+
+Perubahan besar: dashboard admin kini dipakai dua tim dengan akun masing-masing.
+
+- **Akun per orang** (tab baru **Akun tim** di spreadsheet PROYEK GURU FREELANCE):
+  email + password sendiri, dengan peran **Seleksi**, **Akademik**, dan/atau **Pemilik**.
+  Password hanya disimpan sebagai hash; password sementara wajib diganti saat masuk
+  pertama; 5× salah = terkunci 15 menit; akun nonaktif atau password yang di-reset
+  langsung mengeluarkan sesi lama.
+- **Login**: halaman masuk kini meminta email + password. **Pemilik** tetap bisa masuk
+  dengan password internal lama (email dikosongkan) — tidak ada yang terkunci saat
+  transisi.
+- **Dua dashboard** dari satu alamat /admin — menu, menu bawah di HP, dan izin API
+  mengikuti peran:
+  - **Tim Seleksi**: Pendaftaran & akun, Corong rekrutmen, Database guru.
+  - **Tim Akademik**: Master, Proyek bulan baru, Katalog, Log, Pembayaran, Ringkasan,
+    Analisis, Pantau reachout, Database guru.
+  - **Pemilik**: semua menu + halaman baru **Akun tim** (tambah anggota, ubah peran,
+    reset password, nonaktifkan).
+  Server menolak aksi di luar peran (mis. tim seleksi tidak bisa mengubah katalog/log,
+  tim akademik tidak bisa memverifikasi pendaftar).
+- **Tercatat atas nama orangnya**: kontak WA (kolom PIC di tab Reachout) diisi otomatis
+  dari yang login — pilihan "Dicatat atas nama" manual dihapus; keputusan seleksi
+  mendapat kolom baru **Oleh** di tab Seleksi guru; PIC QC sampel terisi otomatis.
+- Sidebar menampilkan nama yang login, timnya, dan tautan **Ganti password**.
+- Ketahanan: pembacaan & penulisan Google Sheets kini diulang otomatis saat Google
+  membalas galat sementara (500/502/503) selain batas kuota (429); bila Sheets sedang
+  sibuk, dashboard menampilkan "server sibuk" — bukan mengeluarkan anggota tim.
+- Hemat kuota: daftar tab dibaca sekali untuk semua tab kecil, dan pemeriksaan sesi
+  tim yang bersamaan berbagi satu pembacaan.
+- Tim seleksi tidak lagi ikut memperbarui katalog/log tiap 45 detik (tidak dipakai),
+  supaya kuota baca Sheets tidak terbuang.
+
 ## 2.7.0 — Corong rekrutmen & aktivasi (1 Oktober 2026)
 
 - Menu baru **Pantauan → Corong rekrutmen**:

@@ -1,6 +1,6 @@
 // Catatan reachout (kontak WhatsApp admin -> guru) untuk halaman Pantau reachout.
 import { NextResponse } from "next/server";
-import { tolakBukanAdmin } from "@/lib/authServer";
+import { tolakBukanAdmin, izinAdmin } from "@/lib/authServer";
 import { canWrite } from "@/lib/gauth";
 import { bacaReachout, catatKontak, tandaiHasil, TAB_REACHOUT } from "@/lib/reachout";
 
@@ -17,12 +17,12 @@ export async function GET() {
 }
 
 export async function POST(req) {
-  const bukan = await tolakBukanAdmin();
-  if (bukan) return bukan;
+  const { sesi, tolak } = await izinAdmin();
+  if (tolak) return tolak;
   if (!canWrite()) return NextResponse.json({ error: "Mode baca-saja: butuh service account dengan akses Editor." }, { status: 403 });
   try {
     const body = await req.json();
-    if (body.action === "catat") return NextResponse.json({ ok: true, ...(await catatKontak(body)) });
+    if (body.action === "catat") return NextResponse.json({ ok: true, ...(await catatKontak({ ...body, pic: sesi.nama })) });
     if (body.action === "hasil") return NextResponse.json({ ok: true, ...(await tandaiHasil(body.kid, body.hasil)) });
     return NextResponse.json({ error: "Aksi tidak dikenal." }, { status: 400 });
   } catch (e) {

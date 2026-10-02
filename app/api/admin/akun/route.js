@@ -2,7 +2,7 @@
 // Hash password TIDAK PERNAH dikirim ke browser; password asli hanya muncul
 // sekali, di respons pembuatan/reset akun, untuk dikirim admin via WhatsApp.
 import { NextResponse } from "next/server";
-import { tolakBukanAdmin } from "@/lib/authServer";
+import { tolakBukanAdmin, izinAdmin } from "@/lib/authServer";
 import { canWrite } from "@/lib/gauth";
 import { getTeachers } from "@/lib/teachers";
 import { bacaAkun, akunPublik, buatAkun, resetPassword, setStatusAkun, simpanPengaturan, wajibLoginGuru, rapikanEmail, STATUS, TAB_AKUN } from "@/lib/akun";
@@ -59,8 +59,9 @@ export async function GET() {
 }
 
 export async function POST(req) {
-  const bukan = await tolakBukanAdmin();
-  if (bukan) return bukan;
+  const { sesi, tolak } = await izinAdmin(["Seleksi"]);
+  if (tolak) return tolak;
+  const oleh = sesi.nama; // dicatat di kolom "Oleh" tab Seleksi guru / PIC QC
   if (!canWrite()) return NextResponse.json({ error: "Mode baca-saja: butuh service account dengan akses Editor." }, { status: 403 });
   let body;
   try {
@@ -81,7 +82,7 @@ export async function POST(req) {
       case "verifikasi1": {
         const g = await masukkanDataGuru(body.email);
         const tahap = perluSampel(g.statusForm) ? "Sampel" : "";
-        await simpanSeleksi(body.email, { nama: g.nama, tahap });
+        await simpanSeleksi(body.email, { oleh, nama: g.nama, tahap });
         return NextResponse.json({ ok: true, idGuru: g.idGuru, nama: g.nama, tahap: tahap || "Siap akses" });
       }
 
@@ -91,21 +92,21 @@ export async function POST(req) {
         return NextResponse.json({ ok: true, kredensial: await beriAkses(body.email, { paksa: Boolean(body.paksa) }) });
 
       case "tolak":
-        await simpanSeleksi(body.email, { nama: body.nama, tahap: "Ditolak" });
+        await simpanSeleksi(body.email, { oleh, nama: body.nama, tahap: "Ditolak" });
         return NextResponse.json({ ok: true });
 
       case "batalTolak":
-        await simpanSeleksi(body.email, { tahap: "" });
+        await simpanSeleksi(body.email, { oleh, tahap: "" });
         return NextResponse.json({ ok: true });
 
       // Tinjauan berkas: rubrik + catatan, dan (opsional) pindah tahap.
       case "tinjau":
-        await simpanSeleksi(body.email, { nama: body.nama, tahap: body.tahap, skor: body.skor, catatan: body.catatan });
+        await simpanSeleksi(body.email, { oleh, nama: body.nama, tahap: body.tahap, skor: body.skor, catatan: body.catatan });
         return NextResponse.json({ ok: true });
 
       // Satu sesi QC sampel.
       case "qc":
-        return NextResponse.json({ ok: true, ...(await catatQc(body.email, body.qc || {})) });
+        return NextResponse.json({ ok: true, ...(await catatQc(body.email, { ...(body.qc || {}), pic: body.qc?.pic || oleh }, oleh)) });
 
       case "buatAkun": {
         // body.idGuru: satu ID, daftar ID, atau "semua" (semua guru ber-email yang belum punya akun)

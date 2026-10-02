@@ -19,7 +19,7 @@ export async function GET() {
 }
 
 export async function POST(req) {
-  const bukan = await tolakBukanAdmin();
+  const bukan = await tolakBukanAdmin(["Akademik", "Seleksi"]);
   if (bukan) return bukan;
   if (!canWrite()) {
     return NextResponse.json({ error: "Mode baca-saja: butuh service account dengan akses Editor." }, { status: 403 });

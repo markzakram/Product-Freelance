@@ -7,7 +7,7 @@
 //  lib/kontakWa.js. "Mengambil" dihitung dari Log pengambilan bulan ini.
 // ============================================================================
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { numberID } from "@/lib/format";
 import { tautanWa } from "@/lib/tautan";
@@ -29,7 +29,7 @@ import {
   pesanTindakLanjut,
   pesanIngatkanAmbil,
 } from "@/lib/reachoutOpsi";
-import { catatWa, tandaiHasilWa, picSaya, aturPicSaya } from "@/lib/kontakWa";
+import { catatWa, tandaiHasilWa } from "@/lib/kontakWa";
 import CariGuru from "./CariGuru";
 import Icon from "./Icon";
 
@@ -66,15 +66,14 @@ const SARING_AKT = [
   ["langsung", "Chat langsung", (k) => k.tujuan === "Chat langsung"],
 ];
 
-export default function PantauReachout({ data, projects, assignments, bulan, namaBulan, guruDb, master, riwayat, akun, wajibLogin, picList = [], aksiEl, muatUlang }) {
+// Kontak dicatat atas nama anggota tim yang login (`namaSaya`) — diisi server dari sesi.
+export default function PantauReachout({ data, projects, assignments, bulan, namaBulan, guruDb, master, riwayat, akun, wajibLogin, namaSaya = "", aksiEl, muatUlang }) {
   const [saringP, setSaringP] = useState("kurang");
   const [buka, setBuka] = useState(() => new Set());
   const [saringA, setSaringA] = useState("semua");
   const [nAkt, setNAkt] = useState(15);
   const [nTindak, setNTindak] = useState(8);
   const [cari, setCari] = useState(null);
-  const [pic, setPic] = useState("");
-  useEffect(() => setPic(picSaya()), []);
 
   const kontak = useMemo(() => data?.kontak || [], [data]);
   const bisa = Boolean(data?.canWrite);
@@ -210,24 +209,11 @@ export default function PantauReachout({ data, projects, assignments, bulan, nam
   const aksi = aksiEl
     ? createPortal(
         <>
-          <label className="rc-pic">
-            <span>Dicatat atas nama</span>
-            <select
-              className="select sm"
-              value={pic}
-              onChange={(e) => {
-                setPic(e.target.value);
-                aturPicSaya(e.target.value);
-              }}
-            >
-              <option value="">— pilih PIC —</option>
-              {[...new Set([...(pic ? [pic] : []), ...picList])].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-          </label>
+          {namaSaya ? (
+            <span className="rc-pic">
+              <Icon name="userCheck" size={16} /> Dicatat atas nama <b>{namaSaya}</b>
+            </span>
+          ) : null}
           <button type="button" className="btn btn-ghost sm" onClick={muatUlang} title="Baca ulang tab Reachout (kontak dari admin lain)">
             <Icon name="refresh" /> Segarkan
           </button>

@@ -57,7 +57,7 @@ const HANDLERS = {
 };
 
 export async function POST(req) {
-  const bukan = await tolakBukanAdmin();
+  const bukan = await tolakBukanAdmin(["Akademik"]);
   if (bukan) return bukan;
   if (!canWrite()) {
     return NextResponse.json(

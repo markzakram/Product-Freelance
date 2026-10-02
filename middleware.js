@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { COOKIE, tokenFor, passwordConfigured, bolehTanpaPassword } from "@/lib/auth";
+import { COOKIE, COOKIE_TIM, tokenFor, passwordConfigured, bolehTanpaPassword, bacaTokenTim } from "@/lib/auth";
 
 // The write API lives under /api/admin and must be gated by the same cookie as
 // the pages — otherwise anyone could POST edits straight into the spreadsheet.
@@ -29,6 +29,9 @@ export async function middleware(req) {
   const cookie = req.cookies.get(COOKIE)?.value;
   const expected = await tokenFor(process.env.INTERNAL_PASSWORD);
   if (cookie && cookie === expected) return NextResponse.next();
+  // Anggota tim (v3.0.0): cukup tanda tangan sah di sini; status akun, peran,
+  // dan password yang sudah diganti diperiksa ulang di route (lib/authServer).
+  if (await bacaTokenTim(req.cookies.get(COOKIE_TIM)?.value)) return NextResponse.next();
 
   // API callers get a 401 rather than an HTML redirect they cannot follow.
   if (pathname.startsWith("/api/")) {

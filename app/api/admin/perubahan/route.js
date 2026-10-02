@@ -7,7 +7,7 @@ import { putuskanPerubahan } from "@/lib/perubahanGuru";
 export const dynamic = "force-dynamic";
 
 export async function POST(req) {
-  const bukan = await tolakBukanAdmin();
+  const bukan = await tolakBukanAdmin(["Akademik"]);
   if (bukan) return bukan;
   if (!canWrite()) return NextResponse.json({ error: "Mode baca-saja: butuh service account dengan akses Editor." }, { status: 403 });
   try {
