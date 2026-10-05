@@ -639,6 +639,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
                 wajibLogin={Boolean(akses?.wajibLogin)}
                 bulan={board.tab}
                 kontak={reachout?.kontak || []}
+                penanda={akses?.penanda || {}}
               />
             )}
 
@@ -656,6 +657,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
                   akun={akses?.akun || []}
                   wajibLogin={Boolean(akses?.wajibLogin)}
                   namaSaya={pengguna.nama}
+                  penanda={akses?.penanda || {}}
                   aksiEl={aksiEl}
                   muatUlang={muatReachout}
                 />
@@ -1737,7 +1739,7 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, m
 /* ============================== KATALOG ================================== */
 const BLANK_P = { id: "", idSubtes: "", platform: "", subtes: "", output: "", harga: "", kebutuhan: "" };
 
-function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan, setErr, onMasterChanged, guruDb, log, riwayat, akun, wajibLogin, bulan, kontak }) {
+function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan, setErr, onMasterChanged, guruDb, log, riwayat, akun, wajibLogin, bulan, kontak, penanda }) {
   const [edit, setEdit] = useState(null);
   const [cari, setCari] = useState(null); // proyek yang sedang dicarikan guru
   const [draft, setDraft] = useState(BLANK_P);
@@ -1913,7 +1915,7 @@ function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan
       ) : null}
 
       {cari ? (
-        <CariGuru proyek={cari} bulan={bulan} kontak={kontak} master={master} guru={guruDb} log={log} riwayat={riwayat} akun={akun} wajibLogin={wajibLogin} onClose={() => setCari(null)} />
+        <CariGuru proyek={cari} bulan={bulan} kontak={kontak} penanda={penanda} master={master} guru={guruDb} log={log} riwayat={riwayat} akun={akun} wajibLogin={wajibLogin} onClose={() => setCari(null)} />
       ) : null}
 
       {confirm ? (

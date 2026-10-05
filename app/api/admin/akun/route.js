@@ -10,6 +10,7 @@ import { daftarPerubahan } from "@/lib/perubahanGuru";
 import { simpanSeleksi, catatQc } from "@/lib/seleksi";
 import { daftarPendaftar, masukkanDataGuru, beriAkses, perluSampel } from "@/lib/pendaftaran";
 import { loginGuruSiap } from "@/lib/sesiGuru";
+import { bacaPenanda, penandaPublik } from "@/lib/penandaGuru";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -19,12 +20,13 @@ export async function GET() {
   const bukan = await tolakBukanAdmin();
   if (bukan) return bukan;
   try {
-    const [pendaftar, akun, guru, wajib, perubahan] = await Promise.all([
+    const [pendaftar, akun, guru, wajib, perubahan, penanda] = await Promise.all([
       daftarPendaftar().catch((e) => ({ error: e.message })),
       bacaAkun({ segar: true }),
       getTeachers(),
       wajibLoginGuru(),
       daftarPerubahan({ status: "Menunggu" }).catch(() => []),
+      bacaPenanda().catch(() => new Map()),
     ]);
     return NextResponse.json(
       {
@@ -43,7 +45,10 @@ export async function GET() {
           jurusan: g.jurusan,
           universitas: g.universitas,
           bidang: g.bidang,
+          liveclass: g.liveclass, // jawaban form guru (Ya/Mungkin/Tidak) — bukan penanda tim
+          jadwalLive: g.jadwalLive,
         })),
+        penanda: penandaPublik(penanda), // ID guru -> { liveclass, diubah, oleh } (dipasang tim)
         wajibLogin: wajib,
         perubahan, // ajuan "Profil saya" yang menunggu persetujuan
         loginSiap: loginGuruSiap(),

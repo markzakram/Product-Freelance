@@ -12,6 +12,22 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.1.0 — Penanda "Bisa liveclass" untuk guru (5 Oktober 2026)
+
+- Tab **Akun guru** (Pendaftaran & akun) punya kolom baru **Liveclass**: tombol
+  **Tandai** / **✓ Bisa liveclass** untuk guru di Data guru freelance yang sudah
+  dipastikan tim bisa mengajar live class (mis. setelah microteaching). Di bawahnya
+  tampil jawaban form guru sendiri ("form: Ya / Mungkin / Tidak") sebagai petunjuk.
+- Saringan baru **Liveclass**: *Bisa liveclass* (sudah ditandai) dan *Bersedia di form,
+  belum ditandai* (menjawab Ya/Mungkin tapi belum dicek tim) — bisa digabung dengan
+  saringan status akun dan keahlian.
+- **Cari guru** untuk proyek live class (tim akademik): guru yang ditandai mendapat
+  lencana **✓ bisa liveclass**, naik ke urutan atas, dan ada pilihan *Hanya yang sudah
+  ditandai bisa liveclass*.
+- Penanda disimpan di tab baru **Penanda guru** (ID guru, nama, bisa liveclass, diubah,
+  oleh) — dibuat otomatis; Data guru tidak diubah. Bisa dipasang/dilepas oleh tim
+  Seleksi dan Akademik; nama yang menandai tercatat.
+
 ## 3.0.0 — Akun tim & dua dashboard: Seleksi dan Akademik (2 Oktober 2026)
 
 Perubahan besar: dashboard admin kini dipakai dua tim dengan akun masing-masing.

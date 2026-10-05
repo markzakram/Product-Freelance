@@ -197,6 +197,11 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
   const [tampil, setTampil] = useState("pendaftar");
   const [saringP, setSaringP] = useState("Menunggu");
   const [saringA, setSaringA] = useState("semua");
+  // Penanda "Bisa liveclass" (dipasang tim). `liveLokal` = perubahan yang baru
+  // disimpan, supaya tampil langsung tanpa membaca ulang semua data.
+  const [fLive, setFLive] = useState("semua"); // semua | bisa | calon
+  const [liveLokal, setLiveLokal] = useState({});
+  const [simpanLive, setSimpanLive] = useState("");
   const [q, setQ] = useState("");
   const [konfirmasi, setKonfirmasi] = useState(null); // { judul, isi, tombol, bahaya, jalan }
   const [kred, setKred] = useState(null); // { daftar, reset }
@@ -290,9 +295,38 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
   const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const cocok = (...xs) => words.every((w) => lower(xs.join(" ")).includes(w));
   const listP = pendaftarK.filter((p) => (saringP === "Semua" || p.status === saringP || (saringP === CADANGAN && !p.idGuru && p.status !== "Ditolak")) && cocok(p.nama, p.email, p.wa, p.bidang, p.universitas));
+  const bisaLive = (g) => (g.idGuru in liveLokal ? liveLokal[g.idGuru] : Boolean(data?.penanda?.[g.idGuru]?.liveclass));
+  // calon: guru menjawab "Ya"/"Mungkin" bersedia liveclass di form, tapi belum ditandai tim
+  const calonLive = (g) => !bisaLive(g) && /^(ya|mungkin)/i.test(g.liveclass || "");
+  const nBisaLive = guruK.filter(bisaLive).length;
+  const nCalonLive = guruK.filter(calonLive).length;
   const listA = guruK.filter(
-    (g) => (saringA === "semua" || g.st.k === saringA || (saringA === "belum" && g.st.k === "belum")) && cocok(g.nama, g.email, g.idGuru, g.wa)
+    (g) =>
+      (saringA === "semua" || g.st.k === saringA || (saringA === "belum" && g.st.k === "belum")) &&
+      (fLive === "semua" || (fLive === "bisa" ? bisaLive(g) : calonLive(g))) &&
+      cocok(g.nama, g.email, g.idGuru, g.wa)
   );
+
+  const tandaiLive = async (g, nilai) => {
+    setSimpanLive(g.idGuru);
+    setErr("");
+    setLiveLokal((m) => ({ ...m, [g.idGuru]: nilai }));
+    try {
+      const res = await fetch("/api/admin/penanda", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idGuru: g.idGuru, liveclass: nilai }),
+        cache: "no-store",
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.error || `Gagal (HTTP ${res.status})`);
+    } catch (e) {
+      setLiveLokal((m) => ({ ...m, [g.idGuru]: !nilai }));
+      setErr("Penanda liveclass belum tersimpan: " + e.message);
+    } finally {
+      setSimpanLive("");
+    }
+  };
 
   const jalankan = async (fn) => {
     setBusy(true);
@@ -774,6 +808,21 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
               .filter(([k]) => hitungAK[k] || saringA === k)
               .map(([k, l]) => chip(saringA === k, l, hitungAK[k] || 0, () => setSaringA(k)))}
           </div>
+          <div className="chips geser" role="group" aria-label="Saring liveclass">
+            <span className="mpick-lbl">Liveclass</span>
+            {chip(fLive === "semua", "Semua", guruK.length, () => setFLive("semua"))}
+            {chip(fLive === "bisa", "Bisa liveclass", nBisaLive, () => setFLive("bisa"))}
+            {chip(fLive === "calon", "Bersedia di form, belum ditandai", nCalonLive, () => setFLive("calon"))}
+          </div>
+          {fLive === "calon" && nCalonLive ? (
+            <div className="banner info">
+              <Icon name="info" />
+              <div>
+                Guru-guru ini menjawab <b>Ya / Mungkin</b> bersedia live class di form, tapi belum dipastikan tim. Tandai <b>Bisa liveclass</b> setelah dicek
+                (mis. microteaching) — penanda itulah yang dipakai saringan dan Cari guru.
+              </div>
+            </div>
+          ) : null}
           {saringA === "tanpaEmail" && hitungA.tanpaEmail ? (
             <div className="banner info">
               <Icon name="info" />
@@ -789,7 +838,7 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
           <div className="table-wrap fixed">
             <table className="grid-table">
               <colgroup>
-                {[7, 22, 24, 17, 15, 15].map((w, i) => (
+                {[5, 17, 19, 16, 14, 12, 17].map((w, i) => (
                   <col key={i} style={{ width: w + "%" }} />
                 ))}
               </colgroup>
@@ -799,6 +848,7 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
                   <th>Nama</th>
                   <th>Email login</th>
                   <th>Status akun</th>
+                  <th>Liveclass</th>
                   <th>Login terakhir</th>
                   <th className="act">
                     <span className="sr-only">Aksi</span>
@@ -808,7 +858,7 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
               <tbody>
                 {listA.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="empty">
+                    <td colSpan={7} className="empty">
                       Tidak ada guru yang cocok.
                     </td>
                   </tr>
@@ -829,6 +879,28 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
                     </td>
                     <td data-l="Status akun">
                       <span className={"pill " + g.st.cls}>{g.st.label}</span>
+                    </td>
+                    <td data-l="Liveclass">
+                      {(() => {
+                        const bisa = bisaLive(g);
+                        const p = data?.penanda?.[g.idGuru];
+                        return (
+                          <>
+                            <button
+                              type="button"
+                              className={"live-tanda" + (bisa ? " on" : "")}
+                              aria-pressed={bisa}
+                              disabled={kunciTulis || simpanLive === g.idGuru}
+                              onClick={() => tandaiLive(g, !bisa)}
+                              title={bisa ? `Bisa liveclass${p?.oleh ? " — ditandai " + p.oleh : ""}${p?.diubah ? " · " + p.diubah : ""}. Klik untuk melepas.` : "Tandai: sudah dipastikan bisa mengajar live class"}
+                            >
+                              <Icon name={bisa ? "check" : "plus"} size={13} stroke={2.4} />
+                              {bisa ? "Bisa liveclass" : "Tandai"}
+                            </button>
+                            {g.liveclass ? <small className="ksd-sub">form: {g.liveclass}</small> : null}
+                          </>
+                        );
+                      })()}
                     </td>
                     <td className="xs2" data-l="Login terakhir">
                       {g.akun?.loginTerakhir || "—"}

@@ -67,7 +67,7 @@ const SARING_AKT = [
 ];
 
 // Kontak dicatat atas nama anggota tim yang login (`namaSaya`) — diisi server dari sesi.
-export default function PantauReachout({ data, projects, assignments, bulan, namaBulan, guruDb, master, riwayat, akun, wajibLogin, namaSaya = "", aksiEl, muatUlang }) {
+export default function PantauReachout({ data, projects, assignments, bulan, namaBulan, guruDb, master, riwayat, akun, wajibLogin, namaSaya = "", penanda = {}, aksiEl, muatUlang }) {
   const [saringP, setSaringP] = useState("kurang");
   const [buka, setBuka] = useState(() => new Set());
   const [saringA, setSaringA] = useState("semua");
@@ -540,6 +540,7 @@ export default function PantauReachout({ data, projects, assignments, bulan, nam
           proyek={cari}
           bulan={bulan}
           kontak={kontak}
+          penanda={penanda}
           master={master}
           guru={guruDb}
           log={assignments}

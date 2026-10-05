@@ -22,7 +22,8 @@ const LABEL_PENDEK = Object.fromEntries(BIDANG.map((b) => [b.k, b.label.replace(
 
 // `wajibLogin`: label "belum punya akun" hanya berarti bila halaman proyek sudah dikunci.
 // `bulan` = tab bulan katalog; `kontak` = catatan Reachout (untuk tanda "ditawari").
-export default function CariGuru({ proyek: p, bulan, kontak = [], master, guru, log, riwayat, akun, wajibLogin, onClose }) {
+// `penanda`: { idGuru: { liveclass } } — guru yang sudah dipastikan tim bisa live class.
+export default function CariGuru({ proyek: p, bulan, kontak = [], penanda = {}, master, guru, log, riwayat, akun, wajibLogin, onClose }) {
   const m = master.find((x) => x.id === p.idSubtes);
   const tebakan = useMemo(() => bidangProyek(p, m), [p, m]);
   const perlu = minatDibutuhkan(p, m);
@@ -31,6 +32,7 @@ export default function CariGuru({ proyek: p, bulan, kontak = [], master, guru, 
   const [bidang, setBidang] = useState(() => new Set(tebakan));
   const [tanpaBidang, setTanpaBidang] = useState(false);
   const [hanyaMinat, setHanyaMinat] = useState(true);
+  const [hanyaTanda, setHanyaTanda] = useState(false); // proyek live: hanya yang ditandai bisa liveclass
   const [sembunyiSudah, setSembunyiSudah] = useState(false);
   const [jadwal, setJadwal] = useState(() => new Set());
   const [q, setQ] = useState("");
@@ -43,9 +45,15 @@ export default function CariGuru({ proyek: p, bulan, kontak = [], master, guru, 
 
   const akunMap = useMemo(() => new Map((akun || []).map((a) => [low(a.email), a])), [akun]);
   const semua = useMemo(
-    () => kandidatGuru({ proyek: p, master: m, guru, log, riwayat, akun: akunMap }),
-    [p, m, guru, log, riwayat, akunMap]
+    () =>
+      kandidatGuru({ proyek: p, master: m, guru, log, riwayat, akun: akunMap }).map((x) => {
+        const tanda = Boolean(penanda?.[x.g.idGuru]?.liveclass);
+        // proyek live: penanda tim lebih dipercaya daripada jawaban form -> naik ke atas
+        return live && tanda ? { ...x, tandaLive: true, minatSesuai: true, skor: x.skor + 3 } : { ...x, tandaLive: tanda };
+      }),
+    [p, m, guru, log, riwayat, akunMap, penanda, live]
   );
+  const nTanda = semua.filter((x) => x.tandaLive).length;
 
   const jumlahBidang = useMemo(() => {
     const c = {};
@@ -63,6 +71,7 @@ export default function CariGuru({ proyek: p, bulan, kontak = [], master, guru, 
       }
       if (hanyaMinat && !x.minatSesuai && !x.tanpaBidang) return false;
       if (sembunyiSudah && x.sudahAmbil) return false;
+      if (live && hanyaTanda && !x.tandaLive) return false;
       if (live && jadwal.size && !x.jadwal.some((j) => jadwal.has(j) || j === "fleksibel")) return false;
       if (words.length && !words.every((w) => low(`${x.g.nama} ${x.g.email} ${x.g.idGuru}`).includes(w))) return false;
       return true;
@@ -146,6 +155,12 @@ export default function CariGuru({ proyek: p, bulan, kontak = [], master, guru, 
           <input type="checkbox" checked={sembunyiSudah} onChange={(e) => setSembunyiSudah(e.target.checked)} />
           Sembunyikan yang sudah ambil proyek ini
         </label>
+        {live ? (
+          <label className="mpick-arsip">
+            <input type="checkbox" checked={hanyaTanda} onChange={(e) => setHanyaTanda(e.target.checked)} />
+            Hanya yang sudah ditandai bisa liveclass <span className="muted">({numberID(nTanda)})</span>
+          </label>
+        ) : null}
         {bidang.size && nTanpaBidang ? (
           <label className="mpick-arsip">
             <input type="checkbox" checked={tanpaBidang} onChange={(e) => setTanpaBidang(e.target.checked)} />
@@ -195,6 +210,7 @@ export default function CariGuru({ proyek: p, bulan, kontak = [], master, guru, 
                   )}
                 </div>
                 <div className="cg-lencana">
+                  {x.tandaLive ? <span className="pill run">✓ bisa liveclass</span> : null}
                   {x.minatSesuai ? <span className="pill appr">berminat</span> : x.tanpaBidang ? <span className="pill batal plain">data form kosong</span> : <span className="pill batal plain">minat lain</span>}
                   {x.pernah ? <span className="pill run">pernah {numberID(x.pernah)} soal subtes ini</span> : null}
                   {x.sudahAmbil ? <span className="pill qc">sudah ambil {numberID(x.sudahAmbil)} soal</span> : null}
