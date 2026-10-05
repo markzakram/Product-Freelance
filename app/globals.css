@@ -1278,3 +1278,17 @@ html{scroll-behavior:smooth}
 .rv-tujuan{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;font-size:13px}
 .rv-tujuan span{font-weight:700}
 .rv-tujuan label{display:inline-flex;align-items:center;gap:6px}
+
+/* ---- v3.4.0: lapor progres & pengingat ----------------------------------------- */
+.lp-select{margin-top:6px;width:100%;min-width:0;padding:5px 8px;font-size:12px}
+.ps-ingat{display:flex;flex-wrap:wrap;gap:6px}
+.ps-ingat .pill{display:inline-flex;align-items:center;gap:4px}
+.ps-progres{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:12px;background:var(--accent-weak-2);font-size:13px}
+.ps-progres b{font-size:13.5px}
+.ps-progres small{font-size:12px;color:var(--text-muted)}
+.ps-progres.ok{flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px;background:var(--good-weak);color:var(--text)}
+.ps-progres.ok svg{color:var(--good)}
+.ps-progres .ps-kumpul{border-top:0;padding-top:4px}
+.ps-dua{display:grid;grid-template-columns:minmax(0,160px) minmax(0,1fr);gap:10px}
+@media(max-width:560px){.ps-dua{grid-template-columns:minmax(0,1fr)}}
+.ps-perhatian ul{margin:4px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:2px;font-size:13px}

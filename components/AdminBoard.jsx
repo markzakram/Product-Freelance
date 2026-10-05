@@ -1782,10 +1782,33 @@ const BLANK_P = { id: "", idSubtes: "", platform: "", subtes: "", output: "", ha
 
 function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan, setErr, onMasterChanged, guruDb, log, riwayat, akun, wajibLogin, bulan, kontak, penanda, aturan = {}, dipesan = {}, onAturan }) {
   const [dlLokal, setDlLokal] = useState({}); // deadline yang baru disimpan (tampil langsung)
+  const [lpLokal, setLpLokal] = useState({}); // titik lapor progres yang baru disimpan
   const [dlSimpan, setDlSimpan] = useState("");
   const deadlineDari = (p) => {
     const id = String(p.id).toUpperCase();
     return id in dlLokal ? dlLokal[id] : aturan[id]?.deadline || "";
+  };
+  const laporDari = (p) => {
+    const id = String(p.id).toUpperCase();
+    return id in lpLokal ? lpLokal[id] : aturan[id]?.lapor || 0;
+  };
+  const simpanLapor = async (p, nilai) => {
+    const id = String(p.id).toUpperCase();
+    const lama = laporDari(p);
+    setLpLokal((m) => ({ ...m, [id]: nilai }));
+    try {
+      const res = await fetch("/api/admin/pengerjaan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "lapor", bulan, idProyek: p.id, lapor: nilai }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.error || `Gagal (HTTP ${res.status})`);
+      onAturan?.();
+    } catch (e) {
+      setLpLokal((m) => ({ ...m, [id]: lama }));
+      setErr?.("Aturan lapor progres belum tersimpan: " + e.message);
+    }
   };
   const simpanDeadline = async (p, nilai) => {
     const id = String(p.id).toUpperCase();
@@ -1904,7 +1927,7 @@ function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan
               <th className="num">Harga</th>
               <th className="num">Kebutuhan</th>
               <th className="num">Sisa</th>
-              <th>Deadline</th>
+              <th>Deadline & lapor</th>
               <th className="act">
                 <span className="sr-only">Aksi</span>
               </th>
@@ -1965,6 +1988,18 @@ function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan
                           aria-label={`Deadline ${p.subtes}`}
                         />
                         {dl ? <div className={"xs2 dl-" + hm.kelas}>{hm.teks}</div> : <div className="muted xs2">belum diatur</div>}
+                        <select
+                          className="select sm lp-select"
+                          value={laporDari(p)}
+                          disabled={readOnly}
+                          onChange={(e) => simpanLapor(p, Number(e.target.value))}
+                          aria-label={`Wajib lapor progres ${p.subtes}`}
+                          title="Guru wajib melapor progres sebelum mengumpulkan hasil akhir"
+                        >
+                          <option value={0}>Lapor progres: tidak wajib</option>
+                          <option value={30}>Wajib lapor 30%</option>
+                          <option value={50}>Wajib lapor 50%</option>
+                        </select>
                       </>
                     );
                   })()}

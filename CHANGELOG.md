@@ -12,6 +12,28 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.4.0 — Lapor progres 30/50% & pengingat (5 Oktober 2026)
+
+- **Lapor progres per proyek**: di Katalog, kolom *Deadline & lapor* punya pilihan
+  **tidak wajib / wajib lapor 30% / wajib lapor 50%** (disimpan di tab Aturan proyek;
+  disalin ke pengambilan saat di-acc). Kartu proyek di halaman guru menampilkan
+  kewajibannya.
+- **Guru (Proyek saya)**: form **Lapor progres** — jumlah soal selesai (minimal sesuai
+  persen), link Google Docs, catatan. **Hasil akhir baru bisa dikumpulkan setelah lapor
+  progres** (juga dijaga di server). Batas lapor dihitung sebanding waktu kerja: acc +
+  (deadline − acc) × persen — mis. acc 1 Okt, deadline 11 Okt, wajib 30% → ±4 Okt.
+- **Pengingat & tanda terlambat** (guru dan tim akademik): deadline besok / hari ini /
+  lewat, lapor progres yang jatuh tempo ≤ 24 jam atau lewat, batas revisi ≤ 24 jam
+  atau lewat. Guru melihat banner **Perlu perhatian** di Proyek saya; tiap kartu diberi
+  penanda.
+- **Tim akademik (Pengambilan guru)**: saringan **Perlu diingatkan**, blok progres di
+  tiap kartu (sudah lapor berapa soal + link, atau belum lapor + batasnya), tombol WA
+  **Ingatkan deadline** (H-1/hari ini), **Tagih (lewat deadline)**, **Ingatkan lapor
+  progres**, **Ingatkan batas revisi** — pesan berisi tautan Proyek saya, tercatat di
+  Reachout. KPI *Terlambat* kini merinci lewat deadline, revisi lewat 3 hari, dan belum
+  lapor progres.
+- Langkah 3 di panduan alur guru diperbarui: kerjakan & lapor progres.
+
 ## 3.3.0 — Pengumpulan & review per soal (5 Oktober 2026)
 
 - **Guru (Proyek saya)**: proyek Running punya form **Kumpulkan untuk direview** — link

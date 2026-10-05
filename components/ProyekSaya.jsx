@@ -9,7 +9,23 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { numberID } from "@/lib/format";
-import { ST, AKTIF, PERINGATAN_MULAI, DENDA_SETELAH, kelasStatus, labelStatus, hitungMundur, tanggalPendek, belumSelesai, linkSah, sisaWaktu } from "@/lib/pengerjaanOpsi";
+import {
+  ST,
+  AKTIF,
+  PERINGATAN_MULAI,
+  DENDA_SETELAH,
+  kelasStatus,
+  labelStatus,
+  hitungMundur,
+  tanggalPendek,
+  belumSelesai,
+  linkSah,
+  sisaWaktu,
+  pengingat,
+  batasLapor,
+  minimalLapor,
+} from "@/lib/pengerjaanOpsi";
+import { msKeWaktu } from "@/lib/reachoutOpsi";
 import Brand from "./Brand";
 import Icon from "./Icon";
 import ThemeToggle from "./ThemeToggle";
@@ -46,11 +62,53 @@ function FormKumpul({ p, onKumpul, sibuk }) {
   );
 }
 
-function Kartu({ p, onBatal, onKumpul, sibuk }) {
+function FormProgres({ p, onLapor, sibuk }) {
+  const min = minimalLapor(p);
+  const [soal, setSoal] = useState(String(min || ""));
+  const [link, setLink] = useState(p.link || "");
+  const [catatan, setCatatan] = useState("");
+  const [galat, setGalat] = useState("");
+  const kirim = (e) => {
+    e.preventDefault();
+    const n = parseInt(soal, 10) || 0;
+    if (n < min) return setGalat(`Minimal ${min} soal (${p.wajibLapor}%) untuk lapor progres.`);
+    if (n > p.jumlah) return setGalat(`Maksimal ${p.jumlah} soal.`);
+    if (!linkSah(link)) return setGalat("Pakai link Google Docs / Drive.");
+    setGalat("");
+    onLapor(p, n, link.trim(), catatan.trim());
+  };
+  return (
+    <form className="ps-kumpul" onSubmit={kirim}>
+      <div className="ps-dua">
+        <label className="ffield">
+          <span>Soal yang sudah selesai</span>
+          <input className="input" type="number" min={min} max={p.jumlah} value={soal} onChange={(e) => setSoal(e.target.value)} required />
+        </label>
+        <label className="ffield">
+          <span>Link Google Docs pekerjaanmu</span>
+          <input className="input" type="url" inputMode="url" placeholder="https://docs.google.com/document/d/…" value={link} onChange={(e) => setLink(e.target.value)} required />
+        </label>
+      </div>
+      <label className="ffield">
+        <span>Catatan (opsional)</span>
+        <input className="input" value={catatan} onChange={(e) => setCatatan(e.target.value)} placeholder="mis. sisa soal selesai Kamis" />
+      </label>
+      {galat ? <small className="neg">{galat}</small> : null}
+      <button type="submit" className="btn btn-blue" disabled={sibuk}>
+        <Icon name="check" stroke={2.4} /> Lapor progres
+      </button>
+    </form>
+  );
+}
+
+function Kartu({ p, onBatal, onKumpul, onLapor, sibuk }) {
   const dl = hitungMundur(p.deadline);
   const aktif = AKTIF.has(p.status);
   const sisa = belumSelesai(p);
   const batas = sisaWaktu(p.tBatas);
+  const ingat = pengingat(p);
+  const perluLapor = p.status === ST.running && p.wajibLapor && !p.tLapor;
+  const tLapor = batasLapor(p);
   return (
     <article className={"ps-kartu" + (aktif ? "" : " selesai")}>
       <div className="ps-atas">
@@ -87,6 +145,33 @@ function Kartu({ p, onBatal, onKumpul, sibuk }) {
           </span>
         ) : null}
       </div>
+      {ingat.length ? (
+        <div className="ps-ingat">
+          {ingat.map((i) => (
+            <span key={i.jenis} className={"pill " + i.kelas}>
+              <Icon name="alert" size={12} /> {i.teks}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      {p.status === ST.running && p.wajibLapor ? (
+        p.tLapor ? (
+          <div className="ps-progres ok">
+            <Icon name="check" size={14} stroke={2.4} /> Progres dilaporkan: <b>{numberID(p.progres)}</b>/{numberID(p.jumlah)} soal ({Math.round((p.progres / p.jumlah) * 100)}%) ·{" "}
+            {p.lapor}
+          </div>
+        ) : (
+          <div className="ps-progres">
+            <b>
+              Wajib lapor progres {p.wajibLapor}% — minimal {numberID(minimalLapor(p))} soal
+            </b>
+            <small>
+              {tLapor ? `Batas lapor ${msKeWaktu(tLapor)} (${sisaWaktu(tLapor).teks}). ` : ""}Hasil akhir baru bisa dikumpulkan setelah lapor progres.
+            </small>
+            <FormProgres p={p} onLapor={onLapor} sibuk={sibuk} />
+          </div>
+        )
+      ) : null}
       {p.ronde ? (
         <div className="ps-hasil" aria-label="Hasil review">
           <span className="appr">
@@ -131,7 +216,7 @@ function Kartu({ p, onBatal, onKumpul, sibuk }) {
           <Icon name="external" size={14} /> Link yang dikumpulkan{p.dikumpulkan ? ` · ${p.dikumpulkan}` : ""}
         </a>
       ) : null}
-      {p.status === ST.running || p.status === ST.revisi ? <FormKumpul p={p} onKumpul={onKumpul} sibuk={sibuk} /> : null}
+      {(p.status === ST.running && !perluLapor) || p.status === ST.revisi ? <FormKumpul p={p} onKumpul={onKumpul} sibuk={sibuk} /> : null}
       {p.status === ST.review ? (
         <div className="ps-aksi">
           <small className="muted">Menunggu review tim akademik ({numberID(sisa)} soal). Hasilnya muncul di sini.</small>
@@ -158,12 +243,29 @@ export default function ProyekSaya({ daftar = [], gagalMuat = false, maks = 3, g
   const menunggu = aktif.filter((p) => p.status === ST.diajukan).length;
   const jalan = aktif.filter((p) => p.status === ST.running || p.status === ST.revisi).length;
   const direview = aktif.filter((p) => p.status === ST.review).length;
+  const perhatian = aktif.map((p) => ({ p, ingat: pengingat(p) })).filter((x) => x.ingat.length);
 
   const kumpul = async (p, link, catatan) => {
     setSibuk(true);
     setGalat("");
     try {
       const res = await fetch("/api/guru/kumpul", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: p.id, link, catatan }) });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.error || `Gagal (HTTP ${res.status})`);
+      router.refresh();
+    } catch (e) {
+      setGalat(e.message);
+      window.scrollTo(0, 0);
+    } finally {
+      setSibuk(false);
+    }
+  };
+
+  const lapor = async (p, soal, link, catatan) => {
+    setSibuk(true);
+    setGalat("");
+    try {
+      const res = await fetch("/api/guru/progres", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: p.id, soal, link, catatan }) });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(j.error || `Gagal (HTTP ${res.status})`);
       router.refresh();
@@ -234,6 +336,22 @@ export default function ProyekSaya({ daftar = [], gagalMuat = false, maks = 3, g
           </div>
         ) : null}
 
+        {perhatian.length ? (
+          <div className="banner sample ps-perhatian" role="status">
+            <Icon name="alert" />
+            <div>
+              <b>Perlu perhatian</b>
+              <ul>
+                {perhatian.map(({ p, ingat }) => (
+                  <li key={p.id}>
+                    {p.subtes}: {ingat.map((i) => i.teks).join(" · ")}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ) : null}
+
         <div className="kpis">
           <div className="kpi">
             <span className="kpi-ico i1">
@@ -271,7 +389,7 @@ export default function ProyekSaya({ daftar = [], gagalMuat = false, maks = 3, g
         {aktif.length ? (
           <div className="ps-list">
             {aktif.map((p) => (
-              <Kartu key={p.id} p={p} onBatal={batal} onKumpul={kumpul} sibuk={sibuk} />
+              <Kartu key={p.id} p={p} onBatal={batal} onKumpul={kumpul} onLapor={lapor} sibuk={sibuk} />
             ))}
           </div>
         ) : (

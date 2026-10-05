@@ -4,7 +4,7 @@ import { izinAdmin } from "@/lib/authServer";
 import { canWrite } from "@/lib/gauth";
 import { getBoard } from "@/lib/juli";
 import { bacaPengerjaan, putuskan, maksAktif, aturMaksAktif, review, terapkanDenda } from "@/lib/pengerjaan";
-import { aturanBulan, aturDeadline } from "@/lib/aturanProyek";
+import { aturanBulan, aturDeadline, aturLapor } from "@/lib/aturanProyek";
 import { AKTIF } from "@/lib/pengerjaanOpsi";
 
 export const dynamic = "force-dynamic";
@@ -50,6 +50,8 @@ export async function POST(req) {
         return NextResponse.json({ ok: true, hasil: await terapkanDenda(body.id, sesi.nama) });
       case "deadline":
         return NextResponse.json({ ok: true, ...(await aturDeadline(body.bulan, body.idProyek, body.deadline, sesi.nama)) });
+      case "lapor":
+        return NextResponse.json({ ok: true, ...(await aturLapor(body.bulan, body.idProyek, body.lapor, sesi.nama)) });
       case "maksAktif":
         return NextResponse.json({ ok: true, maksAktif: await aturMaksAktif(body.nilai) });
       default:

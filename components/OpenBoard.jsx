@@ -90,6 +90,12 @@ function ProjectCard({ p, qty, setQty, milik }) {
             <b>−{numberID(diambil)} soal</b>
           </div>
         ) : null}
+        {p.lapor ? (
+          <div className="row">
+            <span>Lapor progres</span>
+            <b>wajib {p.lapor}%</b>
+          </div>
+        ) : null}
         {p.deadline ? (
           <div className="row">
             <span>Deadline</span>

@@ -66,6 +66,7 @@ export default async function OpenPage({ searchParams }) {
         kebutuhan: r.kebutuhan,
         jenis: jenisDariId(r.idSubtes) || "Lainnya",
         deadline: aturan[id]?.deadline || "",
+        lapor: aturan[id]?.lapor || 0,
       };
     })
     // tetap tampil bila guru ini sendiri sedang mengambilnya (supaya statusnya terlihat)
