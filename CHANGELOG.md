@@ -12,6 +12,28 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.5.0 — Situs demo dengan data contoh (5 Oktober 2026)
+
+- **Mode demo** untuk mencoba program tanpa menyentuh data asli: proyek Vercel kedua dari
+  repo yang sama dengan env `NEXT_PUBLIC_DEMO_MODE=1` dan keempat `SHEET_ID_*` menunjuk
+  **spreadsheet demo** terpisah. Situs asli tidak berubah.
+- **Pengaman spreadsheet**: di mode demo tidak ada jatuh-balik ke spreadsheet asli —
+  bila `SHEET_ID_*` kosong atau sama dengan ID asli, seluruh akses Google Sheets ditolak.
+  Pemulihan data hanya menulis ke spreadsheet yang punya tab penanda **MODE DEMO**.
+- **Akun contoh di halaman login** (`/admin/login` dan `/open/masuk`): Tim Seleksi, Tim
+  Akademik, Pemilik, dan 3 guru — satu klik untuk masuk, password sama untuk semua.
+  Password akun contoh tidak bisa diganti (dipakai bersama).
+- **Data contoh lengkap**: 8 guru + 4 pendaftar di setiap tahap seleksi, katalog 8 proyek
+  bulan berjalan dengan deadline & wajib lapor, pengambilan di setiap status (menunggu
+  acc, running, menunggu review, revisi, selesai, ditolak), log & pembayaran, reachout
+  yang perlu ditindaklanjuti, serta pengingat yang langsung terlihat.
+- **Menu Data demo** (semua anggota tim, hanya di situs demo): penjelasan skenario, daftar
+  akun, dan tombol **Pulihkan data contoh** — mengembalikan semua data ke kondisi awal
+  dengan tanggal disesuaikan ke hari ini.
+- Di situs demo, tombol WhatsApp membuka **pratinjau pesan** (tidak terkirim ke nomor
+  mana pun) dan tautan pendaftaran tidak membuka Google Form asli. Bar **MODE DEMO**
+  tampil di atas setiap halaman.
+
 ## 3.4.0 — Lapor progres 30/50% & pengingat (5 Oktober 2026)
 
 - **Lapor progres per proyek**: di Katalog, kolom *Deadline & lapor* punya pilihan

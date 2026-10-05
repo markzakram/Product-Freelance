@@ -1,5 +1,6 @@
 import "./globals.css";
 import SecretAccess from "@/components/SecretAccess";
+import { MODE_DEMO } from "@/lib/demo";
 
 export const metadata = {
   title: { default: "Product Freelance", template: "%s · Product Freelance" },
@@ -46,6 +47,11 @@ export default function RootLayout({ children }) {
         <script dangerouslySetInnerHTML={{ __html: pwaScript }} />
       </head>
       <body>
+        {MODE_DEMO ? (
+          <div className="pita-demo" role="note">
+            <b>MODE DEMO</b> · data contoh, bebas dicoba — tidak terhubung ke data asli
+          </div>
+        ) : null}
         {children}
         <SecretAccess />
       </body>

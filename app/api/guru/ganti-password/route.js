@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { ubahAkun, waktuWib } from "@/lib/akun";
 import { cocokPassword, hashPassword, cekPasswordBaru } from "@/lib/sandi";
 import { sesiGuru, buatToken, COOKIE_GURU, opsiCookie, asalSah } from "@/lib/sesiGuru";
+import { MODE_DEMO, EMAIL_DEMO } from "@/lib/demo";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,7 @@ export async function POST(req) {
   const sesi = await sesiGuru();
   if (!sesi) return ke(req, "/open/masuk?error=sesi");
   const { akun } = sesi;
+  if (MODE_DEMO && EMAIL_DEMO.has(akun.email)) return ke(req, "/open/ganti-password?error=" + encodeURIComponent("Mode demo: password akun contoh tidak bisa diganti (dipakai bersama)."));
 
   const form = await req.formData();
   const lama = String(form.get("lama") || "");

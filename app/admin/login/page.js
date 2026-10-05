@@ -1,6 +1,8 @@
 import Brand from "@/components/Brand";
 import InputSandi from "@/components/InputSandi";
 import { LAMA_KUNCI_MENIT } from "@/lib/akun";
+import { MODE_DEMO, TIM_DEMO, PASSWORD_DEMO } from "@/lib/demo";
+import AkunDemo from "@/components/AkunDemo";
 
 export const metadata = { title: "Masuk" };
 
@@ -36,6 +38,9 @@ export default function Login({ searchParams }) {
           <div className="banner err" role="alert" style={{ margin: 0 }}>
             <div>{PESAN[error] || PESAN.salah}</div>
           </div>
+        ) : null}
+        {MODE_DEMO ? (
+          <AkunDemo akun={TIM_DEMO.map((a) => ({ ...a, ket: a.peran.join(", ") }))} password={PASSWORD_DEMO} judul="Mode demo — masuk sebagai tim contoh" />
         ) : null}
         <input type="hidden" name="next" value={next} />
         <label className="ffield">

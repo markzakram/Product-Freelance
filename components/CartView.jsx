@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { rupiah, numberID } from "@/lib/format";
 import Icon from "./Icon";
 import { Dialog } from "./Drawer";
+import { tautanWa } from "@/lib/tautan";
 
 // ID proyek ikut di pesan WA: ada subtes bernama sama pada proyek berbeda.
 function pesanWa(dibuat, guru) {
@@ -208,7 +209,7 @@ export default function CartView({ cart = [], onQty, onRemove, onClear, onBack, 
                 Lihat Proyek saya
               </a>
               {waNumber ? (
-                <a className="btn btn-ghost block" href={`https://wa.me/${waNumber}?text=${encodeURIComponent(pesanWa(hasil.dibuat, guru))}`} target="_blank" rel="noopener noreferrer">
+                <a className="btn btn-ghost block" href={tautanWa(waNumber, pesanWa(hasil.dibuat, guru))} target="_blank" rel="noopener noreferrer">
                   <Icon name="send" />
                   Kabari tim akademik via WA (opsional)
                 </a>

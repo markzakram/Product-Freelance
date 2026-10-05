@@ -6,6 +6,7 @@ import { COOKIE_TIM, buatTokenTim, opsiCookieTim } from "@/lib/auth";
 import { cariAkunTim, ubahAkunTim } from "@/lib/akunTim";
 import { waktuWib } from "@/lib/akun";
 import { cocokPassword, hashPassword, cekPasswordBaru } from "@/lib/sandi";
+import { MODE_DEMO, EMAIL_DEMO } from "@/lib/demo";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,7 @@ export async function POST(req) {
   const sesi = await sesiAdmin().catch(() => null);
   if (!sesi) return ke("/admin/login?error=sesi");
   if (!sesi.akunTim) return ke("/admin");
+  if (MODE_DEMO && EMAIL_DEMO.has(sesi.email)) return ke("/admin/ganti-password?error=" + encodeURIComponent("Mode demo: password akun contoh tidak bisa diganti (dipakai bersama)."));
   const akun = await cariAkunTim(sesi.email, { segar: true }).catch(() => null);
   if (!akun) return ke("/admin/ganti-password?error=" + encodeURIComponent("Server sedang bermasalah. Coba lagi sebentar lagi."));
 

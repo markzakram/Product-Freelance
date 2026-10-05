@@ -38,6 +38,8 @@ import CorongRekrutmen from "./CorongRekrutmen";
 import { EVENT_REACHOUT, aturPelaku } from "@/lib/kontakWa";
 import TimPanel from "./TimPanel";
 import PengerjaanPanel from "./PengerjaanPanel";
+import DemoPanel from "./DemoPanel";
+import { MODE_DEMO } from "@/lib/demo";
 import { ST as ST_PJ, hitungMundur } from "@/lib/pengerjaanOpsi";
 import { barisRekap, bankDanRekening, judulRekap, unduhExcel, salinRekap } from "@/lib/rekapFee";
 
@@ -693,6 +695,8 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
 
             {tab === "tim" && pengguna.pemilik && <TimPanel aksiEl={aksiEl} setErr={setErr} emailSaya={pengguna.email} />}
 
+            {tab === "demo" && MODE_DEMO && <DemoPanel />}
+
             {tab === "ambil" && (
               <PengerjaanPanel
                 data={pengerjaan}
@@ -845,6 +849,8 @@ const NAV = [
       { k: "akses", label: "Pendaftaran & akun", judul: "Pendaftaran & Akun Guru", ikon: "userCheck", hitung: "pendaftar", peran: ["Seleksi"] },
       { k: "guru", label: "Database guru", judul: "Database Guru", ikon: "users", hitung: "guru" },
       { k: "tim", label: "Akun tim", judul: "Akun Tim", ikon: "kunci", peran: ["Pemilik"] },
+      // situs demo saja: skenario, akun contoh, tombol pulihkan data (semua anggota tim)
+      ...(MODE_DEMO ? [{ k: "demo", label: "Data demo", judul: "Data Demo", ikon: "refresh" }] : []),
     ],
   },
 ];

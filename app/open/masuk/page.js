@@ -5,6 +5,8 @@ import InputSandi from "@/components/InputSandi";
 import { sesiGuru, loginGuruSiap } from "@/lib/sesiGuru";
 import { wajibLoginGuru, LAMA_KUNCI_MENIT } from "@/lib/akun";
 import { FORM_DAFTAR, WA_ADMIN, tautanWa } from "@/lib/tautan";
+import { MODE_DEMO, GURU_DEMO, PASSWORD_DEMO } from "@/lib/demo";
+import AkunDemo from "@/components/AkunDemo";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Masuk" };
@@ -49,6 +51,7 @@ export default async function MasukGuru({ searchParams }) {
           </div>
         ) : null}
 
+        {MODE_DEMO ? <AkunDemo akun={GURU_DEMO} password={PASSWORD_DEMO} judul="Mode demo — masuk sebagai guru contoh" /> : null}
         {loginGuruSiap() ? (
           <form method="POST" action="/api/guru/masuk" className="auth-form">
             <div className="ffield">
