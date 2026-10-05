@@ -37,6 +37,8 @@ import PantauReachout from "./PantauReachout";
 import CorongRekrutmen from "./CorongRekrutmen";
 import { EVENT_REACHOUT, aturPelaku } from "@/lib/kontakWa";
 import TimPanel from "./TimPanel";
+import PengerjaanPanel from "./PengerjaanPanel";
+import { ST as ST_PJ, hitungMundur } from "@/lib/pengerjaanOpsi";
 import { barisRekap, bankDanRekening, judulRekap, unduhExcel, salinRekap } from "@/lib/rekapFee";
 
 const STATUS_KNOWN = ["Running Soal", "QC Soal", "Revisi Soal", "Approved", "Running Video", STATUS_BATAL];
@@ -49,7 +51,7 @@ const F0 = { q: "", from: "", to: "", platform: SEMUA, guru: SEMUA, subtes: SEMU
 // Halaman yang isinya terikat satu bulan -> perlu pemilih bulan.
 // (Master, Proyek Baru, dan Analisis tidak: master bersifat lintas bulan dan
 // Analisis punya filter bulannya sendiri.)
-const PERBULAN = new Set(["ringkasan", "katalog", "log", "bayar", "reachout"]);
+const PERBULAN = new Set(["ringkasan", "katalog", "ambil", "log", "bayar", "reachout"]);
 
 const tglID = (iso) => {
   const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -155,6 +157,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   const [guru, setGuru] = useState({ rows: [] });
   const [akses, setAkses] = useState(null); // pendaftar & akun guru
   const [reachout, setReachout] = useState(null); // kontak WA admin -> guru (tab Reachout)
+  const [pengerjaan, setPengerjaan] = useState(null); // pengambilan guru bulan aktif + aturan (deadline)
   // Lompatan dari halaman lain ke Pendaftaran & akun: { email?, tampil, saringA?, tinjau? }
   const [fokusAkses, setFokusAkses] = useState(null);
   const [extraLoaded, setExtraLoaded] = useState(false);
@@ -208,6 +211,20 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
     if (!expired) refreshExtra();
   }, [refreshExtra, expired]);
 
+  // Pengambilan guru & deadline per proyek untuk bulan yang sedang dibuka.
+  const tabBoard = board.tab;
+  const muatPengerjaan = useCallback(async () => {
+    if (!tabBoard) return;
+    try {
+      const r = await fetch("/api/admin/pengerjaan?bulan=" + encodeURIComponent(tabBoard), { cache: "no-store" });
+      if (r.status === 401) return setExpired(true);
+      const j = await r.json().catch(() => ({}));
+      setPengerjaan(r.ok ? j : { pengerjaan: [], aturan: {}, error: j.error || "HTTP " + r.status });
+    } catch (e) {
+      setPengerjaan({ pengerjaan: [], aturan: {}, error: e.message });
+    }
+  }, [tabBoard]);
+
   const muatReachout = useCallback(async () => {
     try {
       const r = await fetch("/api/admin/reachout", { cache: "no-store" });
@@ -225,6 +242,10 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   useEffect(() => {
     aturPelaku(pengguna.nama);
   }, [pengguna.nama]);
+
+  useEffect(() => {
+    if (!expired && akademik) muatPengerjaan();
+  }, [muatPengerjaan, expired, akademik]);
 
   // Tombol WA di mana pun (Cari guru, Tinjau, kirim akun, profil) mengumumkan
   // kontak barunya lewat event — lihat lib/kontakWa.js.
@@ -482,6 +503,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
             katalog: projects.length,
             master: master.rows?.length || 0,
             guru: (guru.rows || []).length || teachers.length,
+            ambil: (pengerjaan?.pengerjaan || []).filter((x) => x.status === ST_PJ.diajukan).length || null,
             pendaftar: pendaftarBaru || null,
             guruAjuan: ajuanData,
           }}
@@ -640,6 +662,9 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
                 bulan={board.tab}
                 kontak={reachout?.kontak || []}
                 penanda={akses?.penanda || {}}
+                aturan={pengerjaan?.aturan || {}}
+                dipesan={(pengerjaan?.pengerjaan || []).reduce((m, x) => (x.status === ST_PJ.diajukan ? { ...m, [x.idProyek]: (m[x.idProyek] || 0) + x.jumlah } : m), {})}
+                onAturan={muatPengerjaan}
               />
             )}
 
@@ -666,6 +691,20 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
               ))}
 
             {tab === "tim" && pengguna.pemilik && <TimPanel aksiEl={aksiEl} setErr={setErr} emailSaya={pengguna.email} />}
+
+            {tab === "ambil" && (
+              <PengerjaanPanel
+                data={pengerjaan}
+                bulan={board.tab}
+                namaBulan={namaBulan}
+                projects={projects}
+                guruDb={guru.rows || []}
+                muatUlang={muatPengerjaan}
+                setErr={setErr}
+                aksiEl={aksiEl}
+                onBerubah={refresh}
+              />
+            )}
 
             {tab === "corong" &&
               (extraLoaded ? (
@@ -784,8 +823,9 @@ const NAV = [
       { k: "master", label: "Master subtes", judul: "Master Subtes", langkah: 1, hitung: "master", peran: ["Akademik"] },
       { k: "baru", label: "Proyek bulan baru", judul: "Proyek Bulan Baru", langkah: 2, peran: ["Akademik"] },
       { k: "katalog", label: "Katalog bulan ini", judul: "Katalog Bulan Ini", langkah: 3, hitung: "katalog", peran: ["Akademik"] },
-      { k: "log", label: "Log pengambilan", judul: "Log Pengambilan", langkah: 4, hitung: "log", peran: ["Akademik"] },
-      { k: "bayar", label: "Pembayaran & kwitansi", judul: "Pembayaran & Kwitansi", langkah: 5, peran: ["Akademik"] },
+      { k: "ambil", label: "Pengambilan guru", judul: "Pengambilan Guru", langkah: 4, hitung: "ambil", peran: ["Akademik"] },
+      { k: "log", label: "Log pengambilan", judul: "Log Pengambilan", langkah: 5, hitung: "log", peran: ["Akademik"] },
+      { k: "bayar", label: "Pembayaran & kwitansi", judul: "Pembayaran & Kwitansi", langkah: 6, peran: ["Akademik"] },
     ],
   },
   {
@@ -826,8 +866,8 @@ NAV.forEach((g) =>
 const TABBAR = [
   { k: "ringkasan", label: "Ringkasan", ikon: "home" },
   { k: "katalog", label: "Katalog", ikon: "layers" },
+  { k: "ambil", label: "Ambilan", ikon: "userCheck" },
   { k: "log", label: "Log", ikon: "clipboard" },
-  { k: "bayar", label: "Bayar", ikon: "wallet" },
 ];
 
 // Tim seleksi tidak memakai katalog/log/bayar — menu bawahnya sendiri.
@@ -1739,7 +1779,37 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, m
 /* ============================== KATALOG ================================== */
 const BLANK_P = { id: "", idSubtes: "", platform: "", subtes: "", output: "", harga: "", kebutuhan: "" };
 
-function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan, setErr, onMasterChanged, guruDb, log, riwayat, akun, wajibLogin, bulan, kontak, penanda }) {
+function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan, setErr, onMasterChanged, guruDb, log, riwayat, akun, wajibLogin, bulan, kontak, penanda, aturan = {}, dipesan = {}, onAturan }) {
+  const [dlLokal, setDlLokal] = useState({}); // deadline yang baru disimpan (tampil langsung)
+  const [dlSimpan, setDlSimpan] = useState("");
+  const deadlineDari = (p) => {
+    const id = String(p.id).toUpperCase();
+    return id in dlLokal ? dlLokal[id] : aturan[id]?.deadline || "";
+  };
+  const simpanDeadline = async (p, nilai) => {
+    const id = String(p.id).toUpperCase();
+    setDlSimpan(id);
+    setDlLokal((m) => ({ ...m, [id]: nilai }));
+    try {
+      const res = await fetch("/api/admin/pengerjaan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "deadline", bulan, idProyek: p.id, deadline: nilai }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.error || `Gagal (HTTP ${res.status})`);
+      onAturan?.();
+    } catch (e) {
+      setDlLokal((m) => {
+        const n = { ...m };
+        delete n[id];
+        return n;
+      });
+      setErr?.("Deadline belum tersimpan: " + e.message);
+    } finally {
+      setDlSimpan("");
+    }
+  };
   const [edit, setEdit] = useState(null);
   const [cari, setCari] = useState(null); // proyek yang sedang dicarikan guru
   const [draft, setDraft] = useState(BLANK_P);
@@ -1823,7 +1893,7 @@ function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan
 
       <div className="table-wrap fixed">
         <table className="grid-table t-kat">
-          <Cols widths={[10, 10, 28, 13, 10, 11, 11, 7]} />
+          <Cols widths={[9, 9, 24, 11, 9, 9, 11, 12, 6]} />
           <thead>
             <tr>
               <th>Kode</th>
@@ -1833,6 +1903,7 @@ function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan
               <th className="num">Harga</th>
               <th className="num">Kebutuhan</th>
               <th className="num">Sisa</th>
+              <th>Deadline</th>
               <th className="act">
                 <span className="sr-only">Aksi</span>
               </th>
@@ -1841,7 +1912,7 @@ function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan
           <tbody>
             {list.length === 0 ? (
               <tr>
-                <td colSpan={8} className="empty">
+                <td colSpan={9} className="empty">
                   {projects.length ? "Tidak ada proyek yang cocok." : "Katalog bulan ini masih kosong."}
                 </td>
               </tr>
@@ -1874,6 +1945,28 @@ function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan
                       Cari guru
                     </button>
                   )}
+                  {dipesan[String(p.id).toUpperCase()] ? (
+                    <div className="muted xs2">{numberID(dipesan[String(p.id).toUpperCase()])} menunggu acc</div>
+                  ) : null}
+                </td>
+                <td className="c-deadline" data-l="Deadline">
+                  {(() => {
+                    const dl = deadlineDari(p);
+                    const hm = hitungMundur(dl);
+                    return (
+                      <>
+                        <input
+                          type="date"
+                          className="input sm dl-input"
+                          value={dl}
+                          disabled={readOnly || dlSimpan === String(p.id).toUpperCase()}
+                          onChange={(e) => simpanDeadline(p, e.target.value)}
+                          aria-label={`Deadline ${p.subtes}`}
+                        />
+                        {dl ? <div className={"xs2 dl-" + hm.kelas}>{hm.teks}</div> : <div className="muted xs2">belum diatur</div>}
+                      </>
+                    );
+                  })()}
                 </td>
                 <td className="act">
                   <RowMenu

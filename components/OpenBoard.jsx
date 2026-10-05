@@ -18,12 +18,14 @@ import DataBanner from "./DataBanner";
 import GuideModal from "./GuideModal";
 import CartView from "./CartView";
 import PasangApp from "./PasangApp";
+import { hitungMundur, tanggalPendek, labelStatus, kelasStatus } from "@/lib/pengerjaanOpsi";
 
 const clamp = (n, min, max) => (Number.isNaN(n) ? min : Math.max(min, Math.min(max, n)));
 const JENIS_URUT = ["Soal", "Liveclass", "Laporan FR", "Editor", "Lainnya"];
 const SEMUA = "Semua";
 
-function ProjectCard({ p, qty, setQty }) {
+// `milik` = status pengambilan guru ini untuk proyek tsb (bila sedang berjalan).
+function ProjectCard({ p, qty, setQty, milik }) {
   const input = useRef(null);
   const [baruDiambil, setBaruDiambil] = useState(false);
   const dipilih = qty > 0;
@@ -88,10 +90,25 @@ function ProjectCard({ p, qty, setQty }) {
             <b>−{numberID(diambil)} soal</b>
           </div>
         ) : null}
+        {p.deadline ? (
+          <div className="row">
+            <span>Deadline</span>
+            <b className={"dl-" + hitungMundur(p.deadline).kelas}>
+              {tanggalPendek(p.deadline)} · {hitungMundur(p.deadline).teks}
+            </b>
+          </div>
+        ) : null}
       </div>
 
       <div className="pc-foot">
-        {!dipilih ? (
+        {milik ? (
+          <>
+            <span className={"pill " + kelasStatus(milik)}>{labelStatus(milik)}</span>
+            <a className="btn btn-ghost xs" href="/open/saya">
+              Proyek saya
+            </a>
+          </>
+        ) : !dipilih ? (
           <>
             <span className="muted">Belum diambil</span>
             <button
@@ -159,6 +176,10 @@ function MenuAkun({ guru }) {
           <b>{guru.nama || "Guru"}</b>
           <span>{guru.email}</span>
         </div>
+        <a href="/open/saya" role="menuitem">
+          <Icon name="clipboard" />
+          Proyek saya · status pengambilan
+        </a>
         <a href="/open/profil" role="menuitem">
           <Icon name="userCheck" />
           Profil saya · riwayat & fee
@@ -178,7 +199,8 @@ function MenuAkun({ guru }) {
   );
 }
 
-export default function OpenBoard({ projects, source, bulan, waNumber, panduan = [], brand = "Cerebrum", guru = null, bisaMasuk = false, pesan = "" }) {
+export default function OpenBoard({ projects, source, bulan, waNumber, panduan = [], brand = "Cerebrum", guru = null, bisaMasuk = false, pesan = "", milikku = {}, aktif = 0, maks = 3 }) {
+  const milikDari = (p) => milikku[String(p.id).toUpperCase()];
   const [q, setQ] = useState("");
   const [jenis, setJenis] = useState(SEMUA);
   const [output, setOutput] = useState(SEMUA);
@@ -233,7 +255,7 @@ export default function OpenBoard({ projects, source, bulan, waNumber, panduan =
   const filtered = useMemo(() => {
     const words = q.toLowerCase().split(/\s+/).filter(Boolean);
     return projects
-      .filter((p) => p.sisa > 0)
+      .filter((p) => p.sisa > 0 || milikDari(p))
       .filter((p) => jenis === SEMUA || p.jenis === jenis)
       .filter((p) => output === SEMUA || (p.output || "Lainnya") === output)
       .filter((p) => words.every((w) => `${p.subtes} ${p.output} ${p.jenis}`.toLowerCase().includes(w)))
@@ -265,6 +287,13 @@ export default function OpenBoard({ projects, source, bulan, waNumber, panduan =
               <span className="lbl">Panduan</span>
             </button>
             <ThemeToggle className="sq" />
+            {guru ? (
+              <a className="btn btn-ghost ke-saya" href="/open/saya">
+                <Icon name="clipboard" />
+                <span className="lbl">Proyek saya</span>
+                {aktif ? <span className="badge">{aktif}</span> : null}
+              </a>
+            ) : null}
             {guru ? (
               <MenuAkun guru={guru} />
             ) : bisaMasuk ? (
@@ -305,8 +334,13 @@ export default function OpenBoard({ projects, source, bulan, waNumber, panduan =
             }}
             onBack={() => setView("catalog")}
             waNumber={waNumber}
-            brand={brand}
             guru={guru}
+            aktif={aktif}
+            maks={maks}
+            onSelesai={() => {
+              setQtyMap({});
+              setView("catalog");
+            }}
           />
         ) : (
           <>
@@ -316,7 +350,7 @@ export default function OpenBoard({ projects, source, bulan, waNumber, panduan =
               </span>
               <div>
                 <h1>Proyek {bulan || "bulan ini"}</h1>
-                <p>Pilih proyek, atur jumlah soalnya, lalu ajukan ke Admin Akademik.</p>
+                <p>Pilih proyek, atur jumlah soalnya, lalu ajukan. Tim akademik akan meng-acc pengajuanmu — pantau di Proyek saya.</p>
               </div>
             </div>
 
@@ -377,7 +411,7 @@ export default function OpenBoard({ projects, source, bulan, waNumber, panduan =
                 <div className="eyebrow">{numberID(filtered.length)} proyek</div>
                 <div className="pcards">
                   {filtered.map((p) => (
-                    <ProjectCard key={p.id} p={p} qty={qty[p.id] || 0} setQty={setQty} />
+                    <ProjectCard key={p.id} p={p} qty={qty[p.id] || 0} setQty={setQty} milik={milikDari(p)} />
                   ))}
                 </div>
               </>

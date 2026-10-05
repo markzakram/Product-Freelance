@@ -8,6 +8,9 @@ import { wajibLoginGuru } from "@/lib/akun";
 import { sesiGuru, loginGuruSiap } from "@/lib/sesiGuru";
 import { WA_ADMIN } from "@/lib/tautan";
 import { adminSah } from "@/lib/authServer";
+import { bacaPengerjaan, dipesanPerProyek, maksAktif } from "@/lib/pengerjaan";
+import { aturanBulan } from "@/lib/aturanProyek";
+import { AKTIF, hitungMundur } from "@/lib/pengerjaanOpsi";
 
 // Katalog dibaca langsung dari sheet bulan terbaru pada tiap request, supaya
 // stok (kolom Sisa) yang dilihat guru selalu sama dengan spreadsheet.
@@ -27,22 +30,46 @@ export default async function OpenPage({ searchParams }) {
 
   const [board, panduan, guruDb] = await Promise.all([getBoard(), getPanduan(), sesi ? getTeachers() : null]);
   const bulan = (board.months || []).find((m) => m.tab === board.tab)?.bulan || "";
+  // Pengajuan yang menunggu acc memesan kuota: Sisa yang dilihat guru = Sisa
+  // sheet − pesanan itu. Deadline per proyek dari tab "Aturan proyek".
+  // Gagal membaca keduanya tidak boleh mematikan halaman proyek.
+  const [semuaPj, aturan, maks] = await Promise.all([
+    bacaPengerjaan().catch(() => []),
+    board.source === "live" ? aturanBulan(board.tab).catch(() => ({})) : {},
+    maksAktif(),
+  ]);
+  const dipesan = dipesanPerProyek(semuaPj, board.tab);
+  const milikku = {};
+  let aktifku = 0;
+  if (sesi) {
+    const punyaku = (p) => (sesi.akun.idGuru && p.idGuru === sesi.akun.idGuru) || p.email === sesi.akun.email;
+    semuaPj.forEach((p) => {
+      if (!punyaku(p) || !AKTIF.has(p.status)) return;
+      aktifku++;
+      if (p.bulan === board.tab) milikku[p.idProyek] = p.status;
+    });
+  }
   // Guru hanya boleh melihat/apply proyek yang stoknya masih tersisa, dan
   // hanya kolom yang memang untuk guru: platform & tautan master TIDAK ikut
   // dikirim ke browser (bukan sekadar disembunyikan di tampilan).
   // `id` (kode baris) tetap ikut karena dicantumkan di pesan WhatsApp —
   // ada subtes bernama sama di baris berbeda.
   const open = board.projects
-    .filter((r) => r.sisa > 0)
-    .map((r) => ({
-      id: r.id,
-      subtes: r.subtes,
-      output: r.output,
-      harga: r.harga,
-      sisa: r.sisa,
-      kebutuhan: r.kebutuhan,
-      jenis: jenisDariId(r.idSubtes) || "Lainnya",
-    }));
+    .map((r) => {
+      const id = String(r.id).toUpperCase();
+      return {
+        id: r.id,
+        subtes: r.subtes,
+        output: r.output,
+        harga: r.harga,
+        sisa: r.sisa - (dipesan[id] || 0),
+        kebutuhan: r.kebutuhan,
+        jenis: jenisDariId(r.idSubtes) || "Lainnya",
+        deadline: aturan[id]?.deadline || "",
+      };
+    })
+    // tetap tampil bila guru ini sendiri sedang mengambilnya (supaya statusnya terlihat)
+    .filter((r) => (r.sisa > 0 && !hitungMundur(r.deadline).lewat) || milikku[String(r.id).toUpperCase()]);
 
   let guru = null;
   if (sesi) {
@@ -61,6 +88,9 @@ export default async function OpenPage({ searchParams }) {
       brand={brand}
       guru={guru}
       bisaMasuk={loginGuruSiap()}
+      milikku={milikku}
+      aktif={aktifku}
+      maks={maks}
       pesan={searchParams?.password === "diganti" ? "Password berhasil diganti. Gunakan password baru ini untuk masuk berikutnya." : ""}
     />
   );

@@ -3,6 +3,33 @@
 // Popup "Panduan" di halaman guru. Isinya dibaca dari tab "Panduan" di sheet.
 import Icon from "./Icon";
 import { Dialog } from "./Drawer";
+import { ALUR_GURU, ATURAN_GURU } from "@/lib/pengerjaanOpsi";
+
+/** Alur pengambilan proyek — juga dipakai di halaman Proyek saya. */
+export function AlurPengambilan({ ringkas = false }) {
+  return (
+    <div className="alur">
+      <ol className="alur-langkah">
+        {ALUR_GURU.map(([judul, isi], i) => (
+          <li key={i}>
+            <span className="alur-no">{i + 1}</span>
+            <span>
+              <b>{judul}</b>
+              {!ringkas ? <small>{isi}</small> : null}
+            </span>
+          </li>
+        ))}
+      </ol>
+      {!ringkas ? (
+        <ul className="alur-aturan">
+          {ATURAN_GURU.map((t, i) => (
+            <li key={i}>{t}</li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
 
 function youtubeId(url) {
   if (!url) return "";
@@ -23,6 +50,10 @@ export default function GuideModal({ open, onClose, items = [] }) {
         </button>
       }
     >
+      <p className="modal-sub">
+        <b>Alur pengambilan proyek</b> — pengajuan langsung lewat halaman ini, tidak perlu lewat chat.
+      </p>
+      <AlurPengambilan />
       <p className="modal-sub">
         Baca briefing dan tonton video panduan ini dulu, supaya soal yang kamu kirim sesuai standar dan tidak perlu revisi.
       </p>

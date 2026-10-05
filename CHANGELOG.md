@@ -12,6 +12,35 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.2.0 — Pengambilan proyek lewat dashboard (5 Oktober 2026)
+
+Guru kini mengambil proyek langsung dari halaman proyek; chat WA hanya pemberitahuan
+opsional. Halaman proyek wajib login (hanya guru ber-akun yang bisa mengambil).
+
+- **Halaman guru (/open)**: tombol **Ajukan pengambilan** menyimpan pengajuan langsung
+  (status *Menunggu acc*) dan **memesan kuotanya** — Sisa yang dilihat guru lain
+  berkurang seketika. Kartu proyek menampilkan **deadline** + hitung mundur, dan status
+  bila guru itu sudah mengambilnya. Proyek yang deadline-nya lewat tidak bisa diambil.
+- **Proyek saya** (/open/saya, dari tombol di header & menu akun): semua pengambilan
+  guru dengan status, deadline, siapa yang meng-acc/menolak beserta alasannya;
+  pengajuan yang belum di-acc bisa dibatalkan sendiri.
+- **Panduan alur** di popup Panduan dan di Proyek saya: ajukan → acc → kerjakan
+  sebelum deadline → kumpulkan link GDoc → review (approved/revisi/reject) → revisi
+  maks 3 hari (−25% untuk soal yang telat), plus aturan batas proyek aktif & denda.
+- **Batas proyek aktif per guru** (bawaan 3, diatur tim akademik): pengajuan baru
+  ditolak bila guru sudah mencapai batas.
+- **Dashboard akademik → Pengambilan guru** (langkah 4 alur kerja, juga di menu bawah
+  HP): pengajuan yang menunggu (dengan beban guru, sisa di sheet, perkiraan fee),
+  **Acc** (baris log dibuat otomatis berstatus Running Soal/Video) atau **Tolak** dengan
+  alasan (kuota kembali open), daftar yang sedang Running + tanda lewat deadline, dan
+  tombol WA ke guru (kabari di-acc/ditolak, ingatkan deadline — tercatat di Reachout).
+- **Katalog**: kolom baru **Deadline** (tanggal tetap per proyek, disimpan di tab baru
+  *Aturan proyek*) dan keterangan "N menunggu acc" di kolom Sisa.
+- Pengajuan disimpan di tab baru **Pengerjaan**; yang belum di-acc tidak ditulis ke log
+  (kolom Status log memakai dropdown ketat), sehingga sheet bulanan tidak diubah
+  strukturnya. Dua guru yang mengajukan kuota terakhir bersamaan: yang lebih dulu
+  tercatat yang dapat, yang lain dibatalkan otomatis dengan pesan.
+
 ## 3.1.0 — Penanda "Bisa liveclass" untuk guru (5 Oktober 2026)
 
 - Tab **Akun guru** (Pendaftaran & akun) punya kolom baru **Liveclass**: tombol

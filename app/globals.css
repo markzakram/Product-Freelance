@@ -1201,3 +1201,53 @@ html{scroll-behavior:smooth}
 .live-tanda:hover:not(:disabled){border-color:var(--accent);color:var(--accent-strong)}
 .live-tanda.on{border-style:solid;border-color:transparent;background:var(--accent-weak-2);color:var(--accent-strong)}
 .live-tanda:disabled{opacity:.6;cursor:default}
+
+/* ---- v3.2.0: pengambilan proyek lewat dashboard ---------------------------- */
+.dl-appr{color:var(--good)}
+.dl-qc{color:var(--warn)}
+.dl-rev{color:var(--bad)}
+.dl-input{width:100%;min-width:0;padding:5px 8px}
+.ke-saya{position:relative}
+.ke-saya .badge{margin-left:2px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--accent);color:#fff;font-size:11px;font-weight:800;display:inline-grid;place-items:center}
+.hasil-ajuan{list-style:none;margin:0 0 6px;padding:0;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.hasil-ajuan li{display:flex;gap:8px;align-items:flex-start}
+.hasil-ajuan li svg{flex:none;margin-top:3px;color:var(--good)}
+.hasil-ajuan.gagal li svg{color:var(--bad)}
+/* alur pengambilan (panduan & Proyek saya) */
+.alur{display:flex;flex-direction:column;gap:10px;margin:4px 0 8px}
+.alur-langkah{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.alur-langkah li{display:flex;gap:10px;align-items:flex-start}
+.alur-no{flex:none;width:24px;height:24px;border-radius:999px;background:var(--accent-weak-2);color:var(--accent-strong);font-size:12px;font-weight:800;display:grid;place-items:center}
+.alur-langkah span{display:flex;flex-direction:column;gap:1px}
+.alur-langkah b{font-size:14px}
+.alur-langkah small{font-size:12.5px;color:var(--text-muted);line-height:1.45}
+.alur-aturan{margin:0;padding:10px 12px 10px 28px;border-radius:12px;background:var(--surface-2);font-size:12.5px;color:var(--text-muted);display:flex;flex-direction:column;gap:4px}
+/* Proyek saya */
+.ps-alur summary{cursor:pointer;font-weight:700;display:flex;align-items:center;gap:8px}
+.ps-alur[open] summary{margin-bottom:12px}
+.ps-list,.pj-list{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.ps-kartu{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.ps-kartu.selesai{opacity:.75}
+.ps-atas,.pj-atas{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.ps-judul,.pj-siapa,.pj-proyek{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ps-judul b,.pj-siapa b{font-size:15px;overflow-wrap:anywhere}
+.pj-proyek b{font-size:14px}
+.ps-judul span,.pj-siapa span,.pj-proyek span{font-size:12.5px;color:var(--text-muted)}
+.ps-info{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 14px}
+.ps-info span{display:flex;flex-direction:column;gap:1px;min-width:0}
+.ps-info small{font-size:11.5px;color:var(--text-muted);font-weight:600}
+.ps-info b{font-size:13px;overflow-wrap:anywhere}
+.ps-catatan{margin:0;padding:8px 12px;border-radius:10px;background:var(--surface-2);font-size:13px}
+.ps-catatan.tolak{background:var(--bad-weak);color:var(--bad)}
+.ps-aksi,.pj-aksi{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.pj-aksi{justify-content:flex-start}
+/* panel pengambilan (akademik) */
+.pj-kartu{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.pj-tolak{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--border);padding-top:10px}
+.pj-maks{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text-muted);font-weight:600}
+.pj-maks input{width:64px}
+@media(max-width:760px){
+  .t-kat tr{grid-template-areas:"subtes subtes act" "kode plat output" "harga keb sisa" "deadline deadline deadline"}
+  .t-kat .c-deadline{grid-area:deadline}
+  .pj-maks span{display:none}
+}
