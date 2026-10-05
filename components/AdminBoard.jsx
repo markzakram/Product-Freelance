@@ -503,7 +503,8 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
             katalog: projects.length,
             master: master.rows?.length || 0,
             guru: (guru.rows || []).length || teachers.length,
-            ambil: (pengerjaan?.pengerjaan || []).filter((x) => x.status === ST_PJ.diajukan).length || null,
+            // yang menunggu tindakan tim: pengajuan baru + pengumpulan yang belum direview
+            ambil: (pengerjaan?.pengerjaan || []).filter((x) => x.status === ST_PJ.diajukan || x.status === ST_PJ.review).length || null,
             pendaftar: pendaftarBaru || null,
             guruAjuan: ajuanData,
           }}

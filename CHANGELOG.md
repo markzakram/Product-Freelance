@@ -12,6 +12,37 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.3.0 — Pengumpulan & review per soal (5 Oktober 2026)
+
+- **Guru (Proyek saya)**: proyek Running punya form **Kumpulkan untuk direview** — link
+  Google Docs/Drive (link lain ditolak) + catatan opsional. Status jadi *Menunggu review*
+  (log: QC Soal/Video). Saat **Revisi**: tampil jumlah soal yang direvisi, catatan tim,
+  **batas revisi 3 hari** dengan hitung mundur, dan tombol **Kirim revisi** (link lama
+  terisi otomatis). Rincian tiap review (disetujui, disetujui −25%, ditolak) dan
+  peringatan bila review sudah gagal 2× atau lebih.
+- **Tim akademik (Pengambilan guru)**: saringan baru *Menunggu review*, *Revisi*,
+  *Selesai*; tombol **Buka GDoc** dan **Review N soal** — isi jumlah **disetujui / revisi /
+  reject** (harus pas), pilih kuota soal reject **dibuka lagi ke katalog** atau **tidak
+  dibuka** (kebutuhan dikurangi), dan catatan revisi (wajib bila ada revisi, tampil ke
+  guru). Tombol WA **Kabari revisi** (berisi jumlah soal, catatan, link, batas & aturan
+  25%), **Kirim peringatan**, **Kabari hasil akhir** — semua tercatat di Reachout.
+- **Aturan yang dijalankan sistem**:
+  - Revisi maks **3×24 jam** sejak status Revisi. Soal revisi yang **dikirim guru lewat
+    batas** dan kemudian disetujui dibayar **75%** (potongan hanya untuk soal itu) —
+    dihitung dari waktu kirim guru, bukan waktu review, supaya review yang lambat tidak
+    merugikan guru.
+  - Soal **reject** langsung keluar dari baris log utama ke baris *Cancel* (fee 0).
+  - Setelah semua soal diputuskan: baris log utama jadi **Approved** (soal tepat waktu),
+    soal telat di baris **Approved terpisah dengan tarif 75%** (Ket. Tarif menjelaskan).
+  - Review gagal ke-2 & ke-3 → peringatan; gagal ke-4 → tombol **Terapkan denda 25%**
+    (diputuskan tim; tidak ditumpuk dengan potongan revisi telat).
+- KPI baru: menunggu review, sedang dikerjakan (running + revisi), terlambat (lewat
+  deadline / revisi lewat 3 hari). Angka di menu Pengambilan guru = pengajuan baru +
+  pengumpulan yang belum direview.
+- Tab **Pengerjaan** bertambah kolom (link, waktu kumpul, ronde review, jumlah per hasil,
+  batas & catatan revisi, review gagal, denda, baris log tambahan, reviewer) — judul
+  kolomnya ditambahkan otomatis.
+
 ## 3.2.0 — Pengambilan proyek lewat dashboard (5 Oktober 2026)
 
 Guru kini mengambil proyek langsung dari halaman proyek; chat WA hanya pemberitahuan

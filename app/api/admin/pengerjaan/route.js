@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { izinAdmin } from "@/lib/authServer";
 import { canWrite } from "@/lib/gauth";
 import { getBoard } from "@/lib/juli";
-import { bacaPengerjaan, putuskan, maksAktif, aturMaksAktif } from "@/lib/pengerjaan";
+import { bacaPengerjaan, putuskan, maksAktif, aturMaksAktif, review, terapkanDenda } from "@/lib/pengerjaan";
 import { aturanBulan, aturDeadline } from "@/lib/aturanProyek";
 import { AKTIF } from "@/lib/pengerjaanOpsi";
 
@@ -41,6 +41,13 @@ export async function POST(req) {
         const board = await getBoard(body.bulan);
         return NextResponse.json({ ok: true, pengerjaan: await putuskan(body.id, { acc: Boolean(body.acc), catatan: body.catatan }, sesi.nama, board) });
       }
+      case "review":
+        return NextResponse.json({
+          ok: true,
+          hasil: await review(body.id, { setuju: body.setuju, revisi: body.revisi, tolak: body.tolak, tujuanTolak: body.tujuanTolak, catatan: body.catatan }, sesi.nama),
+        });
+      case "denda":
+        return NextResponse.json({ ok: true, hasil: await terapkanDenda(body.id, sesi.nama) });
       case "deadline":
         return NextResponse.json({ ok: true, ...(await aturDeadline(body.bulan, body.idProyek, body.deadline, sesi.nama)) });
       case "maksAktif":
