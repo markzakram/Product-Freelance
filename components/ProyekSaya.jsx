@@ -22,10 +22,10 @@ import {
   linkSah,
   sisaWaktu,
   pengingat,
-  batasLapor,
-  minimalLapor,
+  statusTitik,
+  titikBerikut,
+  tanggalHari,
 } from "@/lib/pengerjaanOpsi";
-import { msKeWaktu } from "@/lib/reachoutOpsi";
 import Brand from "./Brand";
 import Icon from "./Icon";
 import ThemeToggle from "./ThemeToggle";
@@ -62,8 +62,34 @@ function FormKumpul({ p, onKumpul, sibuk }) {
   );
 }
 
-function FormProgres({ p, onLapor, sibuk }) {
-  const min = minimalLapor(p);
+/** Jadwal titik lapor progres satu pengambilan: yang sudah masuk (✓) dan yang menunggu (H-x). */
+function JadwalLapor({ titik, jumlah, info = false }) {
+  if (!titik.length) return null;
+  return (
+    <ul className="jl-list" aria-label="Jadwal lapor progres">
+      {titik.map((t) => (
+        <li key={t.persen} className={t.selesai ? (t.telat ? "telat" : "ok") : t.lewat ? "lewat" : ""}>
+          <span className="jl-persen">{t.persen}%</span>
+          {t.selesai ? (
+            <span>
+              <Icon name="check" size={13} stroke={2.4} /> {t.laporan.otomatis ? "Terpenuhi lewat pengumpulan hasil akhir" : `${numberID(t.laporan.soal)}/${numberID(jumlah)} soal dilaporkan`} ·{" "}
+              {t.laporan.waktu}
+              {t.telat ? " · telat" : ""}
+            </span>
+          ) : (
+            <span>
+              min. {numberID(t.min)} soal · paling lambat <b>{tanggalHari(t.tanggal)}</b>
+              {info ? "" : <span className={"pill " + (t.lewat || t.hm.hari === 0 ? "rev" : t.hm.hari <= 2 ? "qc" : "run")}>{t.h}</span>}
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function FormProgres({ p, t, onLapor, sibuk }) {
+  const min = t.min;
   const [soal, setSoal] = useState(String(min || ""));
   const [link, setLink] = useState(p.link || "");
   const [catatan, setCatatan] = useState("");
@@ -71,7 +97,7 @@ function FormProgres({ p, onLapor, sibuk }) {
   const kirim = (e) => {
     e.preventDefault();
     const n = parseInt(soal, 10) || 0;
-    if (n < min) return setGalat(`Minimal ${min} soal (${p.wajibLapor}%) untuk lapor progres.`);
+    if (n < min) return setGalat(`Minimal ${min} soal (${t.persen}%) untuk lapor progres.`);
     if (n > p.jumlah) return setGalat(`Maksimal ${p.jumlah} soal.`);
     if (!linkSah(link)) return setGalat("Pakai link Google Docs / Drive.");
     setGalat("");
@@ -95,7 +121,7 @@ function FormProgres({ p, onLapor, sibuk }) {
       </label>
       {galat ? <small className="neg">{galat}</small> : null}
       <button type="submit" className="btn btn-blue" disabled={sibuk}>
-        <Icon name="check" stroke={2.4} /> Lapor progres
+        <Icon name="check" stroke={2.4} /> Lapor progres {t.persen}%
       </button>
     </form>
   );
@@ -107,8 +133,8 @@ function Kartu({ p, onBatal, onKumpul, onLapor, sibuk }) {
   const sisa = belumSelesai(p);
   const batas = sisaWaktu(p.tBatas);
   const ingat = pengingat(p);
-  const perluLapor = p.status === ST.running && p.wajibLapor && !p.tLapor;
-  const tLapor = batasLapor(p);
+  const titik = statusTitik(p);
+  const berikut = p.status === ST.running ? titikBerikut(p) : null;
   return (
     <article className={"ps-kartu" + (aktif ? "" : " selesai")}>
       <div className="ps-atas">
@@ -154,23 +180,25 @@ function Kartu({ p, onBatal, onKumpul, onLapor, sibuk }) {
           ))}
         </div>
       ) : null}
-      {p.status === ST.running && p.wajibLapor ? (
-        p.tLapor ? (
-          <div className="ps-progres ok">
-            <Icon name="check" size={14} stroke={2.4} /> Progres dilaporkan: <b>{numberID(p.progres)}</b>/{numberID(p.jumlah)} soal ({Math.round((p.progres / p.jumlah) * 100)}%) ·{" "}
-            {p.lapor}
-          </div>
-        ) : (
-          <div className="ps-progres">
-            <b>
-              Wajib lapor progres {p.wajibLapor}% — minimal {numberID(minimalLapor(p))} soal
-            </b>
-            <small>
-              {tLapor ? `Batas lapor ${msKeWaktu(tLapor)} (${sisaWaktu(tLapor).teks}). ` : ""}Hasil akhir baru bisa dikumpulkan setelah lapor progres.
-            </small>
-            <FormProgres p={p} onLapor={onLapor} sibuk={sibuk} />
-          </div>
-        )
+      {titik.length && p.status !== ST.ditolak && p.status !== ST.dibatalkan ? (
+        <div className={"ps-progres" + (berikut ? "" : " ok")}>
+          <b>
+            {p.status === ST.diajukan
+              ? "Bila di-acc, wajib lapor progres:"
+              : berikut
+                ? `Wajib lapor progres ${berikut.persen}% — ${berikut.lewat ? berikut.h : `paling lambat ${tanggalHari(berikut.tanggal)} (${berikut.h})`}`
+                : "Lapor progres"}
+          </b>
+          <JadwalLapor titik={titik} jumlah={p.jumlah} info={p.status === ST.diajukan} />
+          {berikut ? (
+            <>
+              <small>
+                Laporkan jumlah soal yang sudah selesai + link Google Docs-mu. Satu laporan bisa sekaligus memenuhi 30% dan 50% bila soalnya sudah cukup.
+              </small>
+              <FormProgres key={berikut.persen} p={p} t={berikut} onLapor={onLapor} sibuk={sibuk} />
+            </>
+          ) : null}
+        </div>
       ) : null}
       {p.ronde ? (
         <div className="ps-hasil" aria-label="Hasil review">
@@ -216,7 +244,15 @@ function Kartu({ p, onBatal, onKumpul, onLapor, sibuk }) {
           <Icon name="external" size={14} /> Link yang dikumpulkan{p.dikumpulkan ? ` · ${p.dikumpulkan}` : ""}
         </a>
       ) : null}
-      {(p.status === ST.running && !perluLapor) || p.status === ST.revisi ? <FormKumpul p={p} onKumpul={onKumpul} sibuk={sibuk} /> : null}
+      {berikut ? (
+        <details className="ps-kumpul-lain">
+          <summary>Sudah selesai semua? Kumpulkan hasil akhir</summary>
+          <small className="muted">Lapor progres yang belum masuk dianggap terpenuhi saat hasil akhir dikumpulkan.</small>
+          <FormKumpul p={p} onKumpul={onKumpul} sibuk={sibuk} />
+        </details>
+      ) : p.status === ST.running || p.status === ST.revisi ? (
+        <FormKumpul p={p} onKumpul={onKumpul} sibuk={sibuk} />
+      ) : null}
       {p.status === ST.review ? (
         <div className="ps-aksi">
           <small className="muted">Menunggu review tim akademik ({numberID(sisa)} soal). Hasilnya muncul di sini.</small>

@@ -8,9 +8,9 @@ import { wajibLoginGuru } from "@/lib/akun";
 import { sesiGuru, loginGuruSiap } from "@/lib/sesiGuru";
 import { WA_ADMIN } from "@/lib/tautan";
 import { adminSah } from "@/lib/authServer";
-import { bacaPengerjaan, dipesanPerProyek, maksAktif } from "@/lib/pengerjaan";
+import { bacaPengerjaan, dipesanPerProyek, maksAktif, lengkapiTitik } from "@/lib/pengerjaan";
 import { aturanBulan } from "@/lib/aturanProyek";
-import { AKTIF, hitungMundur } from "@/lib/pengerjaanOpsi";
+import { AKTIF, ST, hitungMundur, titikBerikut } from "@/lib/pengerjaanOpsi";
 
 // Katalog dibaca langsung dari sheet bulan terbaru pada tiap request, supaya
 // stok (kolom Sisa) yang dilihat guru selalu sama dengan spreadsheet.
@@ -41,13 +41,21 @@ export default async function OpenPage({ searchParams }) {
   const dipesan = dipesanPerProyek(semuaPj, board.tab);
   const milikku = {};
   let aktifku = 0;
+  let laporku = []; // titik lapor progres berikutnya untuk proyek guru ini yang sedang Running
   if (sesi) {
     const punyaku = (p) => (sesi.akun.idGuru && p.idGuru === sesi.akun.idGuru) || p.email === sesi.akun.email;
+    const jalan = [];
     semuaPj.forEach((p) => {
       if (!punyaku(p) || !AKTIF.has(p.status)) return;
       aktifku++;
       if (p.bulan === board.tab) milikku[p.idProyek] = p.status;
+      if (p.status === ST.running) jalan.push(p);
     });
+    laporku = (await lengkapiTitik(jalan))
+      .map((p) => ({ p, t: titikBerikut(p) }))
+      .filter((x) => x.t)
+      .map(({ p, t }) => ({ id: p.id, subtes: p.subtes, persen: t.persen, tanggal: t.tanggal, min: t.min, jumlah: p.jumlah, hari: t.hm.hari }))
+      .sort((a, b) => a.hari - b.hari);
   }
   // Guru hanya boleh melihat/apply proyek yang stoknya masih tersisa, dan
   // hanya kolom yang memang untuk guru: platform & tautan master TIDAK ikut
@@ -66,7 +74,7 @@ export default async function OpenPage({ searchParams }) {
         kebutuhan: r.kebutuhan,
         jenis: jenisDariId(r.idSubtes) || "Lainnya",
         deadline: aturan[id]?.deadline || "",
-        lapor: aturan[id]?.lapor || 0,
+        titik: aturan[id]?.titik || [],
       };
     })
     // tetap tampil bila guru ini sendiri sedang mengambilnya (supaya statusnya terlihat)
@@ -92,6 +100,7 @@ export default async function OpenPage({ searchParams }) {
       milikku={milikku}
       aktif={aktifku}
       maks={maks}
+      laporku={laporku}
       pesan={searchParams?.password === "diganti" ? "Password berhasil diganti. Gunakan password baru ini untuk masuk berikutnya." : ""}
     />
   );

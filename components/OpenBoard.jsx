@@ -18,7 +18,7 @@ import DataBanner from "./DataBanner";
 import GuideModal from "./GuideModal";
 import CartView from "./CartView";
 import PasangApp from "./PasangApp";
-import { hitungMundur, tanggalPendek, labelStatus, kelasStatus } from "@/lib/pengerjaanOpsi";
+import { hitungMundur, tanggalPendek, labelStatus, kelasStatus, labelH, tanggalHari } from "@/lib/pengerjaanOpsi";
 
 const clamp = (n, min, max) => (Number.isNaN(n) ? min : Math.max(min, Math.min(max, n)));
 const JENIS_URUT = ["Soal", "Liveclass", "Laporan FR", "Editor", "Lainnya"];
@@ -90,12 +90,17 @@ function ProjectCard({ p, qty, setQty, milik }) {
             <b>−{numberID(diambil)} soal</b>
           </div>
         ) : null}
-        {p.lapor ? (
-          <div className="row">
-            <span>Lapor progres</span>
-            <b>wajib {p.lapor}%</b>
-          </div>
-        ) : null}
+        {(p.titik || []).map((t) => {
+          const hm = hitungMundur(t.tanggal);
+          return (
+            <div className="row" key={t.persen}>
+              <span>Lapor {t.persen}%</span>
+              <b className={"dl-" + hm.kelas}>
+                {tanggalPendek(t.tanggal)} · {labelH(hm)}
+              </b>
+            </div>
+          );
+        })}
         {p.deadline ? (
           <div className="row">
             <span>Deadline</span>
@@ -205,7 +210,33 @@ function MenuAkun({ guru }) {
   );
 }
 
-export default function OpenBoard({ projects, source, bulan, waNumber, panduan = [], brand = "Cerebrum", guru = null, bisaMasuk = false, pesan = "", milikku = {}, aktif = 0, maks = 3 }) {
+/** Banner untuk guru yang login: titik lapor progres berikutnya di tiap proyek yang sedang dikerjakan. */
+function WajibLapor({ daftar }) {
+  const mendesak = daftar.some((x) => x.hari <= 2);
+  return (
+    <div className={"banner wajib-lapor " + (mendesak ? "sample" : "info")} role="status">
+      <Icon name="clipboard" />
+      <div>
+        <b>Wajib lapor progres</b>
+        <ul>
+          {daftar.map((x) => (
+            <li key={x.id}>
+              <span>
+                {x.subtes} — lapor {x.persen}% (min. {numberID(x.min)} dari {numberID(x.jumlah)} soal) paling lambat <b>{tanggalHari(x.tanggal)}</b>
+              </span>
+              <span className={"pill " + (x.hari < 0 || x.hari === 0 ? "rev" : x.hari <= 2 ? "qc" : "run")}>{labelH({ hari: x.hari })}</span>
+            </li>
+          ))}
+        </ul>
+        <a className="btn-link" href="/open/saya">
+          Lapor di Proyek saya →
+        </a>
+      </div>
+    </div>
+  );
+}
+
+export default function OpenBoard({ projects, source, bulan, waNumber, panduan = [], brand = "Cerebrum", guru = null, bisaMasuk = false, pesan = "", milikku = {}, aktif = 0, maks = 3, laporku = [] }) {
   const milikDari = (p) => milikku[String(p.id).toUpperCase()];
   const [q, setQ] = useState("");
   const [jenis, setJenis] = useState(SEMUA);
@@ -327,6 +358,7 @@ export default function OpenBoard({ projects, source, bulan, waNumber, panduan =
             <div>{pesan}</div>
           </div>
         ) : null}
+        {view === "catalog" && laporku.length ? <WajibLapor daftar={laporku} /> : null}
         {view === "catalog" ? <PasangApp variant="banner" nama="Proyek Guru" ikon="/icons/guru-192.png" /> : null}
 
         {view === "cart" ? (

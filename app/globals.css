@@ -1280,13 +1280,12 @@ html{scroll-behavior:smooth}
 .rv-tujuan label{display:inline-flex;align-items:center;gap:6px}
 
 /* ---- v3.4.0: lapor progres & pengingat ----------------------------------------- */
-.lp-select{margin-top:6px;width:100%;min-width:0;padding:5px 8px;font-size:12px}
 .ps-ingat{display:flex;flex-wrap:wrap;gap:6px}
 .ps-ingat .pill{display:inline-flex;align-items:center;gap:4px}
 .ps-progres{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:12px;background:var(--accent-weak-2);font-size:13px}
 .ps-progres b{font-size:13.5px}
 .ps-progres small{font-size:12px;color:var(--text-muted)}
-.ps-progres.ok{flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px;background:var(--good-weak);color:var(--text)}
+.ps-progres.ok{background:var(--good-weak);color:var(--text)}
 .ps-progres.ok svg{color:var(--good)}
 .ps-progres .ps-kumpul{border-top:0;padding-top:4px}
 .ps-dua{display:grid;grid-template-columns:minmax(0,160px) minmax(0,1fr);gap:10px}
@@ -1314,3 +1313,26 @@ html{scroll-behavior:smooth}
 .demo-akun>div{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 12px;border-radius:12px;border:1px solid var(--border);font-size:13px;min-width:0}
 .demo-akun small{font-size:11.5px;overflow-wrap:anywhere}
 .demo-akun .pill{margin-bottom:4px}
+
+/* ---- v3.6.0: tanggal lapor progres 30% / 50% ------------------------------------ */
+.lp-tgl{display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px;margin-top:8px;font-size:11.5px}
+.lp-tgl>span{flex:1 1 auto;font-weight:700;color:var(--text-muted);white-space:nowrap}
+.lp-tgl small{flex:0 0 auto;font-size:11px;font-weight:700;white-space:nowrap}
+.lp-tgl input{order:3;flex:1 1 100%;min-width:0;width:100%;padding:4px 6px;font-size:12px}
+.jl-list{list-style:none;margin:2px 0 0;padding:0;display:flex;flex-direction:column;gap:5px;font-size:12.5px}
+.jl-list li{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.jl-list li>span:last-child{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}
+.jl-persen{min-width:40px;padding:1px 6px;border-radius:999px;background:var(--surface);font-weight:800;font-size:11.5px;text-align:center}
+.jl-list li.ok .jl-persen{background:var(--good-weak);color:var(--good)}
+.jl-list li.ok svg{color:var(--good)}
+.jl-list li.telat .jl-persen{background:var(--warn-weak);color:var(--warn)}
+.jl-list li.lewat .jl-persen{background:var(--bad-weak);color:var(--bad)}
+.jl-list .pill{margin-left:4px;font-size:11px;padding:1px 7px}
+.ps-progres.baru{background:var(--warn-weak);border:1px solid color-mix(in srgb,var(--warn) 30%,transparent)}
+.ps-kumpul-lain{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--border);padding-top:10px}
+.ps-kumpul-lain summary{cursor:pointer;font-weight:700;font-size:13px;color:var(--accent-strong)}
+.ps-kumpul-lain .ps-kumpul{border-top:0;padding-top:4px}
+.wajib-lapor>div>b{display:block}
+.wajib-lapor ul{margin:6px 0 8px;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-weight:500}
+.wajib-lapor li{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.wajib-lapor li b{font-weight:800}

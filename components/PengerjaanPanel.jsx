@@ -26,15 +26,17 @@ import {
   belumSelesai,
   sisaWaktu,
   pengingat,
-  batasLapor,
-  minimalLapor,
+  statusTitik,
+  titikBerikut,
+  laporanBaru,
+  tanggalHari,
 } from "@/lib/pengerjaanOpsi";
-import { msKeWaktu } from "@/lib/reachoutOpsi";
 import Icon from "./Icon";
 
 const SARING = [
   ["menunggu", "Menunggu acc", (p) => p.status === ST.diajukan],
   ["review", "Menunggu review", (p) => p.status === ST.review],
+  ["progres", "Progres baru masuk", (p) => laporanBaru(p).length > 0],
   ["ingat", "Perlu diingatkan", (p) => pengingat(p).length > 0],
   ["revisi", "Revisi", (p) => p.status === ST.revisi],
   ["jalan", "Running", (p) => p.status === ST.running],
@@ -67,11 +69,17 @@ const pesanWa = (p, jenis) => {
         `${p.catatanRevisi ? `Catatan: ${p.catatanRevisi}\n` : ""}Komentar detail ada di Google Docs-mu${p.link ? ` (${p.link})` : ""}.\n\n` +
         `Batas kirim revisi: *${p.batasRevisi}* (3 hari). Revisi yang dikirim lewat batas dibayar 75% untuk soal itu. Kirim lewat menu Proyek saya ya. Terima kasih!`
       );
-    case "progres":
-      return (
-        `${sapa}proyek ${proyek} wajib lapor progres ${p.wajibLapor}% (minimal ${minimalLapor(p)} soal)` +
-        `${batasLapor(p) ? `, batasnya ${msKeWaktu(batasLapor(p))}` : ""}. Laporkan lewat menu Proyek saya: ${asalWeb()}/open/saya — hasil akhir baru bisa dikumpulkan setelah lapor progres. Terima kasih!`
-      );
+    case "progres": {
+      const t = titikBerikut(p);
+      if (!t) return `${sapa}terima kasih, lapor progres proyek ${proyek} sudah lengkap.`;
+      return t.lewat
+        ? `${sapa}batas lapor progres ${t.persen}% proyek ${proyek} sudah lewat (*${tanggalHari(t.tanggal)}*, ${t.h}). Mohon segera laporkan minimal ${t.min} dari ${p.jumlah} soal yang sudah selesai + link Google Docs-nya lewat Proyek saya: ${asalWeb()}/open/saya`
+        : `${sapa}pengingat: proyek ${proyek} wajib lapor progres ${t.persen}% (minimal ${t.min} dari ${p.jumlah} soal) paling lambat *${tanggalHari(t.tanggal)}* (${t.h}). Laporkan jumlah soal yang sudah selesai + link Google Docs-nya lewat Proyek saya: ${asalWeb()}/open/saya. Terima kasih!`;
+    }
+    case "progres-terima": {
+      const l = laporanBaru(p).slice(-1)[0];
+      return `${sapa}laporan progres proyek ${proyek} sudah kami terima${l ? ` (${l.soal}/${p.jumlah} soal)` : ""}. Terima kasih, lanjutkan sampai selesai ya!${p.deadline ? ` Deadline: ${tanggalPendek(p.deadline)}.` : ""}`;
+    }
     case "ingat-revisi":
       return `${sapa}pengingat: batas kirim revisi proyek ${proyek} adalah *${p.batasRevisi}*. Revisi yang dikirim lewat batas dibayar 75% untuk soal itu. Kirim lewat Proyek saya: ${asalWeb()}/open/saya`;
     case "lewat":
@@ -300,7 +308,9 @@ export default function PengerjaanPanel({ data, bulan, namaBulan, projects = [],
             const kurang = p.status === ST.diajukan && pr && pr.sisa < p.jumlah;
             const sisaSoal = belumSelesai(p);
             const ingat = pengingat(p, kini);
-            const tLapor = batasLapor(p);
+            const titik = statusTitik(p, kini);
+            const berikut = p.status === ST.running ? titikBerikut(p, kini) : null;
+            const baru = laporanBaru(p);
             return (
               <article key={p.id} className="card pj-kartu">
                 <div className="pj-atas">
@@ -374,29 +384,39 @@ export default function PengerjaanPanel({ data, bulan, namaBulan, projects = [],
                     ))}
                   </div>
                 ) : null}
-                {p.wajibLapor && (p.status === ST.running || p.tLapor) ? (
-                  p.tLapor ? (
-                    <div className="ps-progres ok">
-                      <Icon name="check" size={14} stroke={2.4} /> Progres: <b>{numberID(p.progres)}</b>/{numberID(p.jumlah)} soal ({Math.round((p.progres / p.jumlah) * 100)}%) · lapor{" "}
-                      {p.lapor}
-                      {p.linkProgres ? (
-                        <>
-                          {" · "}
-                          <a href={p.linkProgres} target="_blank" rel="noopener noreferrer">
-                            link
-                          </a>
-                        </>
-                      ) : null}
-                      {p.catatanProgres ? <small> · “{p.catatanProgres}”</small> : null}
-                    </div>
-                  ) : (
-                    <div className="ps-progres">
-                      <b>
-                        Belum lapor progres — wajib {p.wajibLapor}% ({numberID(minimalLapor(p))} soal)
-                      </b>
-                      <small>{tLapor ? `batas ${msKeWaktu(tLapor)} · ${sisaWaktu(tLapor, kini).teks}` : "tanpa batas waktu (deadline belum diatur)"}</small>
-                    </div>
-                  )
+                {titik.length && p.status !== ST.ditolak && p.status !== ST.dibatalkan ? (
+                  <div className={"ps-progres" + (baru.length ? " baru" : berikut ? "" : " ok")}>
+                    <b>{baru.length ? "Progres baru masuk" : berikut ? `Lapor progres ${berikut.persen}% berikutnya: ${tanggalHari(berikut.tanggal)} (${berikut.h})` : "Lapor progres"}</b>
+                    <ul className="jl-list">
+                      {titik.map((t) => (
+                        <li key={t.persen} className={t.selesai ? (t.telat ? "telat" : "ok") : t.lewat ? "lewat" : ""}>
+                          <span className="jl-persen">{t.persen}%</span>
+                          {t.selesai ? (
+                            <span>
+                              <Icon name="check" size={13} stroke={2.4} />{" "}
+                              {t.laporan.otomatis ? "terpenuhi lewat pengumpulan hasil akhir" : `${numberID(t.laporan.soal)}/${numberID(p.jumlah)} soal`} · {t.laporan.waktu}
+                              {t.telat ? " · telat" : ""}
+                              {t.laporan.link && !t.laporan.otomatis ? (
+                                <>
+                                  {" · "}
+                                  <a href={t.laporan.link} target="_blank" rel="noopener noreferrer">
+                                    link
+                                  </a>
+                                </>
+                              ) : null}
+                              {t.laporan.catatan ? <small> · “{t.laporan.catatan}”</small> : null}
+                            </span>
+                          ) : (
+                            <span>
+                              belum lapor · min. {numberID(t.min)} soal · {tanggalHari(t.tanggal)}{" "}
+                              {p.status === ST.diajukan ? null : <span className={"pill " + (t.lewat || t.hm.hari === 0 ? "rev" : t.hm.hari <= 2 ? "qc" : "run")}>{t.h}</span>}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                    {p.dicek && !baru.length ? <small>dicek {p.dicek}{p.dicekOleh ? ` · ${p.dicekOleh}` : ""}</small> : null}
+                  </div>
                 ) : null}
                 {p.ronde ? (
                   <div className="ps-hasil" aria-label="Hasil review">
@@ -482,7 +502,13 @@ export default function PengerjaanPanel({ data, bulan, namaBulan, projects = [],
                   ) : null}
                   {p.status === ST.running ? tombolWa(p, "acc", "Kabari di-acc") : null}
                   {ingat.some((i) => i.jenis === "deadline") ? tombolWa(p, dl.lewat ? "lewat" : "ingat", dl.lewat ? "Tagih (lewat deadline)" : "Ingatkan deadline", true) : null}
-                  {ingat.some((i) => i.jenis === "progres") ? tombolWa(p, "progres", "Ingatkan lapor progres", true) : null}
+                  {baru.length ? (
+                    <button type="button" className="btn btn-blue sm" disabled={!bisa || Boolean(sibuk)} onClick={() => jalankan(p.id, { action: "progresDicek", id: p.id })}>
+                      <Icon name="check" stroke={2.4} /> {sibuk === p.id ? "Menyimpan…" : "Tandai progres sudah dicek"}
+                    </button>
+                  ) : null}
+                  {baru.length ? tombolWa(p, "progres-terima", "Kabari progres diterima") : null}
+                  {berikut ? tombolWa(p, "progres", `Ingatkan lapor ${berikut.persen}% (${berikut.h})`, berikut.lewat || berikut.hm.hari <= 2) : null}
                   {ingat.some((i) => i.jenis === "revisi") ? tombolWa(p, "ingat-revisi", "Ingatkan batas revisi") : null}
                   {p.status === ST.ditolak ? tombolWa(p, "tolak", "Kabari ditolak") : null}
                   {p.status === ST.selesai ? tombolWa(p, "selesai", "Kabari hasil akhir") : null}

@@ -40,7 +40,7 @@ import TimPanel from "./TimPanel";
 import PengerjaanPanel from "./PengerjaanPanel";
 import DemoPanel from "./DemoPanel";
 import { MODE_DEMO } from "@/lib/demo";
-import { ST as ST_PJ, hitungMundur } from "@/lib/pengerjaanOpsi";
+import { ST as ST_PJ, hitungMundur, laporanBaru, labelH } from "@/lib/pengerjaanOpsi";
 import { barisRekap, bankDanRekening, judulRekap, unduhExcel, salinRekap } from "@/lib/rekapFee";
 
 const STATUS_KNOWN = ["Running Soal", "QC Soal", "Revisi Soal", "Approved", "Running Video", STATUS_BATAL];
@@ -506,7 +506,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
             master: master.rows?.length || 0,
             guru: (guru.rows || []).length || teachers.length,
             // yang menunggu tindakan tim: pengajuan baru + pengumpulan yang belum direview
-            ambil: (pengerjaan?.pengerjaan || []).filter((x) => x.status === ST_PJ.diajukan || x.status === ST_PJ.review).length || null,
+            ambil: (pengerjaan?.pengerjaan || []).filter((x) => x.status === ST_PJ.diajukan || x.status === ST_PJ.review || laporanBaru(x).length).length || null,
             pendaftar: pendaftarBaru || null,
             guruAjuan: ajuanData,
           }}
@@ -1788,32 +1788,32 @@ const BLANK_P = { id: "", idSubtes: "", platform: "", subtes: "", output: "", ha
 
 function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan, setErr, onMasterChanged, guruDb, log, riwayat, akun, wajibLogin, bulan, kontak, penanda, aturan = {}, dipesan = {}, onAturan }) {
   const [dlLokal, setDlLokal] = useState({}); // deadline yang baru disimpan (tampil langsung)
-  const [lpLokal, setLpLokal] = useState({}); // titik lapor progres yang baru disimpan
+  const [lpLokal, setLpLokal] = useState({}); // tanggal lapor progres yang baru disimpan: { "P10-01|30": "2026-10-10" }
   const [dlSimpan, setDlSimpan] = useState("");
   const deadlineDari = (p) => {
     const id = String(p.id).toUpperCase();
     return id in dlLokal ? dlLokal[id] : aturan[id]?.deadline || "";
   };
-  const laporDari = (p) => {
-    const id = String(p.id).toUpperCase();
-    return id in lpLokal ? lpLokal[id] : aturan[id]?.lapor || 0;
+  const laporDari = (p, persen) => {
+    const k = `${String(p.id).toUpperCase()}|${persen}`;
+    return k in lpLokal ? lpLokal[k] : (aturan[String(p.id).toUpperCase()]?.titik || []).find((t) => t.persen === persen)?.tanggal || "";
   };
-  const simpanLapor = async (p, nilai) => {
-    const id = String(p.id).toUpperCase();
-    const lama = laporDari(p);
-    setLpLokal((m) => ({ ...m, [id]: nilai }));
+  const simpanLapor = async (p, persen, tanggal) => {
+    const k = `${String(p.id).toUpperCase()}|${persen}`;
+    const lama = laporDari(p, persen);
+    setLpLokal((m) => ({ ...m, [k]: tanggal }));
     try {
       const res = await fetch("/api/admin/pengerjaan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "lapor", bulan, idProyek: p.id, lapor: nilai }),
+        body: JSON.stringify({ action: "lapor", bulan, idProyek: p.id, persen, tanggal }),
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(j.error || `Gagal (HTTP ${res.status})`);
       onAturan?.();
     } catch (e) {
-      setLpLokal((m) => ({ ...m, [id]: lama }));
-      setErr?.("Aturan lapor progres belum tersimpan: " + e.message);
+      setLpLokal((m) => ({ ...m, [k]: lama }));
+      setErr?.(`Tanggal lapor ${persen}% belum tersimpan: ` + e.message);
     }
   };
   const simpanDeadline = async (p, nilai) => {
@@ -1994,18 +1994,25 @@ function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan
                           aria-label={`Deadline ${p.subtes}`}
                         />
                         {dl ? <div className={"xs2 dl-" + hm.kelas}>{hm.teks}</div> : <div className="muted xs2">belum diatur</div>}
-                        <select
-                          className="select sm lp-select"
-                          value={laporDari(p)}
-                          disabled={readOnly}
-                          onChange={(e) => simpanLapor(p, Number(e.target.value))}
-                          aria-label={`Wajib lapor progres ${p.subtes}`}
-                          title="Guru wajib melapor progres sebelum mengumpulkan hasil akhir"
-                        >
-                          <option value={0}>Lapor progres: tidak wajib</option>
-                          <option value={30}>Wajib lapor 30%</option>
-                          <option value={50}>Wajib lapor 50%</option>
-                        </select>
+                        {[30, 50].map((persen) => {
+                          const tgl = laporDari(p, persen);
+                          const hmL = hitungMundur(tgl);
+                          return (
+                            <label key={persen} className="lp-tgl" title={`Guru wajib melapor progres ${persen}% paling lambat tanggal ini (kosong = tidak wajib)`}>
+                              <span>Lapor {persen}%</span>
+                              <input
+                                type="date"
+                                className="input sm"
+                                value={tgl}
+                                max={dl || undefined}
+                                disabled={readOnly}
+                                onChange={(e) => simpanLapor(p, persen, e.target.value)}
+                                aria-label={`Tanggal lapor progres ${persen}% ${p.subtes}`}
+                              />
+                              {tgl ? <small className={"dl-" + hmL.kelas}>{labelH(hmL)}</small> : <small className="muted">tidak wajib</small>}
+                            </label>
+                          );
+                        })}
                       </>
                     );
                   })()}

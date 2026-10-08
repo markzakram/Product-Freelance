@@ -12,6 +12,32 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.6.0 — Tanggal lapor progres 30% & 50% + pemberitahuan (8 Oktober 2026)
+
+- **Tanggal lapor diatur admin per proyek** (Katalog, kolom *Deadline & lapor*): dua
+  tanggal terpisah **Lapor 30%** dan **Lapor 50%** — boleh salah satu, keduanya, atau
+  kosong (tidak wajib). Tanggalnya sama untuk semua guru yang mengambil proyek itu, dengan
+  label **H-x** di sampingnya. Tidak boleh setelah deadline, dan lapor 30% ≤ lapor 50%.
+  Menggantikan aturan v3.4.0 (satu persen dengan batas dihitung otomatis).
+- **Guru melihat H-x di mana-mana**: kartu katalog (*Lapor 30% · 9 Okt 2026 · H-1*),
+  banner **Wajib lapor progres** di halaman proyek setelah masuk, dan jadwal per titik di
+  Proyek saya (✓ sudah lapor / min. N soal · paling lambat Jum, 9 Okt · H-1). Pengingat
+  *Perlu perhatian* muncul saat H-1, Hari H, atau lewat.
+- **Lapor progres per titik**: guru melaporkan jumlah soal selesai + link Google Docs.
+  Satu laporan bisa sekaligus memenuhi 30% dan 50% bila soalnya cukup. Titik yang
+  tanggalnya sudah lewat saat guru di-acc tidak berlaku untuknya.
+- **Hasil akhir boleh langsung dikumpulkan** walau belum lapor progres — titik yang belum
+  terpenuhi dianggap terpenuhi saat itu (tetap ditandai telat bila tanggalnya lewat).
+  Sebelumnya pengumpulan diblokir sampai lapor progres.
+- **Telat lapor hanya ditandai** (merah "lewat N hari"), tanpa potongan.
+- **Tim akademik (Pengambilan guru)**: saringan **Progres baru masuk** (juga dihitung di
+  angka menu), jadwal titik di tiap kartu dengan link laporannya, tombol **Tandai progres
+  sudah dicek**, WA **Kabari progres diterima** dan **Ingatkan lapor 30%/50% (H-x)** yang
+  pesannya sudah berisi tanggal, H-x, dan jumlah soal minimal.
+- Situs demo: data contoh memakai tanggal lapor baru (Ayu lapor 30% besok, Bima progres
+  baru masuk + lapor 50% hari ini). Cache aturan ikut dikosongkan setelah pemulihan.
+- Notifikasi push ke HP menyusul di tahap berikutnya.
+
 ## 3.5.0 — Situs demo dengan data contoh (5 Oktober 2026)
 
 - **Mode demo** untuk mencoba program tanpa menyentuh data asli: proyek Vercel kedua dari
