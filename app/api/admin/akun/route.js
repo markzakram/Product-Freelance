@@ -5,7 +5,8 @@ import { NextResponse } from "next/server";
 import { tolakBukanAdmin, izinAdmin } from "@/lib/authServer";
 import { canWrite } from "@/lib/gauth";
 import { getTeachers } from "@/lib/teachers";
-import { bacaAkun, akunPublik, buatAkun, resetPassword, setStatusAkun, simpanPengaturan, wajibLoginGuru, rapikanEmail, STATUS, TAB_AKUN } from "@/lib/akun";
+import { bacaAkun, akunPublik, buatAkun, resetPassword, setStatusAkun, simpanPengaturan, wajibLoginGuru, rapikanEmail, STATUS, TAB_AKUN, aturAkunUji, cariAkun } from "@/lib/akun";
+import { bacaPengerjaan, bersihkanDataUji } from "@/lib/pengerjaan";
 import { daftarPerubahan } from "@/lib/perubahanGuru";
 import { simpanSeleksi, catatQc } from "@/lib/seleksi";
 import { daftarPendaftar, masukkanDataGuru, beriAkses, perluSampel } from "@/lib/pendaftaran";
@@ -28,8 +29,19 @@ export async function GET() {
       daftarPerubahan({ status: "Menunggu" }).catch(() => []),
       bacaPenanda().catch(() => new Map()),
     ]);
+    // Akun uji: berapa pengambilan yang akan ikut terhapus bila dibersihkan
+    const uji = akun.filter((a) => a.uji);
+    const dataUji = {};
+    if (uji.length) {
+      const pj = await bacaPengerjaan().catch(() => []);
+      uji.forEach((a) => {
+        const milik = pj.filter((p) => (a.idGuru && p.idGuru === a.idGuru) || p.email === a.email);
+        dataUji[a.email] = { pengambilan: milik.length, soal: milik.reduce((n, p) => n + (p.jumlah || 0), 0) };
+      });
+    }
     return NextResponse.json(
       {
+        dataUji,
         pendaftar: Array.isArray(pendaftar) ? pendaftar : [],
         errorPendaftar: pendaftar.error || "",
         akun: akun.map(akunPublik),
@@ -132,6 +144,16 @@ export async function POST(req) {
       case "status":
         await setStatusAkun(body.email, body.status === STATUS.nonaktif ? STATUS.nonaktif : STATUS.aktif);
         return NextResponse.json({ ok: true });
+
+      // Akun uji (v3.7.0) — khusus Pemilik: menghapus data pengambilan & baris log fee.
+      case "uji":
+      case "bersihkanUji": {
+        if (!sesi.pemilik) return NextResponse.json({ error: "Hanya Pemilik yang bisa mengatur atau membersihkan akun uji." }, { status: 403 });
+        if (body.action === "uji") return NextResponse.json({ ok: true, ...(await aturAkunUji(body.email, Boolean(body.uji))) });
+        const a = await cariAkun(body.email, { segar: true });
+        if (!a) return NextResponse.json({ error: "Akun tidak ditemukan." }, { status: 404 });
+        return NextResponse.json({ ok: true, hasil: await bersihkanDataUji(a) });
+      }
 
       case "wajibLogin":
         if (body.nilai && !loginGuruSiap()) {

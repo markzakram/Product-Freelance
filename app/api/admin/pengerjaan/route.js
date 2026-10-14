@@ -6,6 +6,7 @@ import { getBoard } from "@/lib/juli";
 import { bacaPengerjaan, putuskan, maksAktif, aturMaksAktif, review, terapkanDenda, lengkapiTitik, tandaiProgresDicek } from "@/lib/pengerjaan";
 import { aturanBulan, aturDeadline, aturLapor } from "@/lib/aturanProyek";
 import { AKTIF } from "@/lib/pengerjaanOpsi";
+import { bacaAkun } from "@/lib/akun";
 
 export const dynamic = "force-dynamic";
 
@@ -14,12 +15,14 @@ export async function GET(req) {
   if (tolak) return tolak;
   const bulan = req.nextUrl.searchParams.get("bulan") || "";
   try {
-    const [semua, aturan, maks] = await Promise.all([bacaPengerjaan(), bulan ? aturanBulan(bulan) : {}, maksAktif()]);
+    const [semua, aturan, maks, akun] = await Promise.all([bacaPengerjaan(), bulan ? aturanBulan(bulan) : {}, maksAktif(), bacaAkun().catch(() => [])]);
+    const uji = akun.filter((a) => a.uji);
+    const akunUji = (p) => uji.some((a) => (a.idGuru && p.idGuru === a.idGuru) || p.email === a.email);
     // beban tiap guru dihitung lintas bulan — batasnya berlaku untuk semua proyek aktif
     const aktifPerGuru = {};
     semua.forEach((p) => AKTIF.has(p.status) && (aktifPerGuru[p.idGuru || p.email] = (aktifPerGuru[p.idGuru || p.email] || 0) + 1));
     return NextResponse.json({
-      pengerjaan: await lengkapiTitik(semua.filter((p) => !bulan || p.bulan === bulan)),
+      pengerjaan: (await lengkapiTitik(semua.filter((p) => !bulan || p.bulan === bulan))).map((p) => (akunUji(p) ? { ...p, uji: true } : p)),
       aturan,
       maksAktif: maks,
       aktifPerGuru,

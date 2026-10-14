@@ -321,6 +321,11 @@ export default function PengerjaanPanel({ data, bulan, namaBulan, projects = [],
                     </span>
                   </div>
                   <div className="pj-pil">
+                    {p.uji ? (
+                      <span className="pill batal plain" title="Akun uji — datanya bisa dibersihkan Pemilik di Pendaftaran & akun">
+                        UJI
+                      </span>
+                    ) : null}
                     {p.gagal >= PERINGATAN_MULAI ? <span className="pill rev">review gagal {numberID(p.gagal)}×</span> : null}
                     {p.denda ? <span className="pill rev">denda 25%</span> : null}
                     <span className={"pill " + kelasStatus(p.status)}>{labelStatus(p.status)}</span>

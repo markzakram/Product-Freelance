@@ -774,6 +774,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
             {tab === "akses" &&
               (extraLoaded ? (
                 <AksesPanel
+                  pemilik={pengguna.pemilik}
                   data={akses}
                   busy={busy}
                   setBusy={setBusy}

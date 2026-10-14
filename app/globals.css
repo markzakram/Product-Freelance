@@ -1337,3 +1337,6 @@ html{scroll-behavior:smooth}
 .wajib-lapor ul{margin:6px 0 8px;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-weight:500}
 .wajib-lapor li{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .wajib-lapor li b{font-weight:800}
+
+/* ---- v3.7.0: akun uji ------------------------------------------------------------ */
+.uji-pil{margin-left:6px;padding:1px 7px;font-size:10.5px;letter-spacing:.04em;vertical-align:middle}

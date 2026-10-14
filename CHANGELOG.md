@@ -12,6 +12,18 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.7.0 — Akun uji & bersihkan data uji (14 Oktober 2026)
+
+- **Akun uji** (khusus Pemilik, menu Pendaftaran & akun → Akun guru): akun guru yang
+  dipakai tim untuk mencoba alur bisa ditandai **Akun uji** (kolom baru "Akun uji" di tab
+  Akun guru). Akun ini diberi label **AKUN UJI**, dan pengambilannya berlabel **UJI** di
+  Pengambilan guru.
+- Tombol **Bersihkan data uji** (khusus Pemilik, hanya untuk akun bertanda uji): menghapus
+  semua pengambilan akun itu beserta baris log-nya di semua bulan, sehingga kuota proyek
+  kembali terbuka. Soal reject "hangus" dikembalikan ke kebutuhan katalog, dan penunjuk
+  baris log pengambilan guru lain ikut disesuaikan saat barisnya bergeser. Akunnya tetap
+  ada untuk uji berikutnya. Guru sungguhan tidak bisa dihapus massal.
+
 ## 3.6.1 — Template soal & video panduan baru (14 Oktober 2026)
 
 - Popup **Sebelum mengambil proyek** (halaman guru): dokumen diganti **Template soal (PDF)**

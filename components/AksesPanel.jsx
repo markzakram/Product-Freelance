@@ -193,7 +193,7 @@ function Kredensial({ daftar, reset, onClose }) {
 /* ------------------------------------------------------------------ panel */
 // `fokus`: lompatan dari halaman lain (Corong rekrutmen) — tampilkan satu orang/saringan,
 // lalu `fokusDipakai()` supaya tidak terpasang lagi saat halaman ini dibuka berikutnya.
-export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aksiEl, keDatabaseGuru, picList = [], fokus = null, fokusDipakai }) {
+export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aksiEl, keDatabaseGuru, picList = [], fokus = null, fokusDipakai, pemilik = false }) {
   const [tampil, setTampil] = useState("pendaftar");
   const [saringP, setSaringP] = useState("Menunggu");
   const [saringA, setSaringA] = useState("semua");
@@ -443,6 +443,44 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
           jalan: () => jalankan(() => kirim({ action: "status", email: lower(g.email), status })),
         })
       : jalankan(() => kirim({ action: "status", email: lower(g.email), status }));
+
+  // Akun uji (khusus Pemilik): akun guru yang dipakai tim untuk mencoba alur.
+  const aturUji = (g, uji) =>
+    uji
+      ? setKonfirmasi({
+          judul: `Tandai ${g.nama} sebagai akun uji?`,
+          isi: (
+            <p className="modal-sub">
+              Pengambilannya diberi label <b>UJI</b> di Pengambilan guru, dan semua datanya bisa dibersihkan sekaligus. Hanya untuk akun yang dipakai tim
+              untuk mencoba — jangan untuk guru sungguhan.
+            </p>
+          ),
+          tombol: "Tandai akun uji",
+          jalan: () => jalankan(() => kirim({ action: "uji", email: lower(g.email), uji: true })),
+        })
+      : jalankan(() => kirim({ action: "uji", email: lower(g.email), uji: false }));
+  const bersihkanUji = (g) => {
+    const d = data?.dataUji?.[lower(g.email)] || { pengambilan: 0, soal: 0 };
+    setKonfirmasi({
+      judul: `Bersihkan data uji ${g.nama}?`,
+      isi: (
+        <>
+          <p className="modal-sub">
+            Menghapus <b>{d.pengambilan} pengambilan</b> ({d.soal} soal) milik akun ini beserta <b>baris lognya di semua bulan</b>. Kuota proyek kembali
+            terbuka, dan soal reject "hangus" dikembalikan ke kebutuhan katalog. Tidak bisa dibatalkan.
+          </p>
+          <p className="modal-sub">Akunnya tetap ada dan tetap bisa dipakai untuk uji berikutnya.</p>
+        </>
+      ),
+      tombol: "Bersihkan data uji",
+      bahaya: true,
+      jalan: () =>
+        jalankan(async () => {
+          const j = await kirim({ action: "bersihkanUji", email: lower(g.email) });
+          setInfo(`Data uji ${g.nama} dibersihkan: ${j.hasil.pengambilan} pengambilan, ${j.hasil.log} baris log dihapus${j.hasil.penunjukDigeser ? `, ${j.hasil.penunjukDigeser} penunjuk log guru lain disesuaikan` : ""}.`);
+        }),
+    });
+  };
 
   const tolak = (p) =>
     setKonfirmasi({
@@ -872,6 +910,11 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
                       <button type="button" className="nama-link" onClick={() => setProfil(g.idGuru)}>
                         {g.nama}
                       </button>
+                      {g.akun?.uji ? (
+                        <span className="pill batal plain uji-pil" title="Akun uji — dipakai tim untuk mencoba alur">
+                          AKUN UJI
+                        </span>
+                      ) : null}
                       {adaSaringK && (g.jurusan || g.universitas) ? <small className="ksd-sub">{[g.pendidikan && jenjangDari(g.pendidikan), g.jurusan, g.universitas].filter(Boolean).join(" · ")}</small> : null}
                     </td>
                     <td className="wrap" data-l="Email login">
@@ -917,6 +960,16 @@ export default function AksesPanel({ data, busy, setBusy, setErr, onChanged, aks
                           </button>
                         ) : (
                           <>
+                            {pemilik && g.akun?.uji ? (
+                              <button type="button" className="btn btn-red xs" disabled={kunciTulis} onClick={() => bersihkanUji(g)} title="Hapus semua pengambilan & baris log akun uji ini">
+                                Bersihkan data uji
+                              </button>
+                            ) : null}
+                            {pemilik ? (
+                              <button type="button" className="btn btn-ghost xs" disabled={kunciTulis} onClick={() => aturUji(g, !g.akun?.uji)} title={g.akun?.uji ? "Lepas tanda akun uji" : "Tandai sebagai akun uji (untuk mencoba alur)"}>
+                                {g.akun?.uji ? "Bukan uji" : "Akun uji"}
+                              </button>
+                            ) : null}
                             <button type="button" className="btn btn-ghost xs" disabled={kunciTulis} onClick={() => reset(g)}>
                               Reset password
                             </button>
