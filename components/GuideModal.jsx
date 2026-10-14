@@ -55,13 +55,14 @@ export default function GuideModal({ open, onClose, items = [] }) {
       </p>
       <AlurPengambilan />
       <p className="modal-sub">
-        Baca briefing dan tonton video panduan ini dulu, supaya soal yang kamu kirim sesuai standar dan tidak perlu revisi.
+        Pelajari template soal dan tonton video panduan ini dulu, supaya soal yang kamu kirim sesuai standar dan tidak perlu revisi.
       </p>
-      <a className="guide-doc" href="/panduan-kerja-guru-freelance.pdf" target="_blank" rel="noopener noreferrer">
+      <a className="guide-doc" href="/template-soal.pdf" target="_blank" rel="noopener noreferrer">
         <span className="doc-ico"><Icon name="file" size={20} /></span>
         <span className="g-txt">
           <span className="g-no">DOKUMEN</span>
-          <span className="g-ket" style={{ display: "block" }}>Briefing &amp; panduan kerja guru freelance (PDF)</span>
+          <span className="g-ket" style={{ display: "block" }}>Template soal (PDF)</span>
+          <span className="g-sub">Struktur wajib + contoh pilihan ganda, MCMA, isian singkat, dan tabel Benar/Salah</span>
           <span className="g-go">Buka PDF</span>
         </span>
       </a>

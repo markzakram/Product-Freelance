@@ -12,6 +12,15 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.6.1 — Template soal & video panduan baru (14 Oktober 2026)
+
+- Popup **Sebelum mengambil proyek** (halaman guru): dokumen diganti **Template soal (PDF)**
+  — struktur wajib + contoh pilihan ganda, MCMA, isian singkat, dan tabel Benar/Salah
+  (`/template-soal.pdf`, menggantikan briefing lama `/panduan-kerja-guru-freelance.pdf`).
+- Video panduan cukup dua: **Pengenalan Website** dan **Tata Cara Pengerjaan**. Daftar
+  video tetap dibaca dari tab **Panduan** di spreadsheet (sudah diperbarui); cadangan di
+  kode ikut disamakan.
+
 ## 3.6.0 — Tanggal lapor progres 30% & 50% + pemberitahuan (8 Oktober 2026)
 
 - **Tanggal lapor diatur admin per proyek** (Katalog, kolom *Deadline & lapor*): dua
