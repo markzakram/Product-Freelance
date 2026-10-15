@@ -12,6 +12,18 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.8.1 — Baris baru tidak lagi jatuh di bawah rumus templat (16 Oktober 2026)
+
+- Tab bulan yang dibuat dengan menduplikasi tab lain membawa rumus **Sisa / Fee / Bulan**
+  yang sudah disalin jauh ke bawah (sampai baris 96–98). Dashboard dulu menganggap baris
+  templat itu terisi, sehingga **Tambah proyek** dan **acc pengajuan** menaruh baris baru di
+  baris 97–98. Kini kolom turunan itu diabaikan saat mencari baris kosong berikutnya —
+  baris baru langsung menyambung di bawah data (berlaku juga untuk hapus baris).
+- Perbaikan data 16 Okt (langsung di spreadsheet, bukan kode): tab `Oktober_` dan
+  `Oktober_Freelance` bentrok (dashboard hanya membaca satu tab per bulan). 7 proyek UTBK
+  dari `Oktober_Freelance` dipindah ke `Oktober_` sebagai P10-12…P10-18 beserta aturan &
+  pengajuannya; tab lama diganti nama "Arsip UTBK Okt (digabung)".
+
 ## 3.8.0 — Pengambilan per soal / per paket + tipe Latsol / TO (15 Oktober 2026)
 
 - **Panel "Atur" per proyek** di Katalog: kolom *Deadline & lapor* kini *Aturan proyek* berisi
