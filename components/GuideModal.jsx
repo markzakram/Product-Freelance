@@ -62,7 +62,7 @@ export default function GuideModal({ open, onClose, items = [] }) {
         <span className="g-txt">
           <span className="g-no">DOKUMEN</span>
           <span className="g-ket" style={{ display: "block" }}>Template soal (PDF)</span>
-          <span className="g-sub">Struktur wajib + contoh pilihan ganda, MCMA, isian singkat, dan tabel Benar/Salah</span>
+          <span className="g-sub">Struktur wajib + contoh pilihan ganda, MCMA, isian singkat, tabel Benar/Salah, dan tipe lainnya</span>
           <span className="g-go">Buka PDF</span>
         </span>
       </a>

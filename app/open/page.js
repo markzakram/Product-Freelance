@@ -75,6 +75,8 @@ export default async function OpenPage({ searchParams }) {
         jenis: jenisDariId(r.idSubtes) || "Lainnya",
         deadline: aturan[id]?.deadline || "",
         titik: aturan[id]?.titik || [],
+        isiPaket: aturan[id]?.isiPaket || 0, // 0 = per soal
+        tipe: aturan[id]?.tipe || "", // Latsol / TO
       };
     })
     // tetap tampil bila guru ini sendiri sedang mengambilnya (supaya statusnya terlihat)

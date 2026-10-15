@@ -4,7 +4,7 @@ import { izinAdmin } from "@/lib/authServer";
 import { canWrite } from "@/lib/gauth";
 import { getBoard } from "@/lib/juli";
 import { bacaPengerjaan, putuskan, maksAktif, aturMaksAktif, review, terapkanDenda, lengkapiTitik, tandaiProgresDicek } from "@/lib/pengerjaan";
-import { aturanBulan, aturDeadline, aturLapor } from "@/lib/aturanProyek";
+import { aturanBulan, aturDeadline, aturLapor, aturPaket, aturTipe, aturSemua } from "@/lib/aturanProyek";
 import { AKTIF } from "@/lib/pengerjaanOpsi";
 import { bacaAkun } from "@/lib/akun";
 
@@ -55,6 +55,12 @@ export async function POST(req) {
         return NextResponse.json({ ok: true, ...(await aturDeadline(body.bulan, body.idProyek, body.deadline, sesi.nama)) });
       case "lapor":
         return NextResponse.json({ ok: true, ...(await aturLapor(body.bulan, body.idProyek, body.persen, body.tanggal, sesi.nama)) });
+      case "aturan": // panel "Atur" di Katalog — semua aturan satu proyek sekaligus
+        return NextResponse.json({ ok: true, ...(await aturSemua(body.bulan, body.idProyek, body.aturan || {}, sesi.nama)) });
+      case "tipe":
+        return NextResponse.json({ ok: true, ...(await aturTipe(body.bulan, body.idProyek, body.tipe, sesi.nama)) });
+      case "paket":
+        return NextResponse.json({ ok: true, ...(await aturPaket(body.bulan, body.idProyek, body.isi, sesi.nama)) });
       case "progresDicek":
         return NextResponse.json({ ok: true, ...(await tandaiProgresDicek(body.id, sesi.nama)) });
       case "maksAktif":

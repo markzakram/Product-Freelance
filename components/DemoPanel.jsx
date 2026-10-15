@@ -12,7 +12,7 @@ import { GURU_DEMO, TIM_DEMO, PASSWORD_DEMO } from "@/lib/demo";
 
 const SKENARIO = [
   ["Tim seleksi", "Pendaftar di setiap tahap: baru masuk, ditinjau, sampel (perlu revisi), lolos sampel & siap dibuatkan akun, ditolak; plus kontak WA yang perlu ditindaklanjuti."],
-  ["Tim akademik", "Katalog 8 proyek bulan ini dengan deadline & wajib lapor progres, satu pengajuan menunggu acc, satu hasil menunggu review, satu revisi berjalan, dan log pembayaran."],
+  ["Tim akademik", "Katalog 8 proyek bulan ini (6 Latsol per soal, 2 TO per paket 10 soal) dengan deadline & wajib lapor progres, satu pengajuan menunggu acc, satu hasil menunggu review, satu revisi berjalan, dan log pembayaran."],
   ["Guru (freelance)", "Ayu: proyek berjalan dengan lapor 30% besok (H-1) dan 50% H-3 + pengajuan menunggu acc. Bima: hasil menunggu review + progres 30% baru masuk, lapor 50% hari ini. Citra: sedang revisi dengan batas 3 hari."],
 ];
 

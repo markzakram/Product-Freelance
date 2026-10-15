@@ -19,6 +19,7 @@ import GuideModal from "./GuideModal";
 import CartView from "./CartView";
 import PasangApp from "./PasangApp";
 import { hitungMundur, tanggalPendek, labelStatus, kelasStatus, labelH, tanggalHari } from "@/lib/pengerjaanOpsi";
+import { paketTersedia, paketDariSoal, soalDariPaket, teksJumlah, rincianPaket, TIPE_PROYEK } from "@/lib/paket";
 
 const clamp = (n, min, max) => (Number.isNaN(n) ? min : Math.max(min, Math.min(max, n)));
 const JENIS_URUT = ["Soal", "Liveclass", "Laporan FR", "Editor", "Lainnya"];
@@ -38,6 +39,11 @@ function ProjectCard({ p, qty, setQty, milik }) {
   const pct = p.kebutuhan > 0 ? persen(sisaTampil) : sisaTampil > 0 ? 100 : 0;
   const menipis = p.kebutuhan > 0 && sisaTampil / p.kebutuhan < 0.25;
   const set = (v) => setQty(p, clamp(parseInt(v, 10), 0, p.sisa));
+  // Proyek per paket: guru memilih jumlah PAKET; yang disimpan tetap jumlah soal.
+  const isi = p.isiPaket || 0;
+  const maksPaket = paketTersedia(p.sisa, isi);
+  const nPaket = paketDariSoal(qty, isi);
+  const setPaket = (v) => setQty(p, soalDariPaket(clamp(parseInt(v, 10), 0, maksPaket), p.sisa, isi));
 
   // Tepat setelah "Ambil", fokus pindah ke jumlah dengan isi terpilih: guru
   // bisa langsung mengetik "25". Sengaja bukan autoFocus — itu akan
@@ -55,6 +61,7 @@ function ProjectCard({ p, qty, setQty, milik }) {
       <div className="pc-top">
         <div className="pc-chips">
           <span className="mini brand">{p.jenis}</span>
+          {p.tipe ? <span className={"mini tipe tipe-" + p.tipe.toLowerCase()}>{p.tipe}</span> : null}
           {p.output ? <span className="mini">{p.output}</span> : null}
         </div>
         {dipilih && sisaTampil === 0 ? (
@@ -67,9 +74,14 @@ function ProjectCard({ p, qty, setQty, milik }) {
       <h3>{p.subtes}</h3>
 
       <div className="pc-price">
-        <b>{rupiah(p.harga)}</b>
-        <span>/soal</span>
+        <b>{rupiah(isi ? p.harga * isi : p.harga)}</b>
+        <span>{isi ? `/paket · ${isi} soal` : "/soal"}</span>
       </div>
+      {isi ? (
+        <div className="pc-paket">
+          <span className="mini">Per paket</span> {rupiah(p.harga)}/soal · ambil per paket berisi {numberID(isi)} soal
+        </div>
+      ) : null}
 
       <div className="pc-stock">
         <div className={"meter dua" + (menipis ? " warn" : "")} aria-hidden="true">
@@ -84,10 +96,18 @@ function ProjectCard({ p, qty, setQty, milik }) {
             {p.kebutuhan > 0 ? ` / ${numberID(p.kebutuhan)}` : ""} soal
           </b>
         </div>
+        {isi ? (
+          <div className="row" title={rincianPaket(sisaTampil, isi)}>
+            <span>Paket tersedia</span>
+            <b>
+              {numberID(paketTersedia(sisaTampil, isi))} paket{sisaTampil % isi && sisaTampil > isi ? ` (terakhir ${sisaTampil % isi} soal)` : ""}
+            </b>
+          </div>
+        ) : null}
         {diambil ? (
           <div className="row ambilmu">
             <span>Kamu ambil</span>
-            <b>−{numberID(diambil)} soal</b>
+            <b>−{teksJumlah(diambil, isi)}</b>
           </div>
         ) : null}
         {(p.titik || []).map((t) => {
@@ -127,7 +147,8 @@ function ProjectCard({ p, qty, setQty, milik }) {
               className="take"
               onClick={() => {
                 setBaruDiambil(true);
-                set(1);
+                if (isi) setPaket(1);
+                else set(1);
               }}
             >
               <Icon name="plus" stroke={2.2} />
@@ -136,29 +157,55 @@ function ProjectCard({ p, qty, setQty, milik }) {
           </>
         ) : (
           <>
-            <div className="stepper">
-              <button type="button" onClick={() => set(qty - 1)} aria-label={`Kurangi ${p.subtes}`}>
-                <Icon name="minus" />
-              </button>
-              <input
-                ref={input}
-                type="number"
-                inputMode="numeric"
-                min={0}
-                max={p.sisa}
-                value={qty}
-                onChange={(e) => set(e.target.value)}
-                onFocus={(e) => e.target.select()}
-                aria-label={`Jumlah soal ${p.subtes}`}
-              />
-              <button type="button" onClick={() => set(qty + 1)} disabled={qty >= p.sisa} aria-label={`Tambah ${p.subtes}`}>
-                <Icon name="plus" />
-              </button>
-              <button type="button" className="btn btn-ghost xs" onClick={() => set(p.sisa)} disabled={qty >= p.sisa}>
-                Maks
-              </button>
-            </div>
-            <span className="sub">{rupiah(qty * p.harga)}</span>
+            {isi ? (
+              <div className="stepper paket">
+                <button type="button" onClick={() => setPaket(nPaket - 1)} aria-label={`Kurangi paket ${p.subtes}`}>
+                  <Icon name="minus" />
+                </button>
+                <input
+                  ref={input}
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={maksPaket}
+                  value={nPaket}
+                  onChange={(e) => setPaket(e.target.value)}
+                  onFocus={(e) => e.target.select()}
+                  aria-label={`Jumlah paket ${p.subtes}`}
+                />
+                <button type="button" onClick={() => setPaket(nPaket + 1)} disabled={nPaket >= maksPaket} aria-label={`Tambah paket ${p.subtes}`}>
+                  <Icon name="plus" />
+                </button>
+                <span className="unit">paket</span>
+              </div>
+            ) : (
+              <div className="stepper">
+                <button type="button" onClick={() => set(qty - 1)} aria-label={`Kurangi ${p.subtes}`}>
+                  <Icon name="minus" />
+                </button>
+                <input
+                  ref={input}
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={p.sisa}
+                  value={qty}
+                  onChange={(e) => set(e.target.value)}
+                  onFocus={(e) => e.target.select()}
+                  aria-label={`Jumlah soal ${p.subtes}`}
+                />
+                <button type="button" onClick={() => set(qty + 1)} disabled={qty >= p.sisa} aria-label={`Tambah ${p.subtes}`}>
+                  <Icon name="plus" />
+                </button>
+                <button type="button" className="btn btn-ghost xs" onClick={() => set(p.sisa)} disabled={qty >= p.sisa}>
+                  Maks
+                </button>
+              </div>
+            )}
+            <span className="sub">
+              {rupiah(qty * p.harga)}
+              {isi ? ` · ${numberID(qty)} soal` : ""}
+            </span>
           </>
         )}
       </div>
@@ -241,6 +288,7 @@ export default function OpenBoard({ projects, source, bulan, waNumber, panduan =
   const [q, setQ] = useState("");
   const [jenis, setJenis] = useState(SEMUA);
   const [output, setOutput] = useState(SEMUA);
+  const [tipe, setTipe] = useState(SEMUA);
   const [sort, setSort] = useState("sisa");
   const [qty, setQtyMap] = useState({}); // id -> jumlah soal
   const [view, setView] = useState("catalog"); // "catalog" | "cart"
@@ -270,7 +318,7 @@ export default function OpenBoard({ projects, source, bulan, waNumber, panduan =
     () =>
       projects
         .filter((p) => (qty[p.id] || 0) > 0)
-        .map((p) => ({ id: p.id, subtes: p.subtes, output: p.output, harga: p.harga, sisa: p.sisa, qty: Math.min(qty[p.id], p.sisa) })),
+        .map((p) => ({ id: p.id, subtes: p.subtes, output: p.output, tipe: p.tipe || "", harga: p.harga, sisa: p.sisa, isi: p.isiPaket || 0, qty: Math.min(qty[p.id], p.sisa) })),
     [projects, qty]
   );
   const soalCart = cart.reduce((s, it) => s + it.qty, 0);
@@ -288,6 +336,7 @@ export default function OpenBoard({ projects, source, bulan, waNumber, panduan =
   };
   const daftarJenis = useMemo(() => hitung("jenis", JENIS_URUT), [projects]); // eslint-disable-line react-hooks/exhaustive-deps
   const daftarOutput = useMemo(() => hitung("output"), [projects]); // eslint-disable-line react-hooks/exhaustive-deps
+  const daftarTipe = useMemo(() => TIPE_PROYEK.map((k) => ({ k, n: projects.filter((p) => p.tipe === k).length })).filter((x) => x.n), [projects]);
 
   const filtered = useMemo(() => {
     const words = q.toLowerCase().split(/\s+/).filter(Boolean);
@@ -295,11 +344,12 @@ export default function OpenBoard({ projects, source, bulan, waNumber, panduan =
       .filter((p) => p.sisa > 0 || milikDari(p))
       .filter((p) => jenis === SEMUA || p.jenis === jenis)
       .filter((p) => output === SEMUA || (p.output || "Lainnya") === output)
+      .filter((p) => tipe === SEMUA || p.tipe === tipe)
       .filter((p) => words.every((w) => `${p.subtes} ${p.output} ${p.jenis}`.toLowerCase().includes(w)))
       .sort((a, b) =>
         sort === "sisa" ? b.sisa - a.sisa : sort === "harga" ? b.harga - a.harga : a.subtes.localeCompare(b.subtes)
       );
-  }, [projects, q, jenis, output, sort]);
+  }, [projects, q, jenis, output, tipe, sort]);
 
   const keCart = () => {
     setView("cart");
@@ -431,6 +481,11 @@ export default function OpenBoard({ projects, source, bulan, waNumber, panduan =
                 <div className="chips" role="group" aria-label="Saring output">
                   {chip(output === SEMUA, "Semua", projects.length, () => setOutput(SEMUA))}
                   {daftarOutput.map(({ k, n }) => chip(output === k, k, n, () => setOutput(k)))}
+                </div>
+              ) : null}
+              {daftarTipe.length ? (
+                <div className="chips" role="group" aria-label="Saring tipe pembuatan">
+                  {daftarTipe.map(({ k, n }) => chip(tipe === k, k === "TO" ? "TO (tryout)" : "Latsol", n, () => setTipe(tipe === k ? SEMUA : k)))}
                 </div>
               ) : null}
               {daftarJenis.length > 1 ? (

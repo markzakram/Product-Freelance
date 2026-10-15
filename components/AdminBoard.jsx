@@ -40,7 +40,8 @@ import TimPanel from "./TimPanel";
 import PengerjaanPanel from "./PengerjaanPanel";
 import DemoPanel from "./DemoPanel";
 import { MODE_DEMO } from "@/lib/demo";
-import { ST as ST_PJ, hitungMundur, laporanBaru, labelH } from "@/lib/pengerjaanOpsi";
+import { ST as ST_PJ, hitungMundur, laporanBaru, labelH, tanggalPendek } from "@/lib/pengerjaanOpsi";
+import { isiPaket, rincianPaket, ISI_MIN, ISI_MAKS, TIPE_PROYEK } from "@/lib/paket";
 import { barisRekap, bankDanRekening, judulRekap, unduhExcel, salinRekap } from "@/lib/rekapFee";
 
 const STATUS_KNOWN = ["Running Soal", "QC Soal", "Revisi Soal", "Approved", "Running Video", STATUS_BATAL];
@@ -1784,62 +1785,196 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, m
   );
 }
 
+/* ========================= PANEL "ATUR" PROYEK ============================ */
+// Semua aturan satu baris katalog dalam satu panel: tipe pembuatan, satuan
+// pengambilan, deadline, dan tanggal lapor progres. Disimpan sekali (aksi
+// "aturan") supaya kombinasinya divalidasi bersama di server.
+function AturanDrawer({ p, nilai, bulan, readOnly, onClose, onTersimpan }) {
+  const titik = nilai.titik || [];
+  const tglLapor = (n) => titik.find((t) => t.persen === n)?.tanggal || "";
+  const [f, setF] = useState(() => ({
+    tipe: nilai.tipe || "",
+    mode: nilai.isiPaket ? "paket" : "soal",
+    isi: nilai.isiPaket ? String(nilai.isiPaket) : "",
+    deadline: nilai.deadline || "",
+    lapor30: tglLapor(30),
+    lapor50: tglLapor(50),
+  }));
+  const [busy, setBusy] = useState(false);
+  const [galat, setGalat] = useState("");
+  const set = (k, v) => setF((x) => ({ ...x, [k]: v }));
+  const isi = f.mode === "paket" ? isiPaket(f.isi) : 0;
+  const masalah =
+    f.mode === "paket" && !isi
+      ? `Isi dulu jumlah soal per paket (${ISI_MIN}–${ISI_MAKS}).`
+      : f.lapor30 && f.lapor50 && f.lapor30 > f.lapor50
+        ? "Tanggal lapor 30% harus sebelum (atau sama dengan) tanggal lapor 50%."
+        : f.deadline && [f.lapor30, f.lapor50].some((t) => t && t > f.deadline)
+          ? "Tanggal lapor progres tidak boleh setelah deadline."
+          : "";
+
+  const simpan = async () => {
+    setBusy(true);
+    setGalat("");
+    try {
+      const res = await fetch("/api/admin/pengerjaan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "aturan",
+          bulan,
+          idProyek: p.id,
+          aturan: { tipe: f.tipe, isi, deadline: f.deadline, lapor30: f.lapor30, lapor50: f.lapor50 },
+        }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.error || `Gagal (HTTP ${res.status})`);
+      onTersimpan(j);
+    } catch (e) {
+      setGalat(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const tanggal = (k, label, maks) => {
+    const hm = hitungMundur(f[k]);
+    return (
+      <div className="ffield">
+        <span>{label}</span>
+        <div className="atur-tgl">
+          <input type="date" className="input" value={f[k]} max={maks || undefined} disabled={busy || readOnly} onChange={(e) => set(k, e.target.value)} aria-label={label} />
+          {f[k] ? (
+            <>
+              <b className={"dl-" + hm.kelas} title={hm.teks}>
+                {k === "deadline" ? hm.teks : labelH(hm)}
+              </b>
+              <button type="button" className="ibtn" onClick={() => set(k, "")} disabled={busy || readOnly} aria-label={`Kosongkan ${label}`} title="Kosongkan">
+                <Icon name="x" />
+              </button>
+            </>
+          ) : (
+            <small className="muted">{k === "deadline" ? "belum diatur" : "tidak wajib"}</small>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <Drawer
+      title="Aturan proyek"
+      sub={`${p.id} · ${p.subtes}`}
+      onClose={onClose}
+      busy={busy}
+      foot={
+        <div className="drawer-actions">
+          <button type="button" className="btn btn-ghost" onClick={onClose} disabled={busy}>
+            Batal
+          </button>
+          <button type="button" className="btn btn-blue" onClick={simpan} disabled={busy || readOnly || Boolean(masalah)}>
+            {busy ? "Menyimpan…" : "Simpan"}
+          </button>
+        </div>
+      }
+    >
+      <div className="atur-form">
+        <div className="ffield">
+          <span>Tipe pembuatan</span>
+          <div className="seg" role="radiogroup" aria-label="Tipe pembuatan">
+            {TIPE_PROYEK.map((t) => (
+              <button
+                key={t}
+                type="button"
+                role="radio"
+                aria-checked={f.tipe === t}
+                className={"seg-btn" + (f.tipe === t ? " on" : "")}
+                disabled={busy || readOnly}
+                onClick={() => set("tipe", f.tipe === t ? "" : t)}
+              >
+                <b>{t}</b>
+                <small>{t === "TO" ? "Soal untuk tryout" : "Latihan soal"}</small>
+              </button>
+            ))}
+          </div>
+          <small>Tampil sebagai label di halaman guru, dan guru bisa menyaring katalog per tipe. Klik pilihan yang aktif untuk mengosongkan.</small>
+        </div>
+
+        <div className="ffield">
+          <span>Satuan pengambilan</span>
+          <div className="seg" role="radiogroup" aria-label="Satuan pengambilan">
+            <button type="button" role="radio" aria-checked={f.mode === "soal"} className={"seg-btn" + (f.mode === "soal" ? " on" : "")} disabled={busy || readOnly} onClick={() => set("mode", "soal")}>
+              <b>Per soal</b>
+              <small>Guru bebas memilih jumlah soal</small>
+            </button>
+            <button type="button" role="radio" aria-checked={f.mode === "paket"} className={"seg-btn" + (f.mode === "paket" ? " on" : "")} disabled={busy || readOnly} onClick={() => set("mode", "paket")}>
+              <b>Per paket</b>
+              <small>Guru mengambil kelipatan paket</small>
+            </button>
+          </div>
+          {f.mode === "paket" ? (
+            <div className="atur-isi">
+              <input
+                type="number"
+                inputMode="numeric"
+                className="input"
+                min={ISI_MIN}
+                max={ISI_MAKS}
+                placeholder="mis. 10"
+                value={f.isi}
+                disabled={busy || readOnly}
+                onChange={(e) => set("isi", e.target.value)}
+                aria-label="Jumlah soal per paket"
+              />
+              <span>soal per paket</span>
+            </div>
+          ) : null}
+          {isi ? (
+            <small>
+              {rupiah(p.harga * isi)}/paket ({rupiah(p.harga)}/soal) · sisa sekarang {rincianPaket(p.sisa, isi) || "habis"}
+              {p.sisa > isi && p.sisa % isi ? " — paket terakhir lebih kecil" : ""}
+            </small>
+          ) : f.mode === "paket" ? (
+            <small className="neg">Isi dulu jumlah soal per paket ({ISI_MIN}–{ISI_MAKS}).</small>
+          ) : (
+            <small>Harga tetap per soal; review hasil tetap per soal.</small>
+          )}
+        </div>
+
+        {tanggal("deadline", "Deadline")}
+        {tanggal("lapor30", "Lapor progres 30%", f.deadline)}
+        {tanggal("lapor50", "Lapor progres 50%", f.deadline)}
+        <small className="muted atur-catatan">Kosongkan tanggal lapor bila tidak wajib. Tanggal lapor harus sebelum deadline, dan lapor 30% tidak boleh setelah lapor 50%.</small>
+
+        {masalah ? (
+          <div className="banner err" role="alert" style={{ margin: 0 }}>
+            <Icon name="alert" />
+            <div>{masalah}</div>
+          </div>
+        ) : null}
+        {galat ? (
+          <div className="banner err" role="alert" style={{ margin: 0 }}>
+            <Icon name="alert" />
+            <div>{galat}</div>
+          </div>
+        ) : null}
+      </div>
+    </Drawer>
+  );
+}
+
 /* ============================== KATALOG ================================== */
 const BLANK_P = { id: "", idSubtes: "", platform: "", subtes: "", output: "", harga: "", kebutuhan: "" };
 
 function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan, setErr, onMasterChanged, guruDb, log, riwayat, akun, wajibLogin, bulan, kontak, penanda, aturan = {}, dipesan = {}, onAturan }) {
-  const [dlLokal, setDlLokal] = useState({}); // deadline yang baru disimpan (tampil langsung)
-  const [lpLokal, setLpLokal] = useState({}); // tanggal lapor progres yang baru disimpan: { "P10-01|30": "2026-10-10" }
-  const [dlSimpan, setDlSimpan] = useState("");
-  const deadlineDari = (p) => {
+  // Aturan proyek (tipe, satuan, deadline, lapor) diubah lewat panel "Atur".
+  // `atLokal` = hasil simpan dari server; dipakai terus selama halaman terbuka
+  // (pembacaan ulang bisa dilayani instans lain yang cache-nya belum segar).
+  const [atLokal, setAtLokal] = useState({});
+  const [atur, setAtur] = useState(null); // proyek yang panel Atur-nya terbuka
+  const aturanDari = (p) => {
     const id = String(p.id).toUpperCase();
-    return id in dlLokal ? dlLokal[id] : aturan[id]?.deadline || "";
-  };
-  const laporDari = (p, persen) => {
-    const k = `${String(p.id).toUpperCase()}|${persen}`;
-    return k in lpLokal ? lpLokal[k] : (aturan[String(p.id).toUpperCase()]?.titik || []).find((t) => t.persen === persen)?.tanggal || "";
-  };
-  const simpanLapor = async (p, persen, tanggal) => {
-    const k = `${String(p.id).toUpperCase()}|${persen}`;
-    const lama = laporDari(p, persen);
-    setLpLokal((m) => ({ ...m, [k]: tanggal }));
-    try {
-      const res = await fetch("/api/admin/pengerjaan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "lapor", bulan, idProyek: p.id, persen, tanggal }),
-      });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(j.error || `Gagal (HTTP ${res.status})`);
-      onAturan?.();
-    } catch (e) {
-      setLpLokal((m) => ({ ...m, [k]: lama }));
-      setErr?.(`Tanggal lapor ${persen}% belum tersimpan: ` + e.message);
-    }
-  };
-  const simpanDeadline = async (p, nilai) => {
-    const id = String(p.id).toUpperCase();
-    setDlSimpan(id);
-    setDlLokal((m) => ({ ...m, [id]: nilai }));
-    try {
-      const res = await fetch("/api/admin/pengerjaan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "deadline", bulan, idProyek: p.id, deadline: nilai }),
-      });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(j.error || `Gagal (HTTP ${res.status})`);
-      onAturan?.();
-    } catch (e) {
-      setDlLokal((m) => {
-        const n = { ...m };
-        delete n[id];
-        return n;
-      });
-      setErr?.("Deadline belum tersimpan: " + e.message);
-    } finally {
-      setDlSimpan("");
-    }
+    return atLokal[id] || aturan[id] || {};
   };
   const [edit, setEdit] = useState(null);
   const [cari, setCari] = useState(null); // proyek yang sedang dicarikan guru
@@ -1924,7 +2059,7 @@ function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan
 
       <div className="table-wrap fixed">
         <table className="grid-table t-kat">
-          <Cols widths={[9, 9, 24, 11, 9, 9, 11, 12, 6]} />
+          <Cols widths={[8, 8, 22, 10, 9, 9, 9, 19, 6]} />
           <thead>
             <tr>
               <th>Kode</th>
@@ -1934,7 +2069,7 @@ function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan
               <th className="num">Harga</th>
               <th className="num">Kebutuhan</th>
               <th className="num">Sisa</th>
-              <th>Deadline & lapor</th>
+              <th>Aturan proyek</th>
               <th className="act">
                 <span className="sr-only">Aksi</span>
               </th>
@@ -1980,41 +2115,53 @@ function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan
                     <div className="muted xs2">{numberID(dipesan[String(p.id).toUpperCase()])} menunggu acc</div>
                   ) : null}
                 </td>
-                <td className="c-deadline" data-l="Deadline">
+                <td className="c-deadline" data-l="Aturan">
                   {(() => {
-                    const dl = deadlineDari(p);
-                    const hm = hitungMundur(dl);
+                    const at = aturanDari(p);
+                    const isi = at.isiPaket || 0;
+                    const hm = hitungMundur(at.deadline);
                     return (
-                      <>
-                        <input
-                          type="date"
-                          className="input sm dl-input"
-                          value={dl}
-                          disabled={readOnly || dlSimpan === String(p.id).toUpperCase()}
-                          onChange={(e) => simpanDeadline(p, e.target.value)}
-                          aria-label={`Deadline ${p.subtes}`}
-                        />
-                        {dl ? <div className={"xs2 dl-" + hm.kelas}>{hm.teks}</div> : <div className="muted xs2">belum diatur</div>}
-                        {[30, 50].map((persen) => {
-                          const tgl = laporDari(p, persen);
-                          const hmL = hitungMundur(tgl);
-                          return (
-                            <label key={persen} className="lp-tgl" title={`Guru wajib melapor progres ${persen}% paling lambat tanggal ini (kosong = tidak wajib)`}>
-                              <span>Lapor {persen}%</span>
-                              <input
-                                type="date"
-                                className="input sm"
-                                value={tgl}
-                                max={dl || undefined}
-                                disabled={readOnly}
-                                onChange={(e) => simpanLapor(p, persen, e.target.value)}
-                                aria-label={`Tanggal lapor progres ${persen}% ${p.subtes}`}
-                              />
-                              {tgl ? <small className={"dl-" + hmL.kelas}>{labelH(hmL)}</small> : <small className="muted">tidak wajib</small>}
-                            </label>
-                          );
-                        })}
-                      </>
+                      <div className="atur-ringkas">
+                        <div className="atur-chips">
+                          {at.tipe ? <span className={"mini tipe tipe-" + at.tipe.toLowerCase()}>{at.tipe}</span> : <span className="mini kosong">tipe —</span>}
+                          <span className="mini">{isi ? `Per paket ${isi} soal` : "Per soal"}</span>
+                        </div>
+                        <small>
+                          Deadline{" "}
+                          {at.deadline ? (
+                            <b className={"dl-" + hm.kelas} title={hm.teks}>
+                              {tanggalPendek(at.deadline)} · {labelH(hm)}
+                            </b>
+                          ) : (
+                            <b className="muted">belum diatur</b>
+                          )}
+                        </small>
+                        <small>
+                          Lapor{" "}
+                          {(at.titik || []).length ? (
+                            (at.titik || []).map((t) => {
+                              const h = hitungMundur(t.tanggal);
+                              return (
+                                <b key={t.persen} className={"dl-" + h.kelas + " atur-titik"} title={tanggalPendek(t.tanggal)}>
+                                  {t.persen}% {labelH(h)}
+                                </b>
+                              );
+                            })
+                          ) : (
+                            <b className="muted">tidak wajib</b>
+                          )}
+                        </small>
+                        {isi ? (
+                          <small className="muted">
+                            {rupiah(p.harga * isi)}/paket · sisa {rincianPaket(p.sisa, isi) || "habis"}
+                          </small>
+                        ) : null}
+                        {!readOnly ? (
+                          <button type="button" className="btn btn-ghost xs" onClick={() => setAtur(p)} aria-label={`Atur ${p.subtes}`}>
+                            <Icon name="edit" size={13} /> Atur
+                          </button>
+                        ) : null}
+                      </div>
                     );
                   })()}
                 </td>
@@ -2072,6 +2219,20 @@ function KatalogTable({ projects, run, busy, readOnly, master, aksiEl, namaBulan
             if (ok) setConfirm(null);
           }}
           busy={busy}
+        />
+      ) : null}
+      {atur ? (
+        <AturanDrawer
+          p={atur}
+          nilai={aturanDari(atur)}
+          bulan={bulan}
+          readOnly={readOnly}
+          onClose={() => setAtur(null)}
+          onTersimpan={(j) => {
+            setAtLokal((m) => ({ ...m, [String(atur.id).toUpperCase()]: { deadline: j.deadline, titik: j.titik, isiPaket: j.isiPaket, tipe: j.tipe } }));
+            setAtur(null);
+            onAturan?.();
+          }}
         />
       ) : null}
     </>

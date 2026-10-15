@@ -12,6 +12,35 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.8.0 — Pengambilan per soal / per paket + tipe Latsol / TO (15 Oktober 2026)
+
+- **Panel "Atur" per proyek** di Katalog: kolom *Deadline & lapor* kini *Aturan proyek* berisi
+  ringkasan (tipe, satuan, deadline + H-x, lapor + H-x, harga paket & sisa paket) dan tombol
+  **Atur**. Panelnya memuat tipe pembuatan, satuan pengambilan, deadline, dan tanggal lapor
+  30%/50% — disimpan sekali dan divalidasi bersama (lapor 30% ≤ lapor 50% ≤ deadline), jadi
+  deadline dan tanggal lapor bisa digeser bersamaan tanpa masalah urutan.
+- **Satuan pengambilan per proyek**: **Per soal** (bawaan, guru bebas memilih jumlah) atau
+  **Per paket** — admin wajib mengisi isi paketnya (2–500 soal). Tersimpan di tab Aturan proyek
+  kolom "Soal per paket".
+- Proyek per paket di halaman guru: harga tampil **per paket** (harga per soal × isi paket;
+  harga di sheet & rumus Fee tetap per soal), baris **Paket tersedia**, dan stepper menghitung
+  **paket**, bukan soal — di kartu maupun di Periksa pengajuan. Bila sisa kuota bukan
+  kelipatan isi paket, **paket terakhir lebih kecil** (mis. sisa 25, isi 10 → 2 paket @10 +
+  1 paket 5 soal). Server menolak jumlah yang bukan kelipatan paket (kecuali seluruh sisa).
+- Jumlah pengambilan tetap disimpan dalam **soal**; isi paket saat diajukan ikut dicatat
+  (tab Pengerjaan kolom "Soal per paket") sehingga Proyek saya & Pengambilan guru
+  menampilkan "2 paket (20 soal)". **Review tetap per soal** seperti sebelumnya.
+- **Tipe pembuatan per proyek: Latsol (latihan soal) / TO (tryout)** — dipilih di panel Atur
+  (tab Aturan proyek kolom "Tipe"). Tampil sebagai label di kartu katalog guru, Periksa
+  pengajuan, Proyek saya, Pengambilan guru, dan pesan WA acc; guru bisa menyaring katalog
+  per tipe. Tipe tidak mengubah aturan lain.
+- **Template soal diperbarui** (`template-soal.pdf`): pembahasan berstruktur (Konsep, Kata
+  Kunci, alasan jawaban benar, Pembahasan Opsi Lain, Cara Cepat) dan halaman baru **Tipe soal
+  lainnya** (perbandingan Kolom 1 / Kolom 2). Alamatnya sama, popup panduan langsung membuka
+  versi baru.
+- Situs demo: 6 proyek Latsol per soal + 2 proyek TO per paket 10 soal (salah satunya
+  dengan paket terakhir 5 soal).
+
 ## 3.7.0 — Akun uji & bersihkan data uji (14 Oktober 2026)
 
 - **Akun uji** (khusus Pemilik, menu Pendaftaran & akun → Akun guru): akun guru yang

@@ -12,10 +12,11 @@ import { rupiah, numberID } from "@/lib/format";
 import Icon from "./Icon";
 import { Dialog } from "./Drawer";
 import { tautanWa } from "@/lib/tautan";
+import { paketTersedia, paketDariSoal, soalDariPaket, teksJumlah } from "@/lib/paket";
 
 // ID proyek ikut di pesan WA: ada subtes bernama sama pada proyek berbeda.
 function pesanWa(dibuat, guru) {
-  const baris = dibuat.map((d, i) => `${i + 1}. ${d.subtes} [${d.idProyek}] — ${numberID(d.jumlah)} soal`).join("\n");
+  const baris = dibuat.map((d, i) => `${i + 1}. ${d.subtes} [${d.idProyek}] — ${teksJumlah(d.jumlah, d.isiPaket)}`).join("\n");
   return `Halo kak, saya ${guru?.nama || ""} baru mengajukan pengambilan proyek lewat dashboard:\n\n${baris}\n\nMohon di-acc ya. Terima kasih!`;
 }
 
@@ -83,38 +84,51 @@ export default function CartView({ cart = [], onQty, onRemove, onClear, onBack, 
       ) : (
         <div className="cart-grid">
           <div className="cart-list">
-            {cart.map((it) => (
-              <div key={it.id} className="cart-item">
-                <div>
-                  <b>{it.subtes}</b>
-                  <span className="meta">
-                    {it.output || "—"} · {rupiah(it.harga)}/soal · maks {numberID(it.sisa)}
-                  </span>
+            {cart.map((it) => {
+              // per paket: stepper menghitung paket; yang dikirim tetap jumlah soal
+              const isi = it.isi || 0;
+              const n = isi ? paketDariSoal(it.qty, isi) : it.qty;
+              const maks = isi ? paketTersedia(it.sisa, isi) : it.sisa;
+              const ke = (v) => (isi ? soalDariPaket(v, it.sisa, isi) : v);
+              return (
+                <div key={it.id} className="cart-item">
+                  <div>
+                    <b>{it.subtes}</b>
+                    <span className="meta">
+                      {it.tipe ? `${it.tipe} · ` : ""}
+                      {it.output || "—"} · {rupiah(it.harga)}/soal ·{" "}
+                      {isi ? `per paket ${numberID(isi)} soal · maks ${numberID(maks)} paket` : `maks ${numberID(it.sisa)}`}
+                    </span>
+                  </div>
+                  <div className={"stepper" + (isi ? " paket" : "")}>
+                    <button type="button" onClick={() => onQty(it.id, ke(n - 1))} disabled={n <= 1} aria-label={`Kurangi ${it.subtes}`}>
+                      <Icon name="minus" />
+                    </button>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      value={n}
+                      min={1}
+                      max={maks}
+                      onChange={(e) => onQty(it.id, ke(Math.max(1, parseInt(e.target.value, 10) || 1)))}
+                      onFocus={(e) => e.target.select()}
+                      aria-label={isi ? `Jumlah paket ${it.subtes}` : `Jumlah soal ${it.subtes}`}
+                    />
+                    <button type="button" onClick={() => onQty(it.id, ke(n + 1))} disabled={n >= maks} aria-label={`Tambah ${it.subtes}`}>
+                      <Icon name="plus" />
+                    </button>
+                    {isi ? <span className="unit">paket</span> : null}
+                    <button type="button" className="ibtn danger" onClick={() => onRemove(it.id)} aria-label={`Hapus ${it.subtes}`}>
+                      <Icon name="trash" />
+                    </button>
+                  </div>
+                  <b className="subtotal">
+                    {rupiah(it.qty * it.harga)}
+                    {isi ? <small>{numberID(it.qty)} soal</small> : null}
+                  </b>
                 </div>
-                <div className="stepper">
-                  <button type="button" onClick={() => onQty(it.id, it.qty - 1)} disabled={it.qty <= 1} aria-label={`Kurangi ${it.subtes}`}>
-                    <Icon name="minus" />
-                  </button>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    value={it.qty}
-                    min={1}
-                    max={it.sisa}
-                    onChange={(e) => onQty(it.id, Math.max(1, parseInt(e.target.value, 10) || 1))}
-                    onFocus={(e) => e.target.select()}
-                    aria-label={`Jumlah soal ${it.subtes}`}
-                  />
-                  <button type="button" onClick={() => onQty(it.id, it.qty + 1)} disabled={it.qty >= it.sisa} aria-label={`Tambah ${it.subtes}`}>
-                    <Icon name="plus" />
-                  </button>
-                  <button type="button" className="ibtn danger" onClick={() => onRemove(it.id)} aria-label={`Hapus ${it.subtes}`}>
-                    <Icon name="trash" />
-                  </button>
-                </div>
-                <b className="subtotal">{rupiah(it.qty * it.harga)}</b>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="card card-p" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -184,7 +198,7 @@ export default function CartView({ cart = [], onQty, onRemove, onClear, onBack, 
               <ul className="hasil-ajuan">
                 {hasil.dibuat.map((d) => (
                   <li key={d.id}>
-                    <Icon name="check" size={14} stroke={2.4} /> {d.subtes} · {numberID(d.jumlah)} soal
+                    <Icon name="check" size={14} stroke={2.4} /> {d.subtes} · {teksJumlah(d.jumlah, d.isiPaket)}
                   </li>
                 ))}
               </ul>

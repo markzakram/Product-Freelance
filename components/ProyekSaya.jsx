@@ -30,6 +30,7 @@ import Brand from "./Brand";
 import Icon from "./Icon";
 import ThemeToggle from "./ThemeToggle";
 import { AlurPengambilan } from "./GuideModal";
+import { teksJumlah } from "@/lib/paket";
 
 const namaBulan = (tab) => String(tab || "").split(/[_\s]/)[0] || tab;
 
@@ -141,6 +142,7 @@ function Kartu({ p, onBatal, onKumpul, onLapor, sibuk }) {
         <div className="ps-judul">
           <b>{p.subtes}</b>
           <span>
+            {p.tipe ? `${p.tipe} · ` : ""}
             {p.idProyek} · {p.output || "—"} · {namaBulan(p.bulan)}
           </span>
         </div>
@@ -149,7 +151,7 @@ function Kartu({ p, onBatal, onKumpul, onLapor, sibuk }) {
       <div className="ps-info">
         <span>
           <small>Jumlah</small>
-          <b>{numberID(p.jumlah)} soal</b>
+          <b>{teksJumlah(p.jumlah, p.isiPaket)}</b>
         </span>
         <span>
           <small>Diajukan</small>

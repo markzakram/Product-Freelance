@@ -32,6 +32,7 @@ import {
   tanggalHari,
 } from "@/lib/pengerjaanOpsi";
 import Icon from "./Icon";
+import { teksJumlah } from "@/lib/paket";
 
 const SARING = [
   ["menunggu", "Menunggu acc", (p) => p.status === ST.diajukan],
@@ -59,7 +60,7 @@ const pesanWa = (p, jenis) => {
   const proyek = `*${p.subtes}* (${p.idProyek})`;
   switch (jenis) {
     case "acc":
-      return `${sapa}pengajuan proyek ${proyek}, ${p.jumlah} soal, sudah di-ACC dan statusnya Running.${p.deadline ? ` Deadline: ${tanggalPendek(p.deadline)}.` : ""} Selamat mengerjakan!`;
+      return `${sapa}pengajuan proyek ${proyek}${p.tipe ? ` (${p.tipe})` : ""}, ${teksJumlah(p.jumlah, p.isiPaket)}, sudah di-ACC dan statusnya Running.${p.deadline ? ` Deadline: ${tanggalPendek(p.deadline)}.` : ""} Selamat mengerjakan!`;
     case "tolak":
       return `${sapa}mohon maaf, pengajuan proyek ${proyek} belum bisa kami ACC.${p.catatan ? `\nAlasan: ${p.catatan}` : ""}`;
     case "revisi":
@@ -334,6 +335,7 @@ export default function PengerjaanPanel({ data, bulan, namaBulan, projects = [],
                 <div className="pj-proyek">
                   <b>{p.subtes}</b>
                   <span>
+                    {p.tipe ? `${p.tipe} · ` : ""}
                     {p.idProyek} · {p.output || "—"}
                     {pr ? ` · ${rupiah(pr.harga)}/soal` : ""}
                   </span>
@@ -342,7 +344,8 @@ export default function PengerjaanPanel({ data, bulan, namaBulan, projects = [],
                   <span>
                     <small>Jumlah</small>
                     <b>
-                      {numberID(p.jumlah)} soal{pr ? ` · ${rupiah(p.jumlah * pr.harga)}` : ""}
+                      {teksJumlah(p.jumlah, p.isiPaket)}
+                      {pr ? ` · ${rupiah(p.jumlah * pr.harga)}` : ""}
                     </b>
                   </span>
                   <span>

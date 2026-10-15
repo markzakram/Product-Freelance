@@ -1316,10 +1316,6 @@ html{scroll-behavior:smooth}
 .demo-akun .pill{margin-bottom:4px}
 
 /* ---- v3.6.0: tanggal lapor progres 30% / 50% ------------------------------------ */
-.lp-tgl{display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px;margin-top:8px;font-size:11.5px}
-.lp-tgl>span{flex:1 1 auto;font-weight:700;color:var(--text-muted);white-space:nowrap}
-.lp-tgl small{flex:0 0 auto;font-size:11px;font-weight:700;white-space:nowrap}
-.lp-tgl input{order:3;flex:1 1 100%;min-width:0;width:100%;padding:4px 6px;font-size:12px}
 .jl-list{list-style:none;margin:2px 0 0;padding:0;display:flex;flex-direction:column;gap:5px;font-size:12.5px}
 .jl-list li{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .jl-list li>span:last-child{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}
@@ -1340,3 +1336,27 @@ html{scroll-behavior:smooth}
 
 /* ---- v3.7.0: akun uji ------------------------------------------------------------ */
 .uji-pil{margin-left:6px;padding:1px 7px;font-size:10.5px;letter-spacing:.04em;vertical-align:middle}
+
+/* ---- v3.8.0: pengambilan per paket ------------------------------------------------ */
+.pc-paket{font-size:12px;color:var(--text-muted);margin-top:-2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.stepper .unit{font-size:12px;font-weight:700;color:var(--text-muted);padding:0 2px}
+.cart-item .subtotal small{display:block;font-size:11.5px;font-weight:600;color:var(--text-muted)}
+.mini.tipe-to{background:var(--warn-weak);color:var(--warn)}
+.mini.tipe-latsol{background:var(--good-weak);color:var(--good)}
+
+/* panel "Atur" proyek + ringkasan di Katalog (v3.8.0) */
+.atur-ringkas{display:flex;flex-direction:column;align-items:flex-start;gap:3px;font-size:12px;min-width:0}
+.atur-ringkas small{font-size:11.5px;color:var(--text-muted);line-height:1.35}
+.atur-ringkas small b{font-weight:700}
+.atur-ringkas .btn{margin-top:4px}
+.atur-chips{display:flex;flex-wrap:wrap;gap:4px}
+.mini.kosong{background:transparent;border:1px dashed var(--border);color:var(--text-faint)}
+.atur-form{display:flex;flex-direction:column;gap:18px}
+.atur-isi{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text-2)}
+.ffield .atur-isi .input{width:110px;flex:0 0 110px}
+.atur-tgl{display:flex;align-items:center;gap:8px}
+.atur-tgl input{flex:1 1 auto;min-width:0;max-width:200px}
+.atur-tgl b{font-size:12.5px;white-space:nowrap}
+.atur-tgl small{font-size:12px}
+.atur-catatan{margin-top:-8px;font-size:12px}
+.atur-titik+.atur-titik::before{content:" · ";color:var(--text-faint);font-weight:400}
