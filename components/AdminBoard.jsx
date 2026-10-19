@@ -43,6 +43,7 @@ import { MODE_DEMO } from "@/lib/demo";
 import { ST as ST_PJ, hitungMundur, laporanBaru, labelH, tanggalPendek } from "@/lib/pengerjaanOpsi";
 import { isiPaket, rincianPaket, ISI_MIN, ISI_MAKS, TIPE_PROYEK } from "@/lib/paket";
 import { barisRekap, bankDanRekening, judulRekap, unduhExcel, salinRekap } from "@/lib/rekapFee";
+import { susunLaporan, unduhLaporan } from "@/lib/laporanPengambilan";
 
 const STATUS_KNOWN = ["Running Soal", "QC Soal", "Revisi Soal", "Approved", "Running Video", STATUS_BATAL];
 const SEMUA = "Semua";
@@ -645,6 +646,9 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
                 master={master.rows || []}
                 aksiEl={aksiEl}
                 namaBulan={namaBulan}
+                aturan={pengerjaan?.aturan || {}}
+                pengerjaan={pengerjaan?.pengerjaan || []}
+                filterAktif={filterAktif}
               />
             )}
             {tab === "katalog" && (
@@ -1605,7 +1609,30 @@ function ProjectModal({ mode, draft, onDraft, onPilih, onSave, onCancel, busy, m
 /* ========================= LOG PENGAMBILAN =============================== */
 const BLANK_A = { tanggal: "", idProject: "", guru: "", idGuru: "", subtes: "", jumlah: "", status: "", picSoal: "", picVideo: "", tarif: "", ketTarif: "" };
 
-function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, master, aksiEl, namaBulan }) {
+function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, master, aksiEl, namaBulan, aturan = {}, pengerjaan = [], filterAktif = false }) {
+  // Laporan Excel per guru (yang diambil, paket, soal, total) dari baris yang sedang tampil.
+  const [buatLaporan, setBuatLaporan] = useState(false);
+  const unduhLaporanExcel = async () => {
+    setBuatLaporan(true);
+    try {
+      const grup = susunLaporan(rows, { projects, aturan, pengerjaan });
+      const th = (() => {
+        const c = {};
+        rows.forEach((r) => /^\d{4}/.test(r.tanggal || "") && (c[r.tanggal.slice(0, 4)] = (c[r.tanggal.slice(0, 4)] || 0) + 1));
+        return Object.keys(c).sort((a, b) => c[b] - c[a])[0] || String(new Date().getFullYear());
+      })();
+      const sebagian = filterAktif ? " (sesuai saringan)" : "";
+      await unduhLaporan(grup, {
+        judul: `LAPORAN PENGAMBILAN FREELANCE ${String(namaBulan || "").toUpperCase()} ${th}${sebagian.toUpperCase()}`,
+        namaTab: `Pengambilan ${namaBulan || ""}`.trim(),
+        namaFile: `Laporan Pengambilan Freelance ${namaBulan || ""} ${th}${sebagian}.xlsx`,
+      });
+    } catch (e) {
+      window.alert("Laporan gagal dibuat: " + e.message);
+    } finally {
+      setBuatLaporan(false);
+    }
+  };
   const [edit, setEdit] = useState(null); // { mode, row }
   const [draft, setDraft] = useState(BLANK_A);
   const [confirm, setConfirm] = useState(null);
@@ -1642,6 +1669,16 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, m
         <span className="muted">
           Fee tampil <b>{rupiah(rows.reduce((a, x) => a + x.fee, 0))}</b>
         </span>
+        <button
+          type="button"
+          className="btn btn-ghost"
+          disabled={buatLaporan || !rows.length}
+          onClick={unduhLaporanExcel}
+          title="Unduh Excel per guru: yang diambil, jumlah paket, soal per paket, total soal, total semua (dari baris yang sedang tampil, tanpa baris Cancel)"
+        >
+          <Icon name="download" />
+          {buatLaporan ? "Menyusun…" : "Laporan Excel"}
+        </button>
         <button
           type="button"
           className="btn btn-blue fab"

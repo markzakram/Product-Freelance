@@ -12,6 +12,20 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.9.0 — Laporan pengambilan per guru (Excel) (19 Oktober 2026)
+
+- Tombol **Laporan Excel** di halaman **Log pengambilan**: unduh laporan per guru dengan
+  kolom **NO · NAMA · YANG DIAMBIL · JUMLAH PAKET · SOAL PER PAKET · TOTAL SOAL · TOTAL
+  SEMUA**. Contoh: Adinda mengambil PBM 1 paket @20 soal dan PPU 2 paket @20 soal → PBM 20,
+  PPU 40, total semua 60. Nama & total semua satu sel untuk semua proyek guru itu; baris
+  JUMLAH di bawah (jumlah guru, pengambilan, paket, dan soal).
+- Sumbernya baris log yang **sedang tampil** (ikut saringan; judul & nama berkas diberi
+  "(sesuai saringan)" bila ada saringan aktif). Baris **Cancel** (soal ditolak) tidak
+  dihitung; beberapa baris untuk proyek yang sama (mis. baris tarif telat) dijumlah jadi satu.
+- Isi paket memakai salinan saat guru mengajukan (bila ada), selain itu aturan proyek saat
+  ini; proyek per soal tampil "-" di kolom paket. Bila paket terakhir lebih kecil, kolom soal
+  per paket menulis mis. "20 (terakhir 5)".
+
 ## 3.8.2 — Link laporan progres guru jelas terlihat di dashboard (19 Oktober 2026)
 
 - **Pengambilan guru**: tiap kartu kini punya daftar **Laporan progres** — Laporan 1, 2, …
