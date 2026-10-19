@@ -29,6 +29,7 @@ import {
   statusTitik,
   titikBerikut,
   laporanBaru,
+  laporanGuru,
   tanggalHari,
 } from "@/lib/pengerjaanOpsi";
 import Icon from "./Icon";
@@ -38,6 +39,7 @@ const SARING = [
   ["menunggu", "Menunggu acc", (p) => p.status === ST.diajukan],
   ["review", "Menunggu review", (p) => p.status === ST.review],
   ["progres", "Progres baru masuk", (p) => laporanBaru(p).length > 0],
+  ["laporan", "Ada laporan progres", (p) => laporanGuru(p).length > 0],
   ["ingat", "Perlu diingatkan", (p) => pengingat(p).length > 0],
   ["revisi", "Revisi", (p) => p.status === ST.revisi],
   ["jalan", "Running", (p) => p.status === ST.running],
@@ -312,6 +314,7 @@ export default function PengerjaanPanel({ data, bulan, namaBulan, projects = [],
             const titik = statusTitik(p, kini);
             const berikut = p.status === ST.running ? titikBerikut(p, kini) : null;
             const baru = laporanBaru(p);
+            const laporan = laporanGuru(p);
             return (
               <article key={p.id} className="card pj-kartu">
                 <div className="pj-atas">
@@ -392,9 +395,18 @@ export default function PengerjaanPanel({ data, bulan, namaBulan, projects = [],
                     ))}
                   </div>
                 ) : null}
-                {titik.length && p.status !== ST.ditolak && p.status !== ST.dibatalkan ? (
+                {(titik.length || laporan.length) && p.status !== ST.ditolak && p.status !== ST.dibatalkan ? (
                   <div className={"ps-progres" + (baru.length ? " baru" : berikut ? "" : " ok")}>
-                    <b>{baru.length ? "Progres baru masuk" : berikut ? `Lapor progres ${berikut.persen}% berikutnya: ${tanggalHari(berikut.tanggal)} (${berikut.h})` : "Lapor progres"}</b>
+                    <b>
+                      {baru.length
+                        ? "Progres baru masuk"
+                        : berikut
+                          ? `Lapor progres ${berikut.persen}% berikutnya: ${tanggalHari(berikut.tanggal)} (${berikut.h})`
+                          : laporan.length
+                            ? "Laporan progres"
+                            : "Lapor progres"}
+                    </b>
+                    {titik.length ? (
                     <ul className="jl-list">
                       {titik.map((t) => (
                         <li key={t.persen} className={t.selesai ? (t.telat ? "telat" : "ok") : t.lewat ? "lewat" : ""}>
@@ -402,17 +414,8 @@ export default function PengerjaanPanel({ data, bulan, namaBulan, projects = [],
                           {t.selesai ? (
                             <span>
                               <Icon name="check" size={13} stroke={2.4} />{" "}
-                              {t.laporan.otomatis ? "terpenuhi lewat pengumpulan hasil akhir" : `${numberID(t.laporan.soal)}/${numberID(p.jumlah)} soal`} · {t.laporan.waktu}
+                              {t.laporan.otomatis ? "terpenuhi lewat pengumpulan hasil akhir" : `terpenuhi · ${numberID(t.laporan.soal)}/${numberID(p.jumlah)} soal`} · {t.laporan.waktu}
                               {t.telat ? " · telat" : ""}
-                              {t.laporan.link && !t.laporan.otomatis ? (
-                                <>
-                                  {" · "}
-                                  <a href={t.laporan.link} target="_blank" rel="noopener noreferrer">
-                                    link
-                                  </a>
-                                </>
-                              ) : null}
-                              {t.laporan.catatan ? <small> · “{t.laporan.catatan}”</small> : null}
                             </span>
                           ) : (
                             <span>
@@ -423,6 +426,35 @@ export default function PengerjaanPanel({ data, bulan, namaBulan, projects = [],
                         </li>
                       ))}
                     </ul>
+                    ) : null}
+                    {laporan.length ? (
+                      <ul className="lp-list" aria-label={`Laporan progres ${p.nama || ""}`}>
+                        {laporan.map((l, i) => {
+                          const isBaru = baru.includes(l);
+                          return (
+                            <li key={l.waktu + i} className={isBaru ? "baru" : ""}>
+                              <div className="lp-info">
+                                <b>
+                                  Laporan {numberID(i + 1)}
+                                  {isBaru ? <span className="pill qc">BARU</span> : null}
+                                </b>
+                                <span>
+                                  {numberID(l.soal)}/{numberID(p.jumlah)} soal ({Math.round((l.soal / (p.jumlah || 1)) * 100)}%) · {l.waktu}
+                                </span>
+                                {l.catatan ? <small>“{l.catatan}”</small> : null}
+                              </div>
+                              {l.link ? (
+                                <a className="btn btn-ghost sm" href={l.link} target="_blank" rel="noopener noreferrer" title={l.link}>
+                                  <Icon name="external" /> Buka progres
+                                </a>
+                              ) : (
+                                <small className="muted">tanpa link</small>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : null}
                     {p.dicek && !baru.length ? <small>dicek {p.dicek}{p.dicekOleh ? ` · ${p.dicekOleh}` : ""}</small> : null}
                   </div>
                 ) : null}

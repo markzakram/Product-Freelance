@@ -12,6 +12,17 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.8.2 — Link laporan progres guru jelas terlihat di dashboard (19 Oktober 2026)
+
+- **Pengambilan guru**: tiap kartu kini punya daftar **Laporan progres** — Laporan 1, 2, …
+  dengan jumlah soal & persentase, waktu lapor, catatan guru, tanda **BARU** (belum dicek), dan
+  tombol **Buka progres** yang membuka link Google Docs yang dilaporkan guru. Sebelumnya link
+  hanya berupa tulisan kecil "link" di sela daftar 30%/50%. Daftar ini juga tampil walau
+  titik lapor proyeknya sudah diubah/dihapus.
+- Saringan baru **Ada laporan progres** untuk melihat semua pengambilan yang sudah mengirim
+  laporan (di samping *Progres baru masuk*).
+- **Proyek saya** (guru): link progres yang sudah dilaporkan bisa dibuka lagi ("buka link").
+
 ## 3.8.1 — Baris baru tidak lagi jatuh di bawah rumus templat (16 Oktober 2026)
 
 - Tab bulan yang dibuat dengan menduplikasi tab lain membawa rumus **Sisa / Fee / Bulan**

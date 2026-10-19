@@ -1360,3 +1360,12 @@ html{scroll-behavior:smooth}
 .atur-tgl small{font-size:12px}
 .atur-catatan{margin-top:-8px;font-size:12px}
 .atur-titik+.atur-titik::before{content:" · ";color:var(--text-faint);font-weight:400}
+
+/* ---- v3.8.2: daftar laporan progres (Pengambilan guru) --------------------------- */
+.lp-list{list-style:none;margin:2px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.lp-list li{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:8px 10px;border-radius:10px;background:var(--surface);border:1px solid var(--border)}
+.lp-list li.baru{border-color:color-mix(in srgb,var(--warn) 50%,transparent)}
+.lp-info{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 180px;font-size:12.5px}
+.lp-info b{display:flex;align-items:center;gap:6px;font-size:13px}
+.lp-info small{color:var(--text-muted);overflow-wrap:anywhere}
+.lp-list .pill{font-size:10.5px;padding:1px 7px}

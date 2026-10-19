@@ -76,6 +76,14 @@ function JadwalLapor({ titik, jumlah, info = false }) {
               <Icon name="check" size={13} stroke={2.4} /> {t.laporan.otomatis ? "Terpenuhi lewat pengumpulan hasil akhir" : `${numberID(t.laporan.soal)}/${numberID(jumlah)} soal dilaporkan`} ·{" "}
               {t.laporan.waktu}
               {t.telat ? " · telat" : ""}
+              {t.laporan.link && !t.laporan.otomatis ? (
+                <>
+                  {" · "}
+                  <a href={t.laporan.link} target="_blank" rel="noopener noreferrer">
+                    buka link
+                  </a>
+                </>
+              ) : null}
             </span>
           ) : (
             <span>
