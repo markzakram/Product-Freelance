@@ -8,7 +8,7 @@
 import { useEffect, useRef } from "react";
 import Icon from "./Icon";
 
-export default function Drawer({ title, sub, onClose, busy, children, foot, wide }) {
+export default function Drawer({ title, sub, onClose, busy, children, foot, wide, side = "right", id }) {
   const ref = useRef(null);
   // Efek di bawah hanya dipasang sekali; tanpa ref ia akan terus membaca nilai
   // `busy` saat panel dibuka, dan Esc tetap menutup panel ketika sedang menyimpan.
@@ -24,12 +24,21 @@ export default function Drawer({ title, sub, onClose, busy, children, foot, wide
     // tidak boleh ikut menutup panel — isian form bisa hilang semua.
     const onKey = (e) => {
       if (e.key === "Escape" && !e.defaultPrevented && !busyRef.current) onClose();
+      if (e.key === "Tab" && ref.current) {
+        const items = [...ref.current.querySelectorAll('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), summary, [tabindex="0"]')].filter((el) => el.getClientRects().length);
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (!first) { e.preventDefault(); ref.current.focus(); }
+        else if (e.shiftKey && (document.activeElement === first || document.activeElement === ref.current)) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (document.activeElement === last || document.activeElement === ref.current)) { e.preventDefault(); first.focus(); }
+      }
     };
     document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
+      document.body.style.overflow = prevOverflow;
       prev?.focus?.();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -37,7 +46,7 @@ export default function Drawer({ title, sub, onClose, busy, children, foot, wide
   return (
     <>
       <div className="drawer-scrim" onClick={() => !busy && onClose()} />
-      <aside ref={ref} tabIndex={-1} className={"drawer" + (wide ? " wide" : "")} role="dialog" aria-modal="true" aria-label={title}>
+      <aside id={id} ref={ref} tabIndex={-1} className={"drawer" + (wide ? " wide" : "") + (side === "left" ? " left" : "")} role="dialog" aria-modal="true" aria-label={title}>
         <div className="drawer-head">
           <div>
             <h2>{title}</h2>

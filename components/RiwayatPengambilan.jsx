@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { riwayatPengambilan, linkSah } from "@/lib/pengerjaanOpsi";
+import { riwayatPengambilan, linkSah, laporanGuru, siklusRevisi, labelSiklusRevisi } from "@/lib/pengerjaanOpsi";
 import { numberID } from "@/lib/format";
 import Icon from "./Icon";
 
@@ -9,12 +9,12 @@ export function judulAktivitas(e) {
   const laporan = `Laporan ${e.noLaporan || "progres"}`;
   switch (e.jenis) {
     case "laporan": return laporan;
-    case "revisi_laporan": return `Revisi ${e.versi - 1} · ${laporan}`;
+    case "revisi_laporan": return `Revisi ${e.versi - 1} dikirim · ${laporan}`;
     case "dicek": return `${laporan} diperiksa`;
-    case "minta_revisi": return `Revisi diminta · ${laporan}`;
+    case "minta_revisi": return `Revisi ${e.versi} diminta · ${laporan}`;
     case "pengumpulan": return "Hasil akhir dikumpulkan";
-    case "revisi_akhir": return `Revisi hasil akhir · versi ${e.versi}`;
-    case "review": return e.lama ? "Review terakhir yang tersimpan" : e.meta?.revisi ? `Review ${e.meta.ronde || ""} · perlu revisi` : `Review ${e.meta?.ronde || ""} · selesai`;
+    case "revisi_akhir": return `Revisi ${e.versi - 1} dikirim · Hasil akhir`;
+    case "review": return e.lama ? "Review terakhir yang tersimpan" : e.meta?.revisi ? `Revisi ${e.versi || e.meta.ronde} diminta · Hasil akhir` : `Review ${e.meta?.ronde || ""} · selesai`;
     case "acc": return "Pengajuan disetujui";
     case "tolak": return "Pengajuan ditolak";
     case "batal": return "Pengajuan dibatalkan";
@@ -26,11 +26,13 @@ export default function RiwayatPengambilan({ p, awal = "semua" }) {
   const [tahap, setTahap] = useState(String(awal));
   const semua = riwayatPengambilan(p);
   const events = semua.filter((e) => tahap === "semua" || e.persen === Number(tahap));
+  const siklus = [...laporanGuru(p).map((l) => ({ key: l.laporanId, persen: l.persen, nama: `Laporan ${l.noLaporan}`, ...siklusRevisi(p, l.persen, l.laporanId) })), { key: "akhir", persen: 100, nama: "Hasil akhir", ...siklusRevisi(p, 100) }].filter((s) => (s.dikirim || s.diminta) && (tahap === "semua" || s.persen === Number(tahap)));
   return (
     <div className="pg-riwayat">
       <div className="pg-stage-tabs" role="group" aria-label="Tahap dalam riwayat">
         {["semua", 30, 50, 100].map((n) => <button key={n} type="button" className={"btn sm " + (tahap === String(n) ? "btn-blue" : "btn-ghost")} aria-pressed={tahap === String(n)} onClick={() => setTahap(String(n))}>{n === "semua" ? "Semua riwayat" : `${n}%`}</button>)}
       </div>
+      {siklus.length ? <div className="pg-revision-summary" aria-label="Ringkasan revisi">{siklus.map((s) => <div key={s.key}><div className="pg-revision-summary-title"><Icon name="restore" size={15} /><b>{s.nama} · {s.persen}%</b></div><strong>{labelSiklusRevisi(s)}</strong><small>{s.dikirim ? `Perbaikan terakhir yang diterima: revisi ${s.dikirim}` : "Belum ada kiriman perbaikan"}</small>{s.diminta ? <small>Menunggu guru mengirim revisi {s.diminta}.</small> : <small>Hasil pemeriksaan tercatat di riwayat berikut.</small>}</div>)}</div> : null}
       {semua.some((e) => e.lama) ? <p className="pg-legacy">Riwayat lama memuat data yang masih tersimpan. Versi sebelum pembaruan mungkin tidak lengkap.</p> : null}
       {!events.length ? <p className="muted">Belum ada aktivitas{tahap === "semua" ? "" : ` pada tahap ${tahap}%`}.</p> : (
         <ol className="pg-timeline">

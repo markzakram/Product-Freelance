@@ -50,6 +50,20 @@ test("100% submission remains distinct from completion and rejections", async ()
   assert.equal(m.tahapAktif({ ...base, status: "Ditolak" }), null);
 });
 
+test("revision summaries distinguish the last delivered fix from the next requested fix", async () => {
+  const m = await load("lib/pengerjaanOpsi.js");
+  const p = { ...base, riwayat: [report("L1", 19, 30, 6), report("L1", 20, 30, 6, 2, "revisi_laporan"), { id: "request-2", jenis: "minta_revisi", persen: 30, laporanId: "L1", versi: 2, waktu: "22/10/2026 09:00", t: time(22) }, report("L2", 22, 50, 10)] };
+  const siklus = m.siklusRevisi(p, 30, "L1");
+  assert.equal(siklus.dikirim, 1);
+  assert.equal(siklus.diminta, 2);
+  assert.equal(m.labelSiklusRevisi(siklus), "Revisi 2 diminta");
+  assert.equal(m.tahapPengambilan(p, 30).waktu, "22/10/2026 09:00", "matrix date follows the request, not the older delivery");
+  assert.equal(m.siklusRevisi(p, 50, "L2").diminta, 0, "requests do not spill into another report");
+  p.riwayat.push(report("L1", 23, 30, 6, 3, "revisi_laporan"));
+  assert.equal(m.labelSiklusRevisi(m.siklusRevisi(p, 30, "L1")), "Revisi 2 dikirim");
+  assert.equal(m.tahapAktif(p), 50);
+});
+
 async function system(legacy = {}) {
   const store = { at: time(19), history: [], row: Array(44).fill(""), transactions: [], fail: false };
   const full = (name) => path.join(root, "lib", name + ".js");
@@ -154,6 +168,28 @@ test("final resubmissions and each review preserve earlier versions", async () =
   assert.equal(p.riwayat.filter((e) => e.jenis === "review").length, 2);
   assert.equal(p.riwayat.find((e) => e.jenis === "pengumpulan").link, submission.link);
   assert.equal(p.riwayat.find((e) => e.jenis === "revisi_akhir").versi, 2);
+});
+
+test("a second final revision request shows revision 2 while revision 1 remains delivered", async () => {
+  const { m, guru, store, read } = await system();
+  const model = await load("lib/pengerjaanOpsi.js");
+  const body = { link: "https://docs.google.com/document/d/final-v1" };
+  await m.kumpulkan(guru, "PJ-1", body);
+  await m.review("PJ-1", { setuju: 16, revisi: 4, tolak: 0, catatan: "Revisi pertama" }, "Akademik");
+  store.at = time(20);
+  await m.kumpulkan(guru, "PJ-1", { link: "https://docs.google.com/document/d/final-v2" });
+  store.at = time(22);
+  await m.review("PJ-1", { setuju: 0, revisi: 4, tolak: 0, catatan: "Revisi kedua" }, "Akademik");
+  let p = await read();
+  const siklus = model.siklusRevisi(p, 100);
+  assert.equal(siklus.dikirim, 1);
+  assert.equal(siklus.diminta, 2);
+  assert.equal(model.tahapPengambilan(p, 100).waktu, "22/10/2026 09:00");
+  store.at = time(23, 8);
+  await m.kumpulkan(guru, "PJ-1", { link: "https://docs.google.com/document/d/final-v3" });
+  p = await read();
+  assert.equal(model.labelSiklusRevisi(model.siklusRevisi(p, 100)), "Revisi 2 dikirim");
+  assert.equal(p.riwayat.filter((e) => ["pengumpulan", "revisi_akhir"].includes(e.jenis)).length, 3);
 });
 
 test("progress authorization, integer counts, and required revision notes are enforced", async () => {

@@ -26,6 +26,7 @@ import {
   titikBerikut,
   tanggalHari,
   revisiProgres,
+  siklusRevisi,
 } from "@/lib/pengerjaanOpsi";
 import RiwayatPengambilan from "./RiwayatPengambilan";
 import Brand from "./Brand";
@@ -59,7 +60,7 @@ function FormKumpul({ p, onKumpul, sibuk }) {
       </label>
       {galat ? <small className="neg">{galat}</small> : null}
       <button type="submit" className="btn btn-blue" disabled={sibuk}>
-        <Icon name="send" /> {p.status === ST.revisi ? "Kirim revisi" : "Kumpulkan untuk direview"}
+        <Icon name="send" /> {p.status === ST.revisi ? `Kirim revisi ${siklusRevisi(p, 100).diminta}` : "Kumpulkan untuk direview"}
       </button>
     </form>
   );
@@ -132,7 +133,7 @@ function FormProgres({ p, t, onLapor, sibuk, laporan = null }) {
       </label>
       {galat ? <small className="neg">{galat}</small> : null}
       <button type="submit" className="btn btn-blue" disabled={sibuk}>
-        <Icon name="check" stroke={2.4} /> {laporan ? `Kirim revisi laporan ${laporan.noLaporan}` : `Lapor progres ${t.persen}%`}
+        <Icon name="check" stroke={2.4} /> {laporan ? `Kirim revisi ${laporan.versi} · Laporan ${laporan.noLaporan}` : `Lapor progres ${t.persen}%`}
       </button>
     </form>
   );
@@ -215,7 +216,7 @@ function Kartu({ p, onBatal, onKumpul, onLapor, sibuk }) {
       ) : null}
       {revisi.map((l) => {
         const permintaan = [...(p.riwayat || [])].reverse().find((e) => e.jenis === "minta_revisi" && e.laporanId === l.laporanId && e.versi === l.versi);
-        return <div key={`${l.laporanId}:${l.versi}`} className="ps-revisi"><b>Revisi laporan {l.noLaporan} · {l.persen}%</b><p>{permintaan?.catatan}</p><FormProgres p={p} t={{ persen: l.persen, min: Math.ceil(p.jumlah * l.persen / 100) }} laporan={l} onLapor={onLapor} sibuk={sibuk} /></div>;
+        return <div key={`${l.laporanId}:${l.versi}`} className="ps-revisi"><b>Revisi {l.versi} diminta · Laporan {l.noLaporan} · {l.persen}%</b><p>{permintaan?.catatan}</p><FormProgres p={p} t={{ persen: l.persen, min: Math.ceil(p.jumlah * l.persen / 100) }} laporan={l} onLapor={onLapor} sibuk={sibuk} /></div>;
       })}
       <details className="ps-kumpul-lain"><summary>Riwayat laporan & revisi</summary><RiwayatPengambilan p={p} /></details>
       {p.ronde ? (

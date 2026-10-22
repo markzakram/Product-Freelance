@@ -1,7 +1,7 @@
 "use client";
 
 import { numberID } from "@/lib/format";
-import { ST, kelasStatus, labelStatus, tahapPengambilan, tanggalPendek, revisiProgres, laporanBaru } from "@/lib/pengerjaanOpsi";
+import { ST, kelasStatus, labelStatus, tahapPengambilan, tanggalPendek, revisiProgres, laporanBaru, siklusRevisi, labelSiklusRevisi } from "@/lib/pengerjaanOpsi";
 import Icon from "./Icon";
 
 function labelTanggal(t) {
@@ -30,11 +30,17 @@ export default function MatriksPengambilan({ daftar, view, selected, onPilih }) 
             <thead><tr><th scope="col">{view === "guru" ? "Subtes" : "Guru"}</th>{[30, 50, 100].map((n) => <th scope="col" key={n}>{n}%</th>)}<th scope="col">Status & tindak lanjut</th></tr></thead>
             <tbody>{grup.list.map((p) => {
               const baru = laporanBaru(p).length;
-              const revisi = p.status === ST.running && revisiProgres(p).length;
+              const perluRevisi = p.status === ST.running ? revisiProgres(p) : [];
+              const revisi = perluRevisi.length > 0;
+              const siklus = revisi ? siklusRevisi(p, perluRevisi[0].persen, perluRevisi[0].laporanId) : siklusRevisi(p, 100);
               return <tr key={p.id} className={p.id === selected ? "selected" : ""}>
                 <td><div className="pg-row-name"><b>{view === "guru" ? p.subtes || "—" : p.nama || p.email || "—"}</b>{p.uji ? <span className="pill batal plain">UJI</span> : null}<small>{p.idProyek} · {teksSoal(p)}{p.tipe ? ` · ${p.tipe}` : ""}</small><small>{p.output || "—"}</small></div></td>
-                {[30, 50, 100].map((n) => { const t = tahapPengambilan(p, n); return <td key={n}><div className="pg-stage-cell"><span className="pg-mobile-stage">{n}%</span><button type="button" className={"pg-stage-button " + (t.kelas || "")} onClick={() => onPilih(p.id, t.via || n)} aria-label={`Riwayat ${n}% ${p.nama || p.email}, ${p.subtes}`}><Icon name={t.label === "Revisi" ? "restore" : ["Diperiksa", "Selesai"].includes(t.label) ? "check" : t.label === "Baru" ? "file" : "calendar"} size={14} />{t.label}</button><small>{labelTanggal(t)}</small></div></td>; })}
-                <td><div className="pg-status-cell"><span className={"pill " + (revisi ? "rev" : baru && p.status === ST.running ? "qc" : kelasStatus(p.status))}>{revisi ? "Revisi progres" : baru && p.status === ST.running ? "Laporan baru" : labelStatus(p.status).replace("Running · sedang dikerjakan", "Dikerjakan")}</span><small>{p.status === ST.revisi ? `Batas revisi ${p.batasRevisi || "—"}` : `Deadline ${tanggalPendek(p.deadline)}`}</small><button type="button" className="btn btn-ghost sm" aria-expanded={p.id === selected} aria-controls="pg-selected" onClick={() => onPilih(p.id, "semua")}>Riwayat <Icon name="chevronRight" size={14} /></button></div></td>
+                {[30, 50, 100].map((n) => {
+                  const t = tahapPengambilan(p, n);
+                  const label = t.label === "Revisi" && t.siklus?.diminta ? `Revisi ${t.siklus.diminta}` : t.label;
+                  return <td key={n}><div className="pg-stage-cell"><span className="pg-mobile-stage">{n}%</span><button type="button" className={"pg-stage-button " + (t.kelas || "")} onClick={() => onPilih(p.id, t.via || n)} aria-label={`Riwayat ${n}% ${p.nama || p.email}, ${p.subtes}`}><Icon name={t.label === "Revisi" ? "restore" : ["Diperiksa", "Selesai"].includes(t.label) ? "check" : t.label === "Baru" ? "file" : "calendar"} size={14} />{label}</button><small>{labelTanggal(t)}</small>{t.siklus?.dikirim || t.siklus?.diminta ? <small className="pg-cycle-marker">{labelSiklusRevisi(t.siklus)}</small> : null}</div></td>;
+                })}
+                <td><div className="pg-status-cell"><span className={"pill " + (revisi ? "rev" : baru && p.status === ST.running ? "qc" : kelasStatus(p.status))}>{revisi || p.status === ST.revisi ? labelSiklusRevisi(siklus) : baru && p.status === ST.running ? "Laporan baru" : labelStatus(p.status).replace("Running · sedang dikerjakan", "Dikerjakan")}</span><small>{p.status === ST.revisi ? `Batas revisi ${p.batasRevisi || "—"}` : `Deadline ${tanggalPendek(p.deadline)}`}</small><button type="button" className="btn btn-ghost sm" aria-expanded={p.id === selected} aria-controls="pg-selected" onClick={() => onPilih(p.id, "semua")}>Riwayat <Icon name="chevronLeft" size={14} /></button></div></td>
               </tr>;
             })}</tbody>
           </table>

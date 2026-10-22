@@ -12,6 +12,19 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.10.1 — Panel riwayat kiri, filter, dan penanda revisi berulang (22 Oktober 2026)
+
+- **Riwayat** dan kolom tahap membuka panel detail dari sebelah kiri setelah
+  diklik. Detail tidak terbuka otomatis; panel bisa ditutup dengan tombol,
+  klik di luar, atau Escape, dengan fokus keyboard kembali ke tombol asal.
+- Pencarian dan pilihan status menjadi toolbar ringkas dengan menu status,
+  jumlah hasil per pilihan, slicer tahap dengan hitungan, serta reset filter.
+- Matriks, riwayat, dan form guru membedakan **Revisi 1 dikirim** dari
+  **Revisi 2 diminta**, dan seterusnya. Ringkasan memperlihatkan perbaikan
+  terakhir yang diterima serta nomor revisi yang masih ditunggu, per laporan.
+- Tanggal status di matriks mengikuti pemeriksaan atau permintaan revisi terbaru;
+  tanggal kiriman awal dan setiap perbaikan tetap tersedia dalam riwayat.
+
 ## 3.10.0 — Matriks Pengambilan Guru & riwayat laporan (22 Oktober 2026)
 
 - Pengambilan Guru memakai tampilan **per subtes** atau **per guru**, pencarian,
