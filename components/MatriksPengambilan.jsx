@@ -3,6 +3,7 @@
 import { numberID } from "@/lib/format";
 import { ST, kelasStatus, labelStatus, tahapPengambilan, tanggalPendek, revisiProgres, laporanBaru, siklusRevisi, labelSiklusRevisi } from "@/lib/pengerjaanOpsi";
 import Icon from "./Icon";
+import { kunciSubtesPengambilan, kunciGuruPengambilan } from "@/lib/pengambilanFilter";
 
 function labelTanggal(t) {
   if (t.waktu) return t.waktu.split(" ")[0];
@@ -12,7 +13,7 @@ function labelTanggal(t) {
 export function kelompokPengambilan(daftar, view) {
   const grup = new Map();
   for (const p of daftar) {
-    const key = view === "guru" ? p.idGuru ? `id:${p.idGuru}` : p.email ? `email:${p.email}` : `pengambilan:${p.id}` : (p.subtes || "Tanpa subtes").trim().toLocaleLowerCase("id");
+    const key = view === "guru" ? kunciGuruPengambilan(p) : kunciSubtesPengambilan(p);
     if (!grup.has(key)) grup.set(key, { key, nama: view === "guru" ? p.nama || p.email || "Guru tanpa nama" : p.subtes || "Tanpa subtes", list: [] });
     grup.get(key).list.push(p);
   }

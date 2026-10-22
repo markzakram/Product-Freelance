@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { numberID } from "@/lib/format";
 import { tautanWa } from "@/lib/tautan";
@@ -12,6 +12,7 @@ import MatriksPengambilan from "./MatriksPengambilan";
 import RiwayatPengambilan from "./RiwayatPengambilan";
 import Drawer from "./Drawer";
 import PengambilanFilters from "./PengambilanFilters";
+import { cocokTeksPengambilan, kunciSubtesPengambilan, kunciGuruPengambilan, opsiFilterPengambilan, hitungOpsiPengambilan } from "@/lib/pengambilanFilter";
 
 const SARING = [
   ["semua", "Semua status", () => true],
@@ -31,6 +32,8 @@ export default function PengambilanWorkspace({ data, bulan, namaBulan, projects 
   const [saring, setSaring] = useState("semua");
   const [tahap, setTahap] = useState("semua");
   const [cari, setCari] = useState("");
+  const [saringSubtes, setSaringSubtes] = useState("");
+  const [saringGuru, setSaringGuru] = useState("");
   const [pilihan, setPilihan] = useState(null);
   const [tahapRiwayat, setTahapRiwayat] = useState("semua");
   const [sibuk, setSibuk] = useState("");
@@ -43,11 +46,21 @@ export default function PengambilanWorkspace({ data, bulan, namaBulan, projects 
   const daftar = useMemo(() => data?.pengerjaan || [], [data]);
   const proyek = useMemo(() => new Map(projects.map((p) => [String(p.id).toUpperCase(), p])), [projects]);
   const guruById = useMemo(() => new Map(guruDb.filter((g) => g.idGuru).map((g) => [String(g.idGuru), g])), [guruDb]);
+  const semuaSubtes = useMemo(() => opsiFilterPengambilan(daftar, "subtes"), [daftar]);
+  const semuaGuru = useMemo(() => opsiFilterPengambilan(daftar, "guru"), [daftar]);
+  useEffect(() => { setSaringSubtes(""); setSaringGuru(""); }, [bulan]);
   const bisa = Boolean(data?.canWrite);
   const maks = data?.maksAktif || 3;
-  const teksCari = cari.trim().toLocaleLowerCase("id");
   const cocok = SARING.find(([k]) => k === saring)[2];
-  const hasilCari = daftar.filter((p) => !teksCari || `${p.nama} ${p.email} ${p.idGuru} ${p.subtes} ${p.idProyek} ${p.output}`.toLocaleLowerCase("id").includes(teksCari));
+  const cocokSubtes = (p) => !saringSubtes || kunciSubtesPengambilan(p) === saringSubtes;
+  const cocokGuru = (p) => !saringGuru || kunciGuruPengambilan(p) === saringGuru;
+  const cocokTahap = (p) => tahap === "semua" || tahapAktif(p) === Number(tahap);
+  const pencarian = daftar.filter((p) => cocokTeksPengambilan(cari, p.nama, p.email, p.idGuru, p.subtes, p.idProyek, p.output));
+  const hasilCari = pencarian.filter((p) => cocokSubtes(p) && cocokGuru(p));
+  const kandidatSubtes = pencarian.filter((p) => cocokGuru(p) && cocok(p) && cocokTahap(p));
+  const kandidatGuru = pencarian.filter((p) => cocokSubtes(p) && cocok(p) && cocokTahap(p));
+  const opsiSubtes = [{ value: "", label: "Semua subtes", count: kandidatSubtes.length }, ...hitungOpsiPengambilan(semuaSubtes, kandidatSubtes, "subtes")];
+  const opsiGuru = [{ value: "", label: "Semua guru", count: kandidatGuru.length }, ...hitungOpsiPengambilan(semuaGuru, kandidatGuru, "guru")];
   const list = hasilCari.filter((p) => cocok(p) && (tahap === "semua" || tahapAktif(p) === Number(tahap))).sort((a, b) => b.row - a.row);
   const statusCounts = Object.fromEntries(SARING.map(([k, , fn]) => [k, hasilCari.filter((p) => fn(p) && (tahap === "semua" || tahapAktif(p) === Number(tahap))).length]));
   const tahapCounts = Object.fromEntries(["semua", 30, 50, 100].map((n) => [n, hasilCari.filter((p) => cocok(p) && (n === "semua" || tahapAktif(p) === n)).length]));
@@ -84,7 +97,7 @@ export default function PengambilanWorkspace({ data, bulan, namaBulan, projects 
       <div className="seg-tab" role="group" aria-label="Sudut pandang utama">{[["subtes", "layers", "Per subtes"], ["guru", "users", "Per guru"]].map(([k, icon, label]) => <button key={k} type="button" className={view === k ? "on" : ""} aria-pressed={view === k} onClick={() => setView(k)}><Icon name={icon} />{label}</button>)}</div>
       <span className="muted" aria-live="polite">{new Set(list.map((p) => p.subtes)).size} subtes · {new Set(list.map((p) => p.idGuru || p.email || p.id)).size} guru · {numberID(list.length)} pengambilan</span>
     </div>
-    <PengambilanFilters cari={cari} setCari={setCari} status={saring} setStatus={setSaring} options={SARING} statusCounts={statusCounts} tahap={tahap} setTahap={setTahap} tahapCounts={tahapCounts} />
+    <PengambilanFilters cari={cari} setCari={setCari} status={saring} setStatus={setSaring} options={SARING} statusCounts={statusCounts} tahap={tahap} setTahap={setTahap} tahapCounts={tahapCounts} subtes={saringSubtes} setSubtes={setSaringSubtes} opsiSubtes={opsiSubtes} guru={saringGuru} setGuru={setSaringGuru} opsiGuru={opsiGuru} />
     {!list.length ? <div className="card empty">{daftar.length ? "Tidak ada pengambilan yang cocok dengan filter." : `Belum ada pengambilan untuk ${namaBulan || "bulan ini"}.`}</div> : <MatriksPengambilan daftar={list} view={view} selected={selected?.id} onPilih={pilih} />}
     {selected ? (() => {
       const p = selected;

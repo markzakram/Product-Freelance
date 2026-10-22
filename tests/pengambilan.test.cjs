@@ -25,6 +25,32 @@ const time = (day, hour = 9) => Date.UTC(2026, 9, day, hour - 7);
 const base = { id: "PJ-1", bulan: "Oktober_", idProyek: "PU-01", idGuru: "1", nama: "Ayu", email: "ayu@test.invalid", jumlah: 20, status: "Running", laporan: [], riwayat: [], tAcc: time(18), titik: [{ persen: 30, tanggal: "2026-10-19" }, { persen: 50, tanggal: "2026-10-22" }] };
 const report = (id, day, persen, soal, versi = 1, jenis = "laporan") => ({ id: `${id}-v${versi}`, laporanId: id, noLaporan: persen === 30 ? 1 : 2, versi, jenis, persen, soal, waktu: `${day}/10/2026 09:00`, t: time(day), link: "https://docs.google.com/document/d/test" });
 
+test("dropdown options preserve teacher identities and merge equivalent subtest names", async () => {
+  const m = await load("lib/pengambilanFilter.js");
+  const rows = [
+    { id: "p1", nama: "Ayu", idGuru: "1", subtes: "Penalaran Umum", idProyek: "PU-01" },
+    { id: "p2", nama: "Ayu", idGuru: "1", subtes: "Literasi", idProyek: "LI-02" },
+    { id: "p3", nama: "Ayu", idGuru: "2", subtes: " penalaran umum ", idProyek: "PU-02" },
+    { id: "p4", nama: "Bima", email: "BIMA@TEST.INVALID", subtes: "Literasi" },
+    { id: "p5", nama: "Bima", email: "bima@test.invalid", subtes: "Literasi" },
+  ];
+  const guru = m.opsiFilterPengambilan(rows, "guru");
+  assert.equal(guru.length, 3, "same name with different IDs stays selectable separately");
+  assert.equal(m.opsiFilterPengambilan(rows, "subtes").length, 2);
+  const counts = m.hitungOpsiPengambilan(guru, rows.filter((p) => m.kunciSubtesPengambilan(p) === "literasi"), "guru");
+  assert.equal(counts.find((o) => o.value === "id:1").count, 1);
+  assert.equal(counts.find((o) => o.value === "id:2").count, 0, "an excluded teacher remains available with a zero count");
+  assert.equal(counts.find((o) => o.value === "email:bima@test.invalid").count, 2);
+});
+
+test("text searches narrow dropdowns by multiple words, codes, and email", async () => {
+  const m = await load("lib/pengambilanFilter.js");
+  assert.equal(m.cocokTeksPengambilan(" UMUM pu-02 ", "Penalaran Umum", "PU-02"), true);
+  assert.equal(m.cocokTeksPengambilan("BIMA @test", "Bima Pratama", "bima@test.invalid"), true);
+  assert.equal(m.cocokTeksPengambilan("Bima literasi", "Bima Pratama", "Penalaran Umum"), false);
+  assert.equal(m.cocokTeksPengambilan("", undefined, null), true);
+});
+
 test("milestones retain separate report states; revision counts are cumulative", async () => {
   const m = await load("lib/pengerjaanOpsi.js");
   const l1 = report("L1", 19, 30, 6);

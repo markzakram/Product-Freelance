@@ -12,6 +12,18 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.11.0 — Dropdown Subtes dan Guru dengan pencarian teks (22 Oktober 2026)
+
+- Filter **Subtes**, **Guru**, dan **Status** memiliki pencarian teks di dalam
+  dropdown. Nama, ID guru, email, atau ID proyek dapat mempersempit pilihan;
+  jumlah hasil tampil pada tiap opsi dan kondisi kosong ditampilkan dengan jelas.
+- Filter Subtes dan Guru bisa digabung dengan pencarian umum, status, serta tahap
+  30% / 50% / 100%, pada tampilan per subtes maupun per guru. Reset menghapus semua
+  pilihan filter. Guru dengan nama sama tetap dibedakan melalui ID/email.
+- Panel Riwayat tetap di sebelah kanan. Penomoran revisi progres dan hasil akhir
+  diperiksa kembali, termasuk perbedaan kiriman revisi terakhir dan revisi berikutnya
+  yang sedang ditunggu.
+
 ## 3.10.2 — Panel riwayat di sebelah kanan (22 Oktober 2026)
 
 - Tombol **Riwayat** dan kolom tahap membuka panel detail dari **sebelah kanan**.
