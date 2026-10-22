@@ -14,7 +14,7 @@ export async function POST(req) {
   if (!canWrite()) return NextResponse.json({ error: "Laporan sedang tidak bisa disimpan. Hubungi admin." }, { status: 503 });
   try {
     const body = await req.json();
-    return NextResponse.json({ ok: true, ...(await laporProgres({ idGuru: sesi.akun.idGuru, email: sesi.akun.email }, body.id, { soal: body.soal, link: body.link, catatan: body.catatan })) });
+    return NextResponse.json({ ok: true, ...(await laporProgres({ idGuru: sesi.akun.idGuru, email: sesi.akun.email }, body.id, { soal: body.soal, link: body.link, catatan: body.catatan, laporanId: body.laporanId })) });
   } catch (e) {
     if (!e.status) console.error("progres:", e);
     return NextResponse.json({ error: e.message || "Gagal melapor progres." }, { status: e.status || 500 });

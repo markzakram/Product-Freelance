@@ -25,7 +25,9 @@ import {
   statusTitik,
   titikBerikut,
   tanggalHari,
+  revisiProgres,
 } from "@/lib/pengerjaanOpsi";
+import RiwayatPengambilan from "./RiwayatPengambilan";
 import Brand from "./Brand";
 import Icon from "./Icon";
 import ThemeToggle from "./ThemeToggle";
@@ -97,10 +99,10 @@ function JadwalLapor({ titik, jumlah, info = false }) {
   );
 }
 
-function FormProgres({ p, t, onLapor, sibuk }) {
+function FormProgres({ p, t, onLapor, sibuk, laporan = null }) {
   const min = t.min;
-  const [soal, setSoal] = useState(String(min || ""));
-  const [link, setLink] = useState(p.link || "");
+  const [soal, setSoal] = useState(String(laporan?.soal || min || ""));
+  const [link, setLink] = useState(laporan?.link || p.link || "");
   const [catatan, setCatatan] = useState("");
   const [galat, setGalat] = useState("");
   const kirim = (e) => {
@@ -110,7 +112,7 @@ function FormProgres({ p, t, onLapor, sibuk }) {
     if (n > p.jumlah) return setGalat(`Maksimal ${p.jumlah} soal.`);
     if (!linkSah(link)) return setGalat("Pakai link Google Docs / Drive.");
     setGalat("");
-    onLapor(p, n, link.trim(), catatan.trim());
+    onLapor(p, n, link.trim(), catatan.trim(), laporan?.laporanId || "");
   };
   return (
     <form className="ps-kumpul" onSubmit={kirim}>
@@ -130,7 +132,7 @@ function FormProgres({ p, t, onLapor, sibuk }) {
       </label>
       {galat ? <small className="neg">{galat}</small> : null}
       <button type="submit" className="btn btn-blue" disabled={sibuk}>
-        <Icon name="check" stroke={2.4} /> Lapor progres {t.persen}%
+        <Icon name="check" stroke={2.4} /> {laporan ? `Kirim revisi laporan ${laporan.noLaporan}` : `Lapor progres ${t.persen}%`}
       </button>
     </form>
   );
@@ -144,6 +146,7 @@ function Kartu({ p, onBatal, onKumpul, onLapor, sibuk }) {
   const ingat = pengingat(p);
   const titik = statusTitik(p);
   const berikut = p.status === ST.running ? titikBerikut(p) : null;
+  const revisi = p.status === ST.running ? revisiProgres(p) : [];
   return (
     <article className={"ps-kartu" + (aktif ? "" : " selesai")}>
       <div className="ps-atas">
@@ -210,6 +213,11 @@ function Kartu({ p, onBatal, onKumpul, onLapor, sibuk }) {
           ) : null}
         </div>
       ) : null}
+      {revisi.map((l) => {
+        const permintaan = [...(p.riwayat || [])].reverse().find((e) => e.jenis === "minta_revisi" && e.laporanId === l.laporanId && e.versi === l.versi);
+        return <div key={`${l.laporanId}:${l.versi}`} className="ps-revisi"><b>Revisi laporan {l.noLaporan} · {l.persen}%</b><p>{permintaan?.catatan}</p><FormProgres p={p} t={{ persen: l.persen, min: Math.ceil(p.jumlah * l.persen / 100) }} laporan={l} onLapor={onLapor} sibuk={sibuk} /></div>;
+      })}
+      <details className="ps-kumpul-lain"><summary>Riwayat laporan & revisi</summary><RiwayatPengambilan p={p} /></details>
       {p.ronde ? (
         <div className="ps-hasil" aria-label="Hasil review">
           <span className="appr">
@@ -307,11 +315,11 @@ export default function ProyekSaya({ daftar = [], gagalMuat = false, maks = 3, g
     }
   };
 
-  const lapor = async (p, soal, link, catatan) => {
+  const lapor = async (p, soal, link, catatan, laporanId = "") => {
     setSibuk(true);
     setGalat("");
     try {
-      const res = await fetch("/api/guru/progres", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: p.id, soal, link, catatan }) });
+      const res = await fetch("/api/guru/progres", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: p.id, soal, link, catatan, laporanId }) });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(j.error || `Gagal (HTTP ${res.status})`);
       router.refresh();

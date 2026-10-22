@@ -12,6 +12,20 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.10.0 — Matriks Pengambilan Guru & riwayat laporan (22 Oktober 2026)
+
+- Pengambilan Guru memakai tampilan **per subtes** atau **per guru**, pencarian,
+  pilihan status, dan filter tahap aktif **30% / 50% / 100%**.
+- Setiap pengambilan menampilkan tahapan, tanggal, status pemeriksaan, dan riwayat
+  laporan, revisi, pengumpulan akhir, serta hasil review dengan tautan per versi.
+- Pemeriksaan dan permintaan revisi progres berlaku per laporan dan versi. Guru
+  mengirim perbaikannya melalui Proyek saya; laporan berikutnya tetap terpisah.
+- Riwayat baru ditambahkan ke tab **Riwayat pengerjaan**, bersama perubahan status
+  dalam satu batch. Data lama yang masih ada disertakan saat pembaruan pertama;
+  versi lama yang sudah tertimpa tidak dapat dipulihkan.
+- Pengumpulan 100% tetap dibedakan dari hasil review selesai. Alur acc, review
+  per soal, kuota, pengingat, dan potongan biaya tetap tersedia di detail.
+
 ## 3.9.0 — Laporan pengambilan per guru (Excel) (19 Oktober 2026)
 
 - Tombol **Laporan Excel** di halaman **Log pengambilan**: unduh laporan per guru dengan

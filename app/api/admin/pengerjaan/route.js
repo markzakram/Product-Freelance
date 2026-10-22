@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { izinAdmin } from "@/lib/authServer";
 import { canWrite } from "@/lib/gauth";
 import { getBoard } from "@/lib/juli";
-import { bacaPengerjaan, putuskan, maksAktif, aturMaksAktif, review, terapkanDenda, lengkapiTitik, tandaiProgresDicek } from "@/lib/pengerjaan";
+import { bacaPengerjaan, putuskan, maksAktif, aturMaksAktif, review, terapkanDenda, lengkapiTitik, tandaiProgresDicek, periksaProgres } from "@/lib/pengerjaan";
 import { aturanBulan, aturDeadline, aturLapor, aturPaket, aturTipe, aturSemua } from "@/lib/aturanProyek";
 import { AKTIF } from "@/lib/pengerjaanOpsi";
 import { bacaAkun } from "@/lib/akun";
@@ -62,7 +62,9 @@ export async function POST(req) {
       case "paket":
         return NextResponse.json({ ok: true, ...(await aturPaket(body.bulan, body.idProyek, body.isi, sesi.nama)) });
       case "progresDicek":
-        return NextResponse.json({ ok: true, ...(await tandaiProgresDicek(body.id, sesi.nama)) });
+        return NextResponse.json({ ok: true, ...(await (body.laporanId ? periksaProgres(body.id, { laporanId: body.laporanId, versi: body.versi }, sesi.nama) : tandaiProgresDicek(body.id, sesi.nama))) });
+      case "revisiProgres":
+        return NextResponse.json({ ok: true, ...(await periksaProgres(body.id, { laporanId: body.laporanId, versi: body.versi, revisi: true, catatan: body.catatan }, sesi.nama)) });
       case "maksAktif":
         return NextResponse.json({ ok: true, maksAktif: await aturMaksAktif(body.nilai) });
       default:
