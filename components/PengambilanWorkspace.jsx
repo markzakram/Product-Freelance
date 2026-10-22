@@ -93,7 +93,7 @@ export default function PengambilanWorkspace({ data, bulan, namaBulan, projects 
       const ingat = pengingat(p);
       const berikut = p.status === ST.running ? titikBerikut(p) : null;
       const laporan = laporanGuru(p);
-      return createPortal(<Drawer id="pg-selected" key={p.id} side="left" wide title="Riwayat pengambilan" sub={`${p.nama || p.email} · ${p.subtes}`} busy={Boolean(sibuk)} onClose={tutup}>
+      return createPortal(<Drawer id="pg-selected" key={p.id} side="right" wide title="Riwayat pengambilan" sub={`${p.nama || p.email} · ${p.subtes}`} busy={Boolean(sibuk)} onClose={tutup}>
         <div className="pg-selected pg-drawer-detail">
         {galatDetail ? <div className="banner err" role="alert"><Icon name="alert" /><div>{galatDetail}</div></div> : null}
         <div className="pg-summary"><div className="pg-summary-top"><div><b>{numberID(progres.soal)}/{numberID(p.jumlah)} soal dilaporkan · {progres.persen}%</b><small>{p.idProyek} · {p.idGuru || p.email} · {teksJumlah(p.jumlah, p.isiPaket)} · deadline {tanggalPendek(p.deadline)}</small></div><span className={"pill " + kelasStatus(p.status)}>{labelStatus(p.status)}</span></div><div className="pg-progress" role="meter" aria-label="Jumlah soal dilaporkan" aria-valuemin={0} aria-valuemax={p.jumlah} aria-valuenow={progres.soal}><span style={{ width: `${progres.persen}%` }} /></div><small>Tahap 100% adalah pengumpulan hasil akhir; status Selesai mengikuti hasil review.</small></div>

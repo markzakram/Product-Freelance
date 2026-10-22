@@ -12,6 +12,11 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.10.2 — Panel riwayat di sebelah kanan (22 Oktober 2026)
+
+- Tombol **Riwayat** dan kolom tahap membuka panel detail dari **sebelah kanan**.
+  Ikon arah pada tombol Riwayat ikut menunjuk ke kanan.
+
 ## 3.10.1 — Panel riwayat kiri, filter, dan penanda revisi berulang (22 Oktober 2026)
 
 - **Riwayat** dan kolom tahap membuka panel detail dari sebelah kiri setelah
