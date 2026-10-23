@@ -56,7 +56,13 @@ const F0 = { q: "", from: "", to: "", platform: SEMUA, guru: SEMUA, subtes: SEMU
 // Halaman yang isinya terikat satu bulan -> perlu pemilih bulan.
 // (Master, Proyek Baru, dan Analisis tidak: master bersifat lintas bulan dan
 // Analisis punya filter bulannya sendiri.)
-const PERBULAN = new Set(["ringkasan", "katalog", "ambil", "log", "bayar", "reachout"]);
+const PERBULAN = new Set(["katalog", "ambil", "log", "bayar", "laporan"]);
+// Halaman Laporan (khusus Pemilik): tiga pantauan lama jadi tab di dalamnya.
+const LAPORAN = [
+  ["analisis", "Analisis lintas bulan", "chart"],
+  ["reachout", "Reachout", "send"],
+  ["corong", "Corong rekrutmen", "filter"],
+];
 
 const tglID = (iso) => {
   const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -122,9 +128,11 @@ export const bolehP = bolehTim;
 export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPassword = false, pengguna = PENGGUNA_BAWAAN }) {
   const akademik = bolehP(pengguna, ["Akademik"]);
   const operasional = bolehP(pengguna, ["Akademik", "Seleksi"]);
+  const pemilikP = bolehP(pengguna, ["Pemilik"]);
   const [board, setBoard] = useState(initial);
   // Satu ruang kerja: dashboard dan matriks ada di Pengambilan Guru.
   const [tab, setTab] = useState("ambil");
+  const [laporanSub, setLaporanSub] = useState("analisis");
   const [f, setF] = useState(F0);
   const [err, setErr] = useState("");
   const [expired, setExpired] = useState(false);
@@ -492,6 +500,11 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   // Pindah halaman selalu mulai dari atas — di HP halaman sebelumnya
   // biasanya sudah tergulir jauh.
   const pilihTab = (k) => {
+    // Kunci menu lama (sebelum v3.14.0) tetap mengarah ke tempat barunya.
+    if (LAPORAN.some(([s]) => s === k)) {
+      setLaporanSub(k);
+      k = "laporan";
+    }
     setTab(k === "ringkasan" ? "ambil" : k);
     setNavOpen(false);
     window.scrollTo(0, 0);
@@ -675,7 +688,18 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
               />
             )}
 
-            {tab === "reachout" &&
+            {tab === "laporan" && pemilikP ? (
+              <div className="seg-tab laporan-tab" role="group" aria-label="Jenis laporan">
+                {LAPORAN.map(([k, label, ikon]) => (
+                  <button key={k} type="button" className={laporanSub === k ? "on" : ""} aria-pressed={laporanSub === k} onClick={() => setLaporanSub(k)}>
+                    <Icon name={ikon} size={16} />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+
+            {tab === "laporan" && pemilikP && laporanSub === "reachout" &&
               (extraLoaded ? (
                 <PantauReachout
                   data={reachout}
@@ -725,7 +749,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
               />
             )}
 
-            {tab === "corong" &&
+            {tab === "laporan" && pemilikP && laporanSub === "corong" &&
               (extraLoaded ? (
                 <CorongRekrutmen
                   akses={akses}
@@ -775,7 +799,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
                 <div className="card empty">Memuat data bulan…</div>
               ))}
 
-            {tab === "analisis" &&
+            {tab === "laporan" && pemilikP && laporanSub === "analisis" &&
               (extraLoaded ? (
                 <AnalyticsPanel data={allMonths} master={master.rows || []} />
               ) : (
@@ -848,14 +872,11 @@ const NAV = [
       { k: "bayar", label: "Pembayaran & kwitansi", judul: "Pembayaran & Kwitansi", langkah: 6, peran: ["Akademik"] },
     ],
   },
+  // Pantauan lama (analisis, reachout, corong) tidak dipakai tim RAD/CLO:
+  // pekerjaannya ada di Pengambilan Guru. Disatukan di satu halaman Pemilik.
   {
-    grup: "Pantauan",
-    item: [
-      { k: "ringkasan", label: "Pantauan RAD & CLO", judul: "Pantauan", ikon: "home", peran: ["Akademik", "Seleksi"] },
-      { k: "analisis", label: "Analisis lintas bulan", judul: "Analisis Lintas Bulan", ikon: "chart", peran: ["Akademik"] },
-      { k: "reachout", label: "Pantau reachout", judul: "Pantau Reachout", ikon: "send", peran: ["Akademik", "Seleksi"] },
-      { k: "corong", label: "Corong rekrutmen", judul: "Corong Rekrutmen & Aktivasi", ikon: "filter", peran: ["Seleksi"] },
-    ],
+    grup: "Laporan",
+    item: [{ k: "laporan", label: "Laporan & analisis", judul: "Laporan & Analisis", ikon: "chart", peran: ["Pemilik"] }],
   },
   {
     grup: "Data pendukung",
@@ -884,7 +905,7 @@ NAV.forEach((g) =>
 
 // Menu bawah di HP: halaman yang dipakai sehari-hari. Master & Proyek bulan
 // baru (dikerjakan sebulan sekali, di laptop) ada di "Lainnya" bersama
-// Analisis dan Database guru.
+// Pembayaran dan Database guru.
 const TABBAR = [
   { k: "ambil", label: "Pengambilan", ikon: "home" },
   { k: "katalog", label: "Katalog", ikon: "layers" },
@@ -892,12 +913,12 @@ const TABBAR = [
   { k: "log", label: "Log", ikon: "clipboard" },
 ];
 
-// Menu harian CLO: Pantauan, Pengambilan, reachout dan pendaftar.
+// Menu harian CLO: Pengambilan (kabar, reminder, butuh guru), pendaftar, guru.
 const TABBAR_CLO = [
   { k: "ambil", label: "Pengambilan", ikon: "home" },
+  { k: "akses", label: "Pendaftar", ikon: "userCheck" },
+  { k: "guru", label: "Guru", ikon: "users" },
   { k: "katalog", label: "Katalog", ikon: "layers" },
-  { k: "reachout", label: "Reachout", ikon: "send" },
-  { k: "akses", label: "Pendaftar", ikon: "users" },
 ];
 
 function TabBar({ tab, pilihTab, bukaMenu, menuTerbuka, adaBaru, item = TABBAR }) {

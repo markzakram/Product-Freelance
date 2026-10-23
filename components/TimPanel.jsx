@@ -12,8 +12,8 @@ import Drawer from "./Drawer";
 import Icon from "./Icon";
 
 const PERAN_UI = [
-  ["RAD", "Pantauan RAD, proyek, katalog, ACC, pemeriksaan progres dan QC"],
-  ["CLO", "Pantauan CLO, kabar hasil, reminder, cari guru, reachout dan seleksi"],
+  ["RAD", "Tugas RAD di Pengambilan Guru: ACC, pemeriksaan progres, QC; proyek & katalog"],
+  ["CLO", "Tugas CLO di Pengambilan Guru: kabar hasil, reminder, cari guru; pendaftar & seleksi"],
   ["Seleksi", "Akun lama · tugas CLO, pendaftar dan seleksi"],
   ["Akademik", "Akun lama · tugas RAD, proyek dan pembayaran"],
   ["Pemilik", "Semua menu + kelola akun tim"],

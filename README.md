@@ -101,17 +101,21 @@ Tanpa mengisi `.env.local`, aplikasi tetap jalan dengan data contoh.
 - **Keamanan**: area `/admin` dilindungi password lewat cookie (12 jam) + `middleware.js`. Kredensial Google & password hanya dipakai di server, tidak pernah terekspos ke browser.
 - **Zero dependency data layer**: koneksi Sheets memakai `fetch` + tanda tangan JWT bawaan Node, tanpa library berat.
 
-## Ruang kerja RAD & CLO (v3.13.0)
+## Ruang kerja RAD & CLO (v3.14.0)
 
-- Semua akun tim membuka **Pengambilan Guru** setelah login. Dashboard dan matriks
-  berada dalam satu halaman; menu **Pantauan RAD & CLO** juga mengarah ke sana.
-  RAD mengelola antrean ACC,
-  pemeriksaan progres 30%/50%, QC akhir dan QC ulang, serta proyek/katalog.
-  CLO memantau hasil RAD, mengabari guru, mencatat reminder, dan mencari guru
-  untuk kuota yang belum terisi. Detail terbuka dari kanan dan sama dengan
-  **Pengambilan Guru**.
+- Semua akun tim membuka **Pengambilan Guru** setelah login — satu-satunya ruang
+  kerja RAD & CLO. Urutan halaman: empat angka ringkas → **antrean tugas** tim →
+  satu tabel semua pengambilan → produksi per subtes (dilipat).
+  RAD: antrean QC ulang, QC hasil akhir, laporan progres 30%/50% baru, dan ACC.
+  CLO: hasil RAD yang belum dikabari, reminder hari ini, dan tab **Butuh guru**
+  (kuota terbuka + ringkasan tawaran) dengan **Cari guru**. Tombol utama (ACC,
+  Sudah diperiksa, Sudah dikabari, Reminder dikirim) jalan langsung dari antrean;
+  tolak/minta revisi/review membuka panel **Detail pengambilan** di kanan.
   Kuota pengajuan yang masih menunggu ACC diperhitungkan sebelum menawarkan
-  pekerjaan kepada guru lain.
+  pekerjaan kepada guru lain. Hitungan antrean, alur, status, dan tenggat ada di
+  `lib/antreanPengambilan.js`.
+- Analisis lintas bulan, Reachout, dan Corong rekrutmen tidak ada di menu RAD/CLO;
+  ketiganya ada di halaman **Laporan & analisis** khusus Pemilik.
 - Pemilik mengatur **RAD / CLO** pada **Akun tim → Peran**. Akun lama tetap
   didukung: **Akademik → RAD**, **Seleksi → CLO**. Untuk anggota lama dengan
   pekerjaan berbeda dari perannya sekarang, ubah perannya di Akun tim; tidak ada
@@ -120,9 +124,9 @@ Tanpa mengisi `.env.local`, aplikasi tetap jalan dengan data contoh.
 - Dashboard menghitung kuota terisi dari katalog dan soal lolos QC dari jumlah
   disetujui pada review pengambilan, termasuk persetujuan parsial. Angka QC ini
   tidak menganggap pengumpulan 100% atau baris log manual tanpa review sebagai
-  hasil yang sudah disetujui. Kartu/grafik/prioritas menyaring matriks lengkap;
-  Reset filter juga menghapus fokus dari dashboard. Kolom Kabar CLO menunjukkan
-  status hasil terbaru tanpa perlu membuka panel. Rincian overview bisa dilipat.
+  hasil yang sudah disetujui. Tabel memakai alur titik ACC → 30% → 50% → 100% → QC
+  dan satu label status; kolom Kabar CLO menunjukkan status hasil terbaru tanpa
+  perlu membuka panel.
 - **Sudah dikabari** adalah konfirmasi manual untuk satu hasil pemeriksaan dan
   versi tertentu, sesudah pesan dikirim. Membuka draf/WhatsApp belum berarti
   mengirim. Revisi berikutnya memerlukan konfirmasi baru; nama petugas dan waktu

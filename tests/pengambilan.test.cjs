@@ -490,3 +490,87 @@ test("admin API enforces RAD and CLO actions and takes the contact author from t
   assert.equal((await post({ action: "kabari", id: "PJ-1", keputusanId: decision.id, oleh: "Pemalsu", pic: "Pemalsu" })).status, 200);
   assert.equal((await read()).riwayat.find((e) => e.jenis === "kabar").oleh, "Rani dari sesi");
 });
+
+// Data asli: p.laporan diisi dari jurnal (lib/pengerjaan.js); objek dari konteks vm dibandingkan sebagai JSON.
+const nyata = (p) => ({ ...p, laporan: (p.riwayat || []).filter((e) => ["laporan", "revisi_laporan"].includes(e.jenis)) });
+const polos = (x) => JSON.parse(JSON.stringify(x));
+
+test("work queues put RAD checks and CLO contacts in priority order and skip closed work", async () => {
+  const pd = await load("lib/pantauanOpsi.js");
+  const m = await load("lib/antreanPengambilan.js");
+  const now = time(23);
+  const final = (id, day, versi = 1, jenis = "pengumpulan") => ({ ...report(id, day, 100, 20, versi), jenis });
+  const list = [
+    { ...base, id: "pending", status: "Diajukan", diajukan: "21/10/2026 09:00", riwayat: [] },
+    { ...base, id: "progress", riwayat: [report("p1", 22, 30, 6)] },
+    { ...base, id: "qc1", status: "Ready to review", ronde: 0, tDikumpulkan: time(22), riwayat: [final("f1", 22)] },
+    { ...base, id: "qc2", status: "Ready to review", ronde: 1, tDikumpulkan: time(21), riwayat: [final("f2", 20), { id: "rv", jenis: "review", versi: 1, persen: 100, t: time(20, 12), meta: { revisi: 5 } }, final("f2", 21, 2, "revisi_akhir")] },
+    { ...base, id: "done", status: "Selesai", tepat: 20, riwayat: [report("old", 19, 30, 6)] },
+  ];
+  const rad = m.tugasRad(list.map((p) => pd.barisPantauan(nyata(p), now)));
+  assert.deepEqual(polos(rad.map((t) => `${t.jenis}:${t.p.id}`)), ["ulang:qc2", "qc:qc1", "progres:progress", "acc:pending"]);
+  assert.equal(rad[2].laporan.laporanId, "p1");
+
+  const accepted = { ...base, id: "acc-ok", riwayat: [{ id: "acc1", jenis: "acc", t: time(18), waktu: "18/10/2026 09:00", oleh: "Nadia" }] };
+  let clo = m.tugasClo([pd.barisPantauan(accepted, now)]);
+  assert.deepEqual(polos(clo.map((t) => t.jenis)), ["kabar", "reminder"], "result to announce comes before the overdue report reminder");
+  accepted.riwayat.push({ id: "k1", jenis: "kabar", t: time(18, 10), meta: { keputusanId: "acc1" } });
+  clo = m.tugasClo([pd.barisPantauan(accepted, now)]);
+  assert.deepEqual(polos(clo.map((t) => t.jenis)), ["reminder"]);
+  assert.ok(clo[0].pengingat.lewat);
+});
+
+test("pipeline, single status and due date describe only the current step", async () => {
+  const m = await load("lib/antreanPengambilan.js");
+  const s = (p, at) => polos(m.alurPengambilan(nyata(p), at).map((a) => a.s));
+  const checked = nyata({ ...base, riwayat: [report("L1", 19, 30, 6), { id: "c1", jenis: "dicek", laporanId: "L1", versi: 1, persen: 30, t: time(19, 12) }] });
+  assert.deepEqual(s(checked, time(21)), ["ok", "ok", "now", "", ""]);
+  assert.deepEqual(s(checked, time(23)), ["ok", "ok", "late", "", ""], "missed 50% date turns the current dot red");
+  assert.equal(m.statusRingkas(checked, time(21)).label, "Dikerjakan · lapor 50%");
+  assert.deepEqual(polos(m.tenggatPengambilan(checked, time(21))), { ket: "Lapor 50%", teks: "besok", kelas: "qc", lewat: false });
+
+  const fresh = nyata({ ...base, riwayat: [report("N1", 22, 50, 10)] });
+  assert.equal(m.statusRingkas(fresh, time(22, 12)).label, "Laporan 50% perlu diperiksa");
+  assert.equal(m.alurPengambilan(fresh, time(22, 12))[2].s, "cek", "report waiting for RAD differs from work in progress");
+
+  assert.deepEqual(s({ ...base, status: "Diajukan" }, time(21)), ["now", "", "", "", ""]);
+  assert.deepEqual(s({ ...base, status: "Ditolak" }, time(21)), ["x", "", "", "", ""]);
+  assert.deepEqual(s({ ...base, titik: [] }, time(21)), ["ok", "skip", "skip", "now", ""], "no report dates: work heads straight to 100%");
+
+  const revisi = { ...base, status: "Revisi", ronde: 1, tepat: 10, tBatas: time(22), batasRevisi: "22/10/2026 09:00", riwayat: [{ ...report("A", 20, 100, 20), jenis: "pengumpulan" }, { id: "q1", jenis: "review", versi: 1, persen: 100, t: time(21), meta: { revisi: 10, setuju: 10 } }] };
+  assert.deepEqual(s(revisi, time(21)), ["ok", "ok", "ok", "ok", "rev"]);
+  assert.equal(m.statusRingkas(revisi, time(21)).label, "Revisi 1 · 10 soal");
+  assert.deepEqual(polos(m.tenggatPengambilan(revisi, time(21))), { ket: "Batas revisi", teks: "1 hari lagi", kelas: "qc", lewat: false });
+  assert.equal(m.statusRingkas({ ...base, status: "Selesai", tepat: 17, telat: 1 }, time(21)).label, "Selesai · 18/20 lolos");
+  assert.equal(m.tenggatPengambilan({ ...base, status: "Selesai" }, time(21)), null);
+});
+
+test("open quota rows summarise this month's offers per teacher", async () => {
+  const m = await load("lib/antreanPengambilan.js");
+  const offer = (idGuru, t, extra = {}) => ({ tujuan: "Tawaran proyek", bulan: "Oktober_", idProyek: "A2", idGuru, t, ...extra });
+  const kontak = [offer("1", time(19)), offer("1", time(19, 12)), offer("2", time(22, 20)), offer("3", time(18), { hasil: "Bersedia" }), offer("4", time(1), { bulan: "September_" })];
+  const k = m.kuotaButuhGuru([{ id: "A1", sisa: 0 }, { id: "A2", sisa: 40 }], [{ idProyek: "A2", jumlah: 10, status: "Diajukan" }], kontak, "Oktober_", time(23));
+  assert.equal(k.length, 1);
+  assert.deepEqual(polos([k[0].tersedia, k[0].dipesan, k[0].ditawari, k[0].menunggu, k[0].bersedia]), [30, 10, 3, 1, 1]);
+});
+
+test("table status chips split action, waiting, overdue and closed work", async () => {
+  const pd = await load("lib/pantauanOpsi.js");
+  const m = await load("lib/antreanPengambilan.js");
+  const now = time(23);
+  const rows = [
+    { ...base, id: "pending", status: "Diajukan" },
+    { ...base, id: "progress", riwayat: [report("p1", 22, 30, 6)] },
+    { ...base, id: "late", riwayat: [] },
+    { ...base, id: "done", status: "Selesai", tepat: 20 },
+    { ...base, id: "no", status: "Ditolak" },
+  ].map((p) => pd.barisPantauan(nyata(p), now));
+  const n = (k) => rows.filter((r) => m.cocokSaringTabel(r, k)).map((r) => r.p.id).join(",");
+  assert.equal(n("semua"), "pending,progress,late,done,no");
+  assert.equal(n("tindakan"), "pending,progress");
+  assert.equal(n("guru"), "late", "teacher's turn excludes rows still waiting on RAD");
+  assert.equal(n("lewat"), "progress,late");
+  assert.equal(n("selesai"), "done");
+  assert.equal(n("tolak"), "no");
+  assert.equal(n("tidak-ada"), n("semua"), "unknown key falls back to all");
+});

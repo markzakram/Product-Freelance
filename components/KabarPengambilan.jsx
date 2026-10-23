@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { keputusanPengambilan, kabarKeputusan, judulKeputusan, pesanKabar, pengingatPantauan } from "@/lib/pantauanOpsi";
+import { keputusanPengambilan, kabarKeputusan, judulKeputusan, pesanKabar, pesanReminder, pengingatPantauan } from "@/lib/pantauanOpsi";
 import { tautanWa } from "@/lib/tautan";
 import Icon from "./Icon";
 
-export default function KabarPengambilan({ p, wa, bisa, sibuk, onCatat }) {
-  const [draf, setDraf] = useState("");
+export default function KabarPengambilan({ p, wa, bisa, sibuk, onCatat, drafAwal = "" }) {
+  const [draf, setDraf] = useState(drafAwal);
   const keputusan = keputusanPengambilan(p);
   const pengingat = pengingatPantauan(p);
   return <section className="pn-kabar" aria-label="Kabar ke guru">
@@ -25,7 +25,7 @@ export default function KabarPengambilan({ p, wa, bisa, sibuk, onCatat }) {
         {draf === e.id ? <div className="pn-draft"><label className="ffield"><span>Draf pesan · {judulKeputusan(e)}</span><textarea className="input" rows={5} readOnly value={pesanKabar(p, e)} /></label>{wa ? <a className="btn btn-wa sm" href={tautanWa(wa, pesanKabar(p, e))} target="_blank" rel="noopener noreferrer"><Icon name="send" />Buka WhatsApp</a> : <small className="muted">Nomor WhatsApp belum tersedia. Draf dapat disalin.</small>}</div> : null}
       </div>;
     })}
-    {pengingat.map((i) => <div key={i.key} className="pn-kabar-item"><div className="pn-kabar-top"><b>{i.teks}</b><span className={"pill " + (i.terkirim ? "appr" : i.kelas)}>{i.terkirim ? "Reminder dicatat" : "Perlu reminder"}</span></div>{i.terkirim ? <small>Dikirim {i.terkirim.waktu} WIB · {i.terkirim.oleh}</small> : <><div className="pg-actions">{wa ? <a className="btn btn-ghost sm" href={tautanWa(wa, `Halo ${p.nama || "Bapak/Ibu"}, pengingat ${p.subtes} (${p.idProyek}): ${i.teks}. Mohon kabari progres dan kendalanya, ya.`)} target="_blank" rel="noopener noreferrer"><Icon name="send" />Buka WhatsApp</a> : null}<button type="button" className="btn btn-ghost sm" disabled={!bisa || sibuk} onClick={() => onCatat({ action: "reminder", id: p.id, pengingatId: i.key })}>Catat reminder dikirim</button></div><small className="muted">Konfirmasi setelah mengirim. Pengingat yang belum selesai dapat muncul kembali pada hari berikutnya.</small></>}</div>)}
+    {pengingat.map((i) => <div key={i.key} className="pn-kabar-item"><div className="pn-kabar-top"><b>{i.teks}</b><span className={"pill " + (i.terkirim ? "appr" : i.kelas)}>{i.terkirim ? "Reminder dicatat" : "Perlu reminder"}</span></div>{i.terkirim ? <small>Dikirim {i.terkirim.waktu} WIB · {i.terkirim.oleh}</small> : <><div className="pg-actions">{wa ? <a className="btn btn-ghost sm" href={tautanWa(wa, pesanReminder(p, i))} target="_blank" rel="noopener noreferrer"><Icon name="send" />Buka WhatsApp</a> : null}<button type="button" className="btn btn-ghost sm" disabled={!bisa || sibuk} onClick={() => onCatat({ action: "reminder", id: p.id, pengingatId: i.key })}>Catat reminder dikirim</button></div><small className="muted">Konfirmasi setelah mengirim. Pengingat yang belum selesai dapat muncul kembali pada hari berikutnya.</small></>}</div>)}
     {!bisa ? <small className="muted">Pencatatan kabar dilakukan oleh tim CLO atau pemilik dengan akses tulis.</small> : null}
   </section>;
 }

@@ -12,6 +12,33 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.14.0 — Pengambilan Guru jadi satu ruang kerja; menu Pantauan diringkas (23 Oktober 2026)
+
+- **Antrean tugas** di atas halaman Pengambilan Guru, urut dari yang paling mendesak.
+  RAD: QC ulang kiriman revisi, QC hasil akhir, laporan progres baru, ACC pengajuan.
+  CLO: hasil RAD yang belum dikabari, reminder yang belum dikirim hari ini, dan tab
+  **Butuh guru** (kuota terbuka + ringkasan tawaran: sudah ditawari, bersedia, belum
+  membalas lebih dari 2 hari) dengan tombol **Cari guru**.
+- Tombol utama langsung dari antrean: **ACC**, **Sudah diperiksa**, **Sudah dikabari**,
+  **Reminder dikirim**, serta tautan WhatsApp/hasil/progres. Tolak, minta revisi, dan
+  review membuka panel detail dengan formnya sudah terbuka.
+- Empat angka ringkas (kuota terisi, lolos QC, tugas tim, lewat tenggat / butuh guru)
+  menggantikan dashboard panjang. Produksi per subtes dipindah ke bawah dan dilipat.
+- **Satu tabel** semua pengambilan (per subtes / per guru) menggantikan tabel berulang
+  per subtes: alur titik ACC → 30% → 50% → 100% → QC, satu label status, tenggat
+  terdekat, dan kabar CLO. Saringan cukup pencarian, Subtes, Guru, dan satu baris status
+  (Perlu tindakan RAD, Belum dikabari, Menunggu guru, Lewat tenggat, Selesai, Ditolak).
+  Di HP tabel menjadi kartu.
+- Panel kanan berganti nama **Detail pengambilan**: kotak **Langkah berikutnya** sesuai
+  tim yang sedang dibuka, lalu tab Riwayat · Laporan progres (dengan jadwal lapor) ·
+  Kabar ke guru · Tindakan lain.
+- Menu **Pantauan** dihapus dari menu RAD/CLO. Analisis lintas bulan, Reachout, dan
+  Corong rekrutmen disatukan di halaman **Laporan & analisis** khusus Pemilik
+  (tautan lama otomatis diarahkan ke sana). Menu bawah HP untuk CLO: Pengambilan ·
+  Pendaftar · Guru · Katalog.
+- Tidak ada perubahan data, API, atau izin: ACC/pemeriksaan/review tetap butuh peran RAD,
+  pencatatan kabar tetap peran CLO.
+
 ## 3.13.0 — Dashboard dan matriks dalam satu Pengambilan Guru (23 Oktober 2026)
 
 - **Pengambilan Guru** menjadi halaman awal dan ruang kerja bersama RAD/CLO.
