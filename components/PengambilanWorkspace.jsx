@@ -12,6 +12,7 @@ import MatriksPengambilan from "./MatriksPengambilan";
 import RiwayatPengambilan from "./RiwayatPengambilan";
 import Drawer from "./Drawer";
 import PengambilanFilters from "./PengambilanFilters";
+import KabarPengambilan from "./KabarPengambilan";
 import { cocokTeksPengambilan, kunciSubtesPengambilan, kunciGuruPengambilan, opsiFilterPengambilan, hitungOpsiPengambilan } from "@/lib/pengambilanFilter";
 
 const SARING = [
@@ -27,7 +28,7 @@ const SARING = [
   ["tolak", "Ditolak & batal", (p) => [ST.ditolak, ST.dibatalkan].includes(p.status)],
 ];
 
-export default function PengambilanWorkspace({ data, bulan, namaBulan, projects = [], guruDb = [], muatUlang, setErr, aksiEl, onBerubah, FormReview, pesanWa }) {
+export default function PengambilanWorkspace({ data, bulan, namaBulan, projects = [], guruDb = [], muatUlang, setErr, aksiEl, onBerubah, FormReview, pesanWa, detailOnly = false, fokus, onTutup }) {
   const [view, setView] = useState("subtes");
   const [saring, setSaring] = useState("semua");
   const [tahap, setTahap] = useState("semua");
@@ -46,6 +47,8 @@ export default function PengambilanWorkspace({ data, bulan, namaBulan, projects 
   const daftar = useMemo(() => data?.pengerjaan || [], [data]);
   const proyek = useMemo(() => new Map(projects.map((p) => [String(p.id).toUpperCase(), p])), [projects]);
   const guruById = useMemo(() => new Map(guruDb.filter((g) => g.idGuru).map((g) => [String(g.idGuru), g])), [guruDb]);
+  const guruByEmail = useMemo(() => new Map(guruDb.filter((g) => g.email).map((g) => [String(g.email).trim().toLowerCase(), g])), [guruDb]);
+  const kontakGuru = (p) => guruById.get(String(p.idGuru)) || guruByEmail.get(String(p.email || "").trim().toLowerCase());
   const semuaSubtes = useMemo(() => opsiFilterPengambilan(daftar, "subtes"), [daftar]);
   const semuaGuru = useMemo(() => opsiFilterPengambilan(daftar, "guru"), [daftar]);
   useEffect(() => { setSaringSubtes(""); setSaringGuru(""); }, [bulan]);
@@ -67,7 +70,9 @@ export default function PengambilanWorkspace({ data, bulan, namaBulan, projects 
   const selected = daftar.find((p) => p.id === pilihan) || null;
   const progres = selected ? progresPengambilan(selected) : null;
   const pilih = (id, n) => { setPilihan(id); setTahapRiwayat(String(n)); setTolak(null); setDinilai(""); setRevisi(null); setInfo(""); setGalatDetail(""); };
-  const tutup = () => { setPilihan(null); setRevisi(null); setTolak(null); setDinilai(""); };
+  const tutup = () => { setPilihan(null); setRevisi(null); setTolak(null); setDinilai(""); onTutup?.(); };
+  useEffect(() => { setPilihan(null); setRevisi(null); setTolak(null); setDinilai(""); }, [bulan]);
+  useEffect(() => { if (fokus?.id) pilih(fokus.id, fokus.tahap || "semua"); }, [fokus]); // eslint-disable-line react-hooks/exhaustive-deps
   const jalankan = async (kunci, body, sesudah) => {
     setSibuk(kunci);
     setErr("");
@@ -77,28 +82,28 @@ export default function PengambilanWorkspace({ data, bulan, namaBulan, projects 
       const res = await fetch("/api/admin/pengerjaan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), cache: "no-store" });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(j.error || `Gagal (HTTP ${res.status})`);
-      await muatUlang();
+      await muatUlang(true);
       sesudah?.(j);
       setInfo("Perubahan tersimpan.");
     } catch (e) { setErr(e.message); setGalatDetail(e.message); }
     finally { setSibuk(""); }
   };
   const tombolWa = (p, jenis, label) => {
-    const wa = guruById.get(String(p.idGuru))?.wa;
+    const wa = kontakGuru(p)?.wa;
     return wa ? <a className="btn btn-ghost sm" href={tautanWa(wa, pesanWa(p, jenis))} target="_blank" rel="noopener noreferrer" onClick={() => catatWa({ tujuan: "Info pengambilan", idGuru: p.idGuru, nama: p.nama, email: p.email, wa })}><Icon name="send" />{label}</a> : null;
   };
 
   if (!data) return <div className="card empty">Memuat pengambilan…</div>;
 
   return <div className="pg-workspace">
-    {aksiEl ? createPortal(<><label className="pj-maks"><span>Maks. proyek aktif / guru</span><input aria-label="Maksimum proyek aktif per guru" className="input sm" type="number" min={1} max={50} value={maksIsi === "" ? maks : maksIsi} onChange={(e) => setMaksIsi(e.target.value)} disabled={!bisa || Boolean(sibuk)} />{maksIsi !== "" && Number(maksIsi) !== maks ? <button type="button" className="btn btn-blue sm" disabled={Boolean(sibuk)} onClick={() => jalankan("maks", { action: "maksAktif", nilai: maksIsi }, () => setMaksIsi(""))}>Simpan</button> : null}</label><button type="button" className="btn btn-ghost sm" onClick={muatUlang} disabled={Boolean(sibuk)}><Icon name="refresh" />Segarkan</button></>, aksiEl) : null}
+    {!detailOnly && aksiEl ? createPortal(<><label className="pj-maks"><span>Maks. proyek aktif / guru</span><input aria-label="Maksimum proyek aktif per guru" className="input sm" type="number" min={1} max={50} value={maksIsi === "" ? maks : maksIsi} onChange={(e) => setMaksIsi(e.target.value)} disabled={!bisa || Boolean(sibuk)} />{maksIsi !== "" && Number(maksIsi) !== maks ? <button type="button" className="btn btn-blue sm" disabled={Boolean(sibuk)} onClick={() => jalankan("maks", { action: "maksAktif", nilai: maksIsi }, () => setMaksIsi(""))}>Simpan</button> : null}</label><button type="button" className="btn btn-ghost sm" onClick={muatUlang} disabled={Boolean(sibuk)}><Icon name="refresh" />Segarkan</button></>, aksiEl) : null}
     {data.error ? <div className="banner err"><Icon name="alert" /><div>Pengambilan belum bisa dibaca: {data.error}</div></div> : null}
-    <div className="pg-viewbar">
+    {!detailOnly ? <><div className="pg-viewbar">
       <div className="seg-tab" role="group" aria-label="Sudut pandang utama">{[["subtes", "layers", "Per subtes"], ["guru", "users", "Per guru"]].map(([k, icon, label]) => <button key={k} type="button" className={view === k ? "on" : ""} aria-pressed={view === k} onClick={() => setView(k)}><Icon name={icon} />{label}</button>)}</div>
       <span className="muted" aria-live="polite">{new Set(list.map((p) => p.subtes)).size} subtes · {new Set(list.map((p) => p.idGuru || p.email || p.id)).size} guru · {numberID(list.length)} pengambilan</span>
     </div>
     <PengambilanFilters cari={cari} setCari={setCari} status={saring} setStatus={setSaring} options={SARING} statusCounts={statusCounts} tahap={tahap} setTahap={setTahap} tahapCounts={tahapCounts} subtes={saringSubtes} setSubtes={setSaringSubtes} opsiSubtes={opsiSubtes} guru={saringGuru} setGuru={setSaringGuru} opsiGuru={opsiGuru} />
-    {!list.length ? <div className="card empty">{daftar.length ? "Tidak ada pengambilan yang cocok dengan filter." : `Belum ada pengambilan untuk ${namaBulan || "bulan ini"}.`}</div> : <MatriksPengambilan daftar={list} view={view} selected={selected?.id} onPilih={pilih} />}
+    {!list.length ? <div className="card empty">{daftar.length ? "Tidak ada pengambilan yang cocok dengan filter." : `Belum ada pengambilan untuk ${namaBulan || "bulan ini"}.`}</div> : <MatriksPengambilan daftar={list} view={view} selected={selected?.id} onPilih={pilih} />}</> : null}
     {selected ? (() => {
       const p = selected;
       const pr = proyek.get(p.idProyek);
@@ -111,6 +116,7 @@ export default function PengambilanWorkspace({ data, bulan, namaBulan, projects 
         {galatDetail ? <div className="banner err" role="alert"><Icon name="alert" /><div>{galatDetail}</div></div> : null}
         <div className="pg-summary"><div className="pg-summary-top"><div><b>{numberID(progres.soal)}/{numberID(p.jumlah)} soal dilaporkan · {progres.persen}%</b><small>{p.idProyek} · {p.idGuru || p.email} · {teksJumlah(p.jumlah, p.isiPaket)} · deadline {tanggalPendek(p.deadline)}</small></div><span className={"pill " + kelasStatus(p.status)}>{labelStatus(p.status)}</span></div><div className="pg-progress" role="meter" aria-label="Jumlah soal dilaporkan" aria-valuemin={0} aria-valuemax={p.jumlah} aria-valuenow={progres.soal}><span style={{ width: `${progres.persen}%` }} /></div><small>Tahap 100% adalah pengumpulan hasil akhir; status Selesai mengikuti hasil review.</small></div>
         {ingat.length ? <div className="ps-ingat">{ingat.map((i) => <span key={i.jenis} className={"pill " + i.kelas}><Icon name="alert" size={12} />{i.teks}</span>)}</div> : null}
+        <KabarPengambilan key={p.id} p={p} wa={kontakGuru(p)?.wa} bisa={Boolean(data.canKabari)} sibuk={Boolean(sibuk)} onCatat={(body) => jalankan(p.id, body)} />
         <RiwayatPengambilan key={`${p.id}:${tahapRiwayat}`} p={p} awal={tahapRiwayat} />
 
         {laporan.length && [ST.running, ST.review, ST.revisi].includes(p.status) ? <div className="pg-report-reviews"><b>Pemeriksaan laporan progres</b>{laporan.map((l) => { const status = statusLaporan(p, l); const siklus = siklusRevisi(p, l.persen, l.laporanId); return <div className="pg-report-review" key={l.laporanId}><div><b>Laporan {l.noLaporan} · {l.persen}%</b><small>Versi {l.versi} · {numberID(l.soal)}/{numberID(p.jumlah)} soal · {status === "revisi" ? `Menunggu revisi ${siklus.diminta}` : status === "dicek" ? "Sudah diperiksa" : "Belum diperiksa"}</small>{siklus.dikirim ? <small>Perbaikan terakhir: revisi {siklus.dikirim}</small> : null}</div><div className="pg-actions">{status === "baru" ? <button type="button" className="btn btn-blue sm" disabled={!bisa || Boolean(sibuk)} onClick={() => jalankan(p.id, { action: "progresDicek", id: p.id, laporanId: l.laporanId, versi: l.versi })}><Icon name="check" />Tandai diperiksa</button> : null}{p.status === ST.running && status !== "revisi" ? <button type="button" className="btn btn-ghost sm" disabled={!bisa || Boolean(sibuk)} onClick={() => setRevisi({ id: p.id, laporanId: l.laporanId, versi: l.versi, catatan: "" })}>Minta revisi {l.versi}</button> : null}</div></div>; })}</div> : null}

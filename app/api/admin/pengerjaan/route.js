@@ -1,9 +1,9 @@
 // Pengambilan proyek oleh guru — dashboard tim akademik.
 import { NextResponse } from "next/server";
-import { izinAdmin } from "@/lib/authServer";
+import { izinAdmin, bolehPeran } from "@/lib/authServer";
 import { canWrite } from "@/lib/gauth";
 import { getBoard } from "@/lib/juli";
-import { bacaPengerjaan, putuskan, maksAktif, aturMaksAktif, review, terapkanDenda, lengkapiTitik, tandaiProgresDicek, periksaProgres } from "@/lib/pengerjaan";
+import { bacaPengerjaan, putuskan, maksAktif, aturMaksAktif, review, terapkanDenda, lengkapiTitik, tandaiProgresDicek, periksaProgres, catatKabarPengambilan } from "@/lib/pengerjaan";
 import { aturanBulan, aturDeadline, aturLapor, aturPaket, aturTipe, aturSemua } from "@/lib/aturanProyek";
 import { AKTIF } from "@/lib/pengerjaanOpsi";
 import { bacaAkun } from "@/lib/akun";
@@ -11,11 +11,11 @@ import { bacaAkun } from "@/lib/akun";
 export const dynamic = "force-dynamic";
 
 export async function GET(req) {
-  const { tolak } = await izinAdmin(["Akademik"]);
+  const { sesi, tolak } = await izinAdmin(["Akademik", "Seleksi"]);
   if (tolak) return tolak;
   const bulan = req.nextUrl.searchParams.get("bulan") || "";
   try {
-    const [semua, aturan, maks, akun] = await Promise.all([bacaPengerjaan(), bulan ? aturanBulan(bulan) : {}, maksAktif(), bacaAkun().catch(() => [])]);
+    const [semua, aturan, maks, akun] = await Promise.all([bacaPengerjaan({ segar: req.nextUrl.searchParams.get("segar") === "1" }), bulan ? aturanBulan(bulan) : {}, maksAktif(), bacaAkun().catch(() => [])]);
     const uji = akun.filter((a) => a.uji);
     const akunUji = (p) => uji.some((a) => (a.idGuru && p.idGuru === a.idGuru) || p.email === a.email);
     // beban tiap guru dihitung lintas bulan — batasnya berlaku untuk semua proyek aktif
@@ -26,7 +26,8 @@ export async function GET(req) {
       aturan,
       maksAktif: maks,
       aktifPerGuru,
-      canWrite: canWrite(),
+      canWrite: canWrite() && bolehPeran(sesi, ["Akademik"]),
+      canKabari: canWrite() && bolehPeran(sesi, ["Seleksi"]),
     });
   } catch (e) {
     return NextResponse.json({ error: e.message || "Gagal membaca pengerjaan." }, { status: 500 });
@@ -34,12 +35,18 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  const { sesi, tolak } = await izinAdmin(["Akademik"]);
+  const { sesi, tolak } = await izinAdmin(["Akademik", "Seleksi"]);
   if (tolak) return tolak;
   if (!canWrite()) return NextResponse.json({ error: "Mode baca-saja: butuh service account dengan akses Editor." }, { status: 403 });
   try {
     const body = await req.json();
+    const kabar = body.action === "kabari" || body.action === "reminder";
+    if (!bolehPeran(sesi, kabar ? ["Seleksi"] : ["Akademik"])) return NextResponse.json({ error: kabar ? "Pencatatan kabar khusus tim CLO." : "Pemeriksaan dan ACC khusus tim RAD." }, { status: 403 });
     switch (body.action) {
+      case "kabari":
+        return NextResponse.json({ ok: true, ...(await catatKabarPengambilan(body.id, { keputusanId: body.keputusanId }, sesi.nama)) });
+      case "reminder":
+        return NextResponse.json({ ok: true, ...(await catatKabarPengambilan(body.id, { pengingatId: body.pengingatId }, sesi.nama)) });
       case "putuskan": {
         const board = await getBoard(body.bulan);
         return NextResponse.json({ ok: true, pengerjaan: await putuskan(body.id, { acc: Boolean(body.acc), catatan: body.catatan }, sesi.nama, board) });

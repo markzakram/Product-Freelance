@@ -38,6 +38,8 @@ import CorongRekrutmen from "./CorongRekrutmen";
 import { EVENT_REACHOUT, aturPelaku } from "@/lib/kontakWa";
 import TimPanel from "./TimPanel";
 import PengerjaanPanel from "./PengerjaanPanel";
+import PantauanPanel from "./PantauanPanel";
+import { bolehTim } from "@/lib/peranTim";
 import DemoPanel from "./DemoPanel";
 import { MODE_DEMO } from "@/lib/demo";
 import { ST as ST_PJ, hitungMundur, laporanBaru, labelH, tanggalPendek } from "@/lib/pengerjaanOpsi";
@@ -105,26 +107,6 @@ function statusPill(s) {
   return <span className={"pill " + cls}>{s || "—"}</span>;
 }
 
-function Bars({ data, fmt = numberID, color }) {
-  const max = Math.max(1, ...data.map((d) => d.value));
-  if (!data.length) return <div className="empty">Belum ada data.</div>;
-  return (
-    <div>
-      {data.map((d) => (
-        <div className="bar-row" key={d.label}>
-          <div className="lbl" title={d.label}>
-            {d.label}
-          </div>
-          <div className="bar-track">
-            <div className="bar-fill" style={{ width: (d.value / max) * 100 + "%", background: color || undefined }} />
-          </div>
-          <div className="val">{fmt(d.value)}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 const Cols = ({ widths }) => (
   <colgroup>
     {widths.map((w, i) => (
@@ -136,13 +118,14 @@ const Cols = ({ widths }) => (
 // ============================================================================
 const PENGGUNA_BAWAAN = { nama: "Admin", email: "", peran: ["Pemilik"], pemilik: true, akunTim: false };
 // Sama dengan bolehPeran di lib/authServer (server tetap memeriksa ulang).
-export const bolehP = (pg, peran = []) => pg.pemilik || !peran.length || peran.some((x) => pg.peran.includes(x));
+export const bolehP = bolehTim;
 
 export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPassword = false, pengguna = PENGGUNA_BAWAAN }) {
   const akademik = bolehP(pengguna, ["Akademik"]);
+  const operasional = bolehP(pengguna, ["Akademik", "Seleksi"]);
   const [board, setBoard] = useState(initial);
-  // Tim seleksi langsung ke pendaftar; tim akademik & pemilik ke ringkasan.
-  const [tab, setTab] = useState(akademik ? "ringkasan" : "akses");
+  // Semua akun mulai dari antrean Pantauan sesuai peran login.
+  const [tab, setTab] = useState("ringkasan");
   const [f, setF] = useState(F0);
   const [err, setErr] = useState("");
   const [expired, setExpired] = useState(false);
@@ -172,18 +155,22 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   // Viewer -> kasus khusus yang perlu instruksi, bukan sekadar "baca-saja".
   const kurangIzin = source === "live" && sheetWritable === false;
 
+  const permintaanBoard = useRef(0);
   const refresh = useCallback(async () => {
+    const requestId = ++permintaanBoard.current;
     setSyncing(true);
     try {
       const j = await apiGet(bulanAktif);
+      if (requestId !== permintaanBoard.current) return;
       setBoard(j);
       setSyncedAt(new Date());
       setErr("");
     } catch (e) {
+      if (requestId !== permintaanBoard.current) return;
       if (e.expired) setExpired(true);
       else setErr("Gagal menyegarkan data: " + e.message);
     } finally {
-      setSyncing(false);
+      if (requestId === permintaanBoard.current) setSyncing(false);
     }
   }, [bulanAktif]);
 
@@ -217,14 +204,18 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
 
   // Pengambilan guru & deadline per proyek untuk bulan yang sedang dibuka.
   const tabBoard = board.tab;
-  const muatPengerjaan = useCallback(async () => {
-    if (!tabBoard) return;
+  const permintaanPengerjaan = useRef(0);
+  const muatPengerjaan = useCallback(async (segar = false) => {
+    const requestId = ++permintaanPengerjaan.current;
+    if (!tabBoard) { setPengerjaan({ pengerjaan: [], canWrite: false, canKabari: false }); return; }
     try {
-      const r = await fetch("/api/admin/pengerjaan?bulan=" + encodeURIComponent(tabBoard), { cache: "no-store" });
+      const r = await fetch("/api/admin/pengerjaan?bulan=" + encodeURIComponent(tabBoard) + (segar === true ? "&segar=1" : ""), { cache: "no-store" });
       if (r.status === 401) return setExpired(true);
       const j = await r.json().catch(() => ({}));
+      if (requestId !== permintaanPengerjaan.current) return;
       setPengerjaan(r.ok ? j : { pengerjaan: [], aturan: {}, error: j.error || "HTTP " + r.status });
     } catch (e) {
+      if (requestId !== permintaanPengerjaan.current) return;
       setPengerjaan({ pengerjaan: [], aturan: {}, error: e.message });
     }
   }, [tabBoard]);
@@ -248,8 +239,19 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   }, [pengguna.nama]);
 
   useEffect(() => {
-    if (!expired && akademik) muatPengerjaan();
-  }, [muatPengerjaan, expired, akademik]);
+    setPengerjaan(null);
+    if (!expired && operasional) muatPengerjaan();
+  }, [muatPengerjaan, expired, operasional]);
+
+  useEffect(() => {
+    if (expired || !operasional) return;
+    const segar = () => { muatPengerjaan(); muatReachout(); };
+    const visible = () => document.visibilityState === "visible" && segar();
+    const interval = setInterval(segar, POLL_MS);
+    window.addEventListener("focus", segar);
+    document.addEventListener("visibilitychange", visible);
+    return () => { clearInterval(interval); window.removeEventListener("focus", segar); document.removeEventListener("visibilitychange", visible); };
+  }, [muatPengerjaan, muatReachout, expired, operasional]);
 
   // Tombol WA di mana pun (Cari guru, Tinjau, kirim akun, profil) mengumumkan
   // kontak barunya lewat event — lihat lib/kontakWa.js.
@@ -283,8 +285,8 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   }, [bulanAktif]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    // Tim seleksi tidak membuka katalog/log: jangan habiskan kuota baca Sheets.
-    if (expired || !akademik) return undefined;
+    // Katalog juga dibaca CLO untuk pemenuhan guru; papan mengikuti bulan aktif.
+    if (expired || !operasional) return undefined;
     const id = setInterval(refresh, POLL_MS);
     const onFocus = () => refresh();
     // Di HP (terutama aplikasi terpasang) kembali ke aplikasi jarang memicu
@@ -297,7 +299,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [refresh, expired, akademik]);
+  }, [refresh, expired, operasional]);
 
   const run = useCallback(
     async (payload) => {
@@ -625,7 +627,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
               </div>
             ) : null}
 
-            {tab === "ringkasan" && <Ringkasan stat={stat} projects={projects} />}
+            {tab === "ringkasan" && <PantauanPanel data={pengerjaan} bulan={board.tab} namaBulan={namaBulan} pengguna={pengguna} projects={projects} guruDb={guru.rows || []} master={master.rows || []} log={assignments} riwayat={allMonths.log || []} akun={akses?.akun || []} kontak={reachout?.kontak || []} penanda={akses?.penanda || {}} wajibLogin={Boolean(akses?.wajibLogin)} muatUlang={muatPengerjaan} muatReachout={muatReachout} setErr={setErr} aksiEl={aksiEl} onBerubah={refresh} pilihTab={pilihTab} />}
 
             {tab === "log" && <StatBulan stat={stat} projects={projects} teachers={teachers} />}
 
@@ -656,7 +658,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
                 projects={projects}
                 run={run}
                 busy={busy}
-                readOnly={readOnly}
+                readOnly={readOnly || !akademik}
                 master={master.rows || []}
                 aksiEl={aksiEl}
                 namaBulan={namaBulan}
@@ -815,7 +817,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
         </div>
       </div>
 
-      <TabBar tab={tab} pilihTab={pilihTab} bukaMenu={() => setNavOpen(true)} menuTerbuka={navOpen} adaBaru={pendaftarBaru > 0 || ajuanData > 0} item={akademik ? TABBAR : TABBAR_SELEKSI} />
+      <TabBar tab={tab} pilihTab={pilihTab} bukaMenu={() => setNavOpen(true)} menuTerbuka={navOpen} adaBaru={pendaftarBaru > 0 || ajuanData > 0} item={akademik ? TABBAR : TABBAR_CLO} />
 
       {print ? <PrintArea groups={print.groups} mode={print.mode} brand={brand} periode={periode} /> : null}
     </>
@@ -833,8 +835,8 @@ const NAV = [
     item: [
       { k: "master", label: "Master subtes", judul: "Master Subtes", langkah: 1, hitung: "master", peran: ["Akademik"] },
       { k: "baru", label: "Proyek bulan baru", judul: "Proyek Bulan Baru", langkah: 2, peran: ["Akademik"] },
-      { k: "katalog", label: "Katalog bulan ini", judul: "Katalog Bulan Ini", langkah: 3, hitung: "katalog", peran: ["Akademik"] },
-      { k: "ambil", label: "Pengambilan guru", judul: "Pengambilan Guru", langkah: 4, hitung: "ambil", peran: ["Akademik"] },
+      { k: "katalog", label: "Katalog bulan ini", judul: "Katalog Bulan Ini", langkah: 3, hitung: "katalog", peran: ["Akademik", "Seleksi"] },
+      { k: "ambil", label: "Pengambilan guru", judul: "Pengambilan Guru", langkah: 4, hitung: "ambil", peran: ["Akademik", "Seleksi"] },
       { k: "log", label: "Log pengambilan", judul: "Log Pengambilan", langkah: 5, hitung: "log", peran: ["Akademik"] },
       { k: "bayar", label: "Pembayaran & kwitansi", judul: "Pembayaran & Kwitansi", langkah: 6, peran: ["Akademik"] },
     ],
@@ -842,9 +844,9 @@ const NAV = [
   {
     grup: "Pantauan",
     item: [
-      { k: "ringkasan", label: "Ringkasan", judul: "Ringkasan", ikon: "home", peran: ["Akademik"] },
+      { k: "ringkasan", label: "Pantauan RAD & CLO", judul: "Pantauan", ikon: "home", peran: ["Akademik", "Seleksi"] },
       { k: "analisis", label: "Analisis lintas bulan", judul: "Analisis Lintas Bulan", ikon: "chart", peran: ["Akademik"] },
-      { k: "reachout", label: "Pantau reachout", judul: "Pantau Reachout", ikon: "send", peran: ["Akademik"] },
+      { k: "reachout", label: "Pantau reachout", judul: "Pantau Reachout", ikon: "send", peran: ["Akademik", "Seleksi"] },
       { k: "corong", label: "Corong rekrutmen", judul: "Corong Rekrutmen & Aktivasi", ikon: "filter", peran: ["Seleksi"] },
     ],
   },
@@ -877,17 +879,18 @@ NAV.forEach((g) =>
 // baru (dikerjakan sebulan sekali, di laptop) ada di "Lainnya" bersama
 // Analisis dan Database guru.
 const TABBAR = [
-  { k: "ringkasan", label: "Ringkasan", ikon: "home" },
+  { k: "ringkasan", label: "Pantauan", ikon: "home" },
   { k: "katalog", label: "Katalog", ikon: "layers" },
   { k: "ambil", label: "Ambilan", ikon: "userCheck" },
   { k: "log", label: "Log", ikon: "clipboard" },
 ];
 
-// Tim seleksi tidak memakai katalog/log/bayar — menu bawahnya sendiri.
-const TABBAR_SELEKSI = [
-  { k: "akses", label: "Pendaftar", ikon: "userCheck" },
-  { k: "corong", label: "Corong", ikon: "filter" },
-  { k: "guru", label: "Guru", ikon: "users" },
+// Menu harian CLO: Pantauan, Pengambilan, reachout dan pendaftar.
+const TABBAR_CLO = [
+  { k: "ringkasan", label: "Pantauan", ikon: "home" },
+  { k: "ambil", label: "Ambilan", ikon: "userCheck" },
+  { k: "reachout", label: "Reachout", ikon: "send" },
+  { k: "akses", label: "Pendaftar", ikon: "users" },
 ];
 
 function TabBar({ tab, pilihTab, bukaMenu, menuTerbuka, adaBaru, item = TABBAR }) {
@@ -923,7 +926,7 @@ const inisial = (n) =>
     .map((w) => w[0].toUpperCase())
     .join("");
 const labelTim = (pg) =>
-  pg.pemilik ? "Divisi Produk" : pg.peran.includes("Seleksi") && pg.peran.includes("Akademik") ? "Tim Seleksi & Akademik" : pg.peran.includes("Seleksi") ? "Tim Seleksi" : "Tim Akademik";
+  pg.pemilik ? "Divisi Produk" : bolehTim(pg, ["Seleksi"]) && bolehTim(pg, ["Akademik"]) ? "Tim RAD & CLO" : bolehTim(pg, ["Seleksi"]) ? "Tim CLO" : "Tim RAD";
 
 function SideNav({ tab, setTab, counts, open, setOpen, months, bulanTab, setBulan, kunciBulan, syncedAt, syncing, refresh, pengguna = PENGGUNA_BAWAAN }) {
   const grup = NAV.map((g) => ({ ...g, item: g.item.filter((it) => bolehP(pengguna, it.peran)) })).filter((g) => g.item.length);
@@ -1080,103 +1083,6 @@ function StatBulan({ stat, projects, teachers }) {
         <span className="sub">{teachers.length ? `dari ${numberID(teachers.length)} guru terdaftar` : "punya baris di log"}</span>
       </div>
     </div>
-  );
-}
-
-/* ============================== RINGKASAN ================================= */
-function Ringkasan({ stat, projects }) {
-  const platBars = Object.entries(stat.byPlat).map(([label, v]) => ({ label, value: v.keb - v.sisa }));
-  const statusBars = Object.entries(stat.byStatus).map(([label, v]) => ({ label, value: v.fee }));
-  const guruBars = Object.entries(stat.byGuru)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
-    .map(([label, value]) => ({ label, value }));
-
-  return (
-    <>
-      <div className="grid stat-grid">
-        <div className="card stat">
-          <div className="label">Total proyek</div>
-          <div className="value">{numberID(projects.length)}</div>
-          <div className="sub">{stat.habis} stok habis</div>
-        </div>
-        <div className="card stat">
-          <div className="label">Kebutuhan soal</div>
-          <div className="value">{numberID(stat.kebutuhan)}</div>
-          <div className="sub">target seluruh katalog</div>
-        </div>
-        <div className="card stat">
-          <div className="label">Sudah diambil</div>
-          <div className="value green">{numberID(stat.diambil)}</div>
-          <div className="meter">
-            <i style={{ width: Math.min(100, stat.pct) + "%" }} />
-          </div>
-        </div>
-        <div className="card stat">
-          <div className="label">Sisa</div>
-          <div className="value amber">{numberID(stat.sisa)}</div>
-          <div className="sub">{stat.negatif ? `${stat.negatif} proyek kelebihan ambil` : "belum diambil"}</div>
-        </div>
-        <div className="card stat">
-          <div className="label">Tampil di halaman guru</div>
-          <div className={"value " + (projects.length - stat.habis > 0 ? "green" : "amber")}>{numberID(projects.length - stat.habis)}</div>
-          <div className="sub">bisa diambil · {stat.habis} stok habis</div>
-        </div>
-        <div className="card stat">
-          <div className="label">Guru aktif</div>
-          <div className="value">{numberID(stat.guruAktif)}</div>
-          <div className="sub">punya baris di log</div>
-        </div>
-      </div>
-
-      <div className="grid stat-grid">
-        <div className="card stat hi">
-          <div className="label">Fee harus dibayar</div>
-          <div className="value">{rupiah(stat.feeTotal)}</div>
-          <div className="sub">total kolom Fee pada log · Cancel = 0</div>
-        </div>
-        <div className="card stat">
-          <div className="label">Anggaran harus disiapkan</div>
-          <div className="value">{rupiah(stat.anggaran)}</div>
-          <div className="sub">harga × kebutuhan, seluruh katalog</div>
-        </div>
-        <div className="card stat">
-          <div className="label">Sisa anggaran</div>
-          <div className="value amber">{rupiah(stat.anggaranSisa)}</div>
-          <div className="sub">harga × sisa yang belum diambil</div>
-        </div>
-      </div>
-
-      <div className="split">
-        <div className="card card-p">
-          <div className="section-head">
-            <h2>Progres per platform</h2>
-            <span className="muted">soal selesai</span>
-          </div>
-          <Bars data={platBars} />
-          <div className="muted" style={{ marginTop: 8 }}>
-            {Object.entries(stat.byPlat)
-              .map(([k, v]) => `${k}: ${numberID(v.keb - v.sisa)}/${numberID(v.keb)}`)
-              .join("  ·  ")}
-          </div>
-        </div>
-        <div className="card card-p">
-          <div className="section-head">
-            <h2>Fee per status</h2>
-            <span className="muted">nilai pekerjaan</span>
-          </div>
-          <Bars data={statusBars} fmt={rupiah} color="var(--good)" />
-        </div>
-      </div>
-
-      <div className="card card-p">
-        <div className="section-head">
-          <h2>10 guru dengan fee terbesar</h2>
-          <span className="muted">bulan ini</span>
-        </div>
-        <Bars data={guruBars} fmt={rupiah} />
-      </div>
-    </>
   );
 }
 

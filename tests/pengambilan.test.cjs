@@ -16,7 +16,7 @@ async function load(file, overrides = {}, globals = {}) {
     return module;
   }
   const entry = moduleFor(path.join(root, file));
-  await entry.link((specifier, parent) => moduleFor(specifier.startsWith("node:") ? specifier : path.resolve(path.dirname(parent.identifier), specifier + (path.extname(specifier) ? "" : ".js"))));
+  await entry.link((specifier, parent) => moduleFor(specifier.startsWith("node:") || overrides[specifier] ? specifier : path.resolve(specifier.startsWith("@/") ? root : path.dirname(parent.identifier), (specifier.startsWith("@/") ? specifier.slice(2) : specifier) + (path.extname(specifier) ? "" : ".js"))));
   await entry.evaluate();
   return entry.namespace;
 }
@@ -49,6 +49,107 @@ test("text searches narrow dropdowns by multiple words, codes, and email", async
   assert.equal(m.cocokTeksPengambilan("BIMA @test", "Bima Pratama", "bima@test.invalid"), true);
   assert.equal(m.cocokTeksPengambilan("Bima literasi", "Bima Pratama", "Penalaran Umum"), false);
   assert.equal(m.cocokTeksPengambilan("", undefined, null), true);
+});
+
+test("RAD and CLO permissions support legacy accounts without granting CLO QC writes", async () => {
+  const m = await load("lib/peranTim.js");
+  for (const role of ["RAD", "Akademik"]) {
+    const p = { peran: [role] };
+    assert.equal(m.bolehTim(p, ["Akademik"]), true);
+    assert.equal(m.bolehTim(p, ["Seleksi"]), false);
+    assert.deepEqual(Array.from(m.timPantauan(p)), ["rad"]);
+  }
+  for (const role of ["CLO", "Seleksi"]) {
+    const p = { peran: [role] };
+    assert.equal(m.bolehTim(p, ["Akademik"]), false);
+    assert.equal(m.bolehTim(p, ["Seleksi"]), true);
+    assert.deepEqual(Array.from(m.timPantauan(p)), ["clo"]);
+  }
+  assert.deepEqual(Array.from(m.timPantauan({ peran: ["Pemilik"], pemilik: true })), ["rad", "clo"]);
+  assert.equal(m.bolehTim(null), false);
+});
+
+test("team-role parsing preserves legacy separators and matches complete role names", async () => {
+  const full = (name) => path.join(root, "lib", name + ".js");
+  const m = await load("lib/akunTim.js", {
+    [full("tabSheet")]: { namaTab: (s) => s, pastikanTab: async () => {}, bacaBaris: async () => [], tambahBaris: async () => {}, ubahBaris: async () => {} },
+    [full("sandi")]: { hashPassword: async () => "", passwordAcak: () => "" },
+    [full("akun")]: { waktuWib: () => "" },
+  }, { TextEncoder, TextDecoder });
+  assert.deepEqual(Array.from(m.rapikanPeran("Akademik / Seleksi")), ["Seleksi", "Akademik"]);
+  assert.deepEqual(Array.from(m.rapikanPeran("RAD & CLO")), ["RAD", "CLO"]);
+  assert.deepEqual(Array.from(m.rapikanPeran(["rad", "CLO"])), ["RAD", "CLO"]);
+  assert.deepEqual(Array.from(m.rapikanPeran("RADAR")), []);
+});
+
+test("notification scope follows the current report version, decision and assignment", async () => {
+  const m = await load("lib/pantauanOpsi.js");
+  const l1 = report("L1", 19, 30, 6);
+  const r1 = { id: "r1", jenis: "minta_revisi", laporanId: "L1", noLaporan: 1, versi: 1, persen: 30, t: time(20) };
+  const sent = { id: "sent1", jenis: "kabar", meta: { keputusanId: "r1" }, oleh: "Rani", t: time(20, 10) };
+  const p = { ...base, riwayat: [l1, r1, sent] };
+  assert.equal(m.barisPantauan(p).siap.length, 0);
+  p.riwayat.push(report("L1", 21, 30, 6, 2, "revisi_laporan"));
+  assert.equal(m.keputusanPengambilan(p).length, 0, "new delivery awaits its own inspection");
+  const r2 = { ...r1, id: "r2", versi: 2, t: time(22) };
+  p.riwayat.push(r2);
+  assert.equal(m.barisPantauan(p).siap.length, 1);
+  assert.match(m.barisPantauan(p).siap[0].judul, /Revisi 2 diminta/);
+  assert.equal(m.kabarKeputusan(p, r2), null);
+  assert.equal(m.kabarKeputusan({ ...base, id: "PJ-OTHER", riwayat: [] }, r1), null);
+  p.riwayat.push(report("L2", 22, 50, 10), { id: "check2", jenis: "dicek", laporanId: "L2", noLaporan: 2, versi: 1, persen: 50, t: time(22, 11) });
+  assert.equal(m.barisPantauan(p).siap.length, 2, "30% revision and 50% result remain separate");
+  assert.equal(m.kabarKeputusan(p, r1).oleh, "Rani", "prior contact remains in journal");
+});
+
+test("new final submission invalidates previous QC contact until review of the new version", async () => {
+  const m = await load("lib/pantauanOpsi.js");
+  const p = { ...base, status: "Revisi", riwayat: [
+    { ...report("A1", 19, 100, 20), jenis: "pengumpulan" },
+    { id: "qc1", jenis: "review", laporanId: "A1", versi: 1, persen: 100, t: time(20), meta: { revisi: 20 } },
+    { id: "sentqc1", jenis: "kabar", t: time(20, 11), meta: { keputusanId: "qc1" } },
+  ] };
+  assert.equal(m.barisPantauan(p).sudah.length, 1);
+  p.status = "Ready to review";
+  p.riwayat.push({ ...report("A1", 21, 100, 20, 2), jenis: "revisi_akhir" });
+  assert.equal(m.barisPantauan(p).keputusan.length, 0);
+  assert.equal(m.barisPantauan(p).tahap, "qc");
+  p.status = "Revisi";
+  p.riwayat.push({ id: "qc2", jenis: "review", laporanId: "A1", versi: 2, persen: 100, t: time(22), meta: { revisi: 10, setuju: 10 } });
+  assert.equal(m.barisPantauan(p).siap.length, 1);
+  assert.match(m.pesanKabar(p, m.keputusanPengambilan(p)[0]), /Revisi 2 diminta/);
+});
+
+test("reminder confirmations expire at the next WIB day and when a schedule changes", async () => {
+  const m = await load("lib/pantauanOpsi.js");
+  const now = time(22, 23);
+  const p = { ...base, deadline: "2026-10-22", riwayat: [] };
+  const first = m.pengingatPantauan(p, now)[0];
+  p.riwayat.push({ id: "rem1", jenis: "reminder", t: now, meta: { pengingatId: first.key } });
+  assert.ok(m.pengingatPantauan(p, now)[0].terkirim);
+  assert.equal(m.pengingatPantauan(p, time(23, 1))[0].terkirim, null);
+  assert.equal(m.pengingatPantauan({ ...p, deadline: "2026-10-23" }, now)[0].terkirim, null);
+});
+
+test("older journal snapshots recover their known review round and closed work has no pending progress tasks", async () => {
+  const m = await load("lib/pantauanOpsi.js");
+  const p = { ...base, status: "Revisi", riwayat: [
+    { ...report("AF", 19, 100, 20, 2), jenis: "pengumpulan", lama: true },
+    { id: "legacy-qc", jenis: "review", persen: 100, versi: 1, lama: true, meta: { ronde: 2, revisi: 5 }, t: time(22) },
+  ] };
+  assert.equal(m.keputusanPengambilan(p)[0].versi, 2);
+  assert.match(m.judulKeputusan(m.keputusanPengambilan(p)[0]), /Revisi 2/);
+  assert.equal(m.progresBelumDiperiksa({ ...base, status: "Selesai", riwayat: [report("old", 19, 30, 6)] }).length, 0);
+});
+
+test("recruiting excludes quota already reserved by pending approvals", async () => {
+  const m = await load("lib/pantauanOpsi.js");
+  const projects = [{ id: "A1", sisa: 30 }, { id: "A2", sisa: 80 }];
+  const result = m.proyekButuhGuru(projects, [{ idProyek: "a1", jumlah: 30, status: "Diajukan" }, { idProyek: "A2", jumlah: 20, status: "Diajukan" }, { idProyek: "A2", jumlah: 50, status: "Running" }]);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].id, "A2");
+  assert.equal(result[0].tersedia, 60);
+  assert.equal(projects[1].sisa, 80, "catalogue source is not mutated");
 });
 
 test("milestones retain separate report states; revision counts are cumulative", async () => {
@@ -227,4 +328,116 @@ test("progress authorization, integer counts, and required revision notes are en
   const l = (await read()).riwayat[0];
   await assert.rejects(m.periksaProgres("PJ-1", { laporanId: l.laporanId, versi: 1, revisi: true }, "Akademik"), /catatan revisi/);
   await assert.rejects(m.laporProgres(guru, "PJ-1", body(6, l.laporanId)), /tidak sedang menunggu revisi/);
+});
+
+test("contact confirmations persist per revision, reject stale results and are idempotent", async () => {
+  const { m, guru, store, read, report: body } = await system();
+  const model = await load("lib/pantauanOpsi.js");
+  await m.laporProgres(guru, "PJ-1", body(6));
+  const l = (await read()).riwayat[0];
+  let oldDecision;
+  for (let versi = 1; versi <= 3; versi++) {
+    await m.periksaProgres("PJ-1", { laporanId: l.laporanId, versi, revisi: true, catatan: `Revisi ${versi}` }, "Nadia RAD");
+    let p = await read();
+    const decision = model.keputusanPengambilan(p)[0];
+    assert.equal(model.barisPantauan(p).siap.length, 1);
+    if (oldDecision) await assert.rejects(m.catatKabarPengambilan(p.id, { keputusanId: oldDecision }, "Rani CLO"), /sudah berubah/);
+    const beforeRow = [...store.row];
+    await m.catatKabarPengambilan(p.id, { keputusanId: decision.id }, "Rani CLO");
+    assert.deepEqual(store.row, beforeRow, "communication never changes assignment status or reported totals");
+    const before = store.history.length;
+    await m.catatKabarPengambilan(p.id, { keputusanId: decision.id }, "Petugas lain");
+    assert.equal(store.history.length, before, "retry does not create another contact event");
+    p = await read();
+    assert.equal(model.barisPantauan(p).siap.length, 0);
+    assert.equal(model.kabarKeputusan(p, decision).oleh, "Rani CLO");
+    assert.equal(model.kabarKeputusan(p, decision).versi, versi);
+    store.at += 60000;
+    await m.laporProgres(guru, p.id, body(6, l.laporanId));
+    oldDecision = decision.id;
+    await assert.rejects(m.catatKabarPengambilan(p.id, { keputusanId: decision.id }, "Rani CLO"), /sudah berubah/);
+  }
+  const p = await read();
+  assert.equal(p.riwayat.filter((e) => e.jenis === "kabar").length, 3);
+  assert.equal(p.riwayat.filter((e) => e.jenis === "revisi_laporan").length, 3);
+  assert.equal(model.barisPantauan(p).keputusan.length, 0);
+});
+
+test("failed contact storage is atomic and legacy final revision remains identifiable", async () => {
+  const { m, store, read } = await system({ Status: "Revisi", Link: "https://docs.google.com/document/d/old", Dikumpulkan: "20/10/2026 10:00", "Ronde review": 2, Direview: "22/10/2026 12:00", Reviewer: "RAD", "Catatan revisi": "Revisi kedua", "Batas revisi": "25/10/2026 12:00" });
+  const model = await load("lib/pantauanOpsi.js");
+  const p = await read();
+  const result = model.keputusanPengambilan(p)[0];
+  assert.equal(result.versi, 2);
+  assert.match(model.judulKeputusan(result), /Revisi 2/);
+  store.fail = true;
+  await assert.rejects(m.catatKabarPengambilan(p.id, { keputusanId: result.id }, "CLO"), /Simulated atomic failure/);
+  assert.equal(store.history.length, 0);
+  store.fail = false;
+  await m.catatKabarPengambilan(p.id, { keputusanId: result.id }, "CLO");
+  const after = await read();
+  assert.equal(model.keputusanPengambilan(after)[0].id, result.id);
+  assert.equal(model.barisPantauan(after).sudah.length, 1);
+  assert.equal(after.riwayat.find((e) => e.jenis === "kabar").meta.keputusanId, result.id);
+});
+
+test("concurrent confirmations share one logical event ID", async () => {
+  const { m, guru, read, report: body } = await system();
+  const model = await load("lib/pantauanOpsi.js");
+  await m.laporProgres(guru, "PJ-1", body(6));
+  const l = (await read()).riwayat[0];
+  await m.periksaProgres("PJ-1", { laporanId: l.laporanId, versi: 1 }, "RAD");
+  const decision = model.keputusanPengambilan(await read())[0];
+  await Promise.all([m.catatKabarPengambilan("PJ-1", { keputusanId: decision.id }, "CLO A"), m.catatKabarPengambilan("PJ-1", { keputusanId: decision.id }, "CLO B")]);
+  assert.equal((await read()).riwayat.filter((e) => e.jenis === "kabar").length, 1);
+});
+
+test("reminder storage validates the current schedule and keeps a named audit entry", async () => {
+  const { m, store, read } = await system();
+  const model = await load("lib/pantauanOpsi.js");
+  store.at = time(22, 10);
+  const [p] = await m.lengkapiTitik([await read()]);
+  const i = model.pengingatPantauan(p, store.at)[0];
+  await assert.rejects(m.catatKabarPengambilan(p.id, { pengingatId: "old-schedule" }, "CLO"), /sudah berubah/);
+  await assert.rejects(m.catatKabarPengambilan(p.id, { pengingatId: i.key }, ""), /Petugas/);
+  await m.catatKabarPengambilan(p.id, { pengingatId: i.key }, "Rani CLO");
+  const after = await read();
+  assert.equal(after.riwayat.find((e) => e.jenis === "reminder").oleh, "Rani CLO");
+  assert.equal(model.pengingatPantauan({ ...after, titik: base.titik }, store.at)[0].terkirim.oleh, "Rani CLO");
+  await assert.rejects(m.catatKabarPengambilan(p.id, { keputusanId: "x", pengingatId: i.key }, "CLO"), /Pilih satu/);
+});
+
+test("admin API enforces RAD and CLO actions and takes the contact author from the session", async () => {
+  const { m, guru, read, report: body } = await system();
+  const roles = await load("lib/peranTim.js");
+  const model = await load("lib/pantauanOpsi.js");
+  await m.laporProgres(guru, "PJ-1", body(6));
+  const l = (await read()).riwayat[0];
+  await m.periksaProgres("PJ-1", { laporanId: l.laporanId, versi: 1 }, "RAD");
+  const decision = model.keputusanPengambilan(await read())[0];
+  let session = { peran: ["CLO"], nama: "Rani dari sesi" };
+  const full = (f) => path.join(root, "lib", f + ".js");
+  const route = await load("app/api/admin/pengerjaan/route.js", {
+    "next/server": { NextResponse: { json: (body, opts) => ({ body, status: opts?.status || 200 }) } },
+    [full("authServer")]: { izinAdmin: async () => ({ sesi: session }), bolehPeran: roles.bolehTim },
+    [full("gauth")]: { canWrite: () => true },
+    [full("pengerjaan")]: { ...m },
+    [full("juli")]: { getBoard: async () => ({}) },
+    [full("aturanProyek")]: Object.fromEntries(["aturanBulan", "aturDeadline", "aturLapor", "aturPaket", "aturTipe", "aturSemua"].map((k) => [k, async () => ({})])),
+    [full("akun")]: { bacaAkun: async () => [] },
+  });
+  const post = (payload) => route.POST({ json: async () => payload });
+  assert.equal((await post({ action: "review", id: "PJ-1" })).status, 403);
+  assert.equal((await post({ action: "progresDicek", id: "PJ-1" })).status, 403);
+  let get = await route.GET({ nextUrl: new URL("https://test.invalid/?bulan=Oktober_") });
+  assert.equal(get.body.canWrite, false);
+  assert.equal(get.body.canKabari, true);
+  session = { peran: ["RAD"], nama: "Nadia" };
+  assert.equal((await post({ action: "kabari", id: "PJ-1", keputusanId: decision.id })).status, 403);
+  get = await route.GET({ nextUrl: new URL("https://test.invalid/?bulan=Oktober_") });
+  assert.equal(get.body.canWrite, true);
+  assert.equal(get.body.canKabari, false);
+  session = { peran: ["CLO"], nama: "Rani dari sesi" };
+  assert.equal((await post({ action: "kabari", id: "PJ-1", keputusanId: decision.id, oleh: "Pemalsu", pic: "Pemalsu" })).status, 200);
+  assert.equal((await read()).riwayat.find((e) => e.jenis === "kabar").oleh, "Rani dari sesi");
 });

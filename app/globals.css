@@ -1522,3 +1522,55 @@ html{scroll-behavior:smooth}
   .pg-event-time{font-size:11.5px}
 }
 @container pengambilan (max-width:440px){.pg-entity-filters{grid-template-columns:minmax(0,1fr)}.pg-stage-button .icon{display:none}}
+
+/* Pantauan RAD / CLO: ringkasan tugas, antrean, dan kabar per keputusan. */
+.pn-workspace{container-type:inline-size;container-name:pantauan;display:flex;flex-direction:column;gap:20px;min-width:0}
+.pn-rolebar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.pn-purpose{margin:0;color:var(--text-2)}
+.pn-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+.pn-stat{text-align:left;font:inherit;cursor:pointer;min-width:0;color:var(--text);transition:border-color .15s,background .15s}
+.pn-stat:hover{border-color:var(--accent-weak-bd);background:var(--accent-weak)}
+.pn-stream{padding:20px 0;border-block:1px solid var(--border)}
+.pn-filterbar{display:flex;flex-direction:column;gap:14px}
+.pn-filterbar .search{max-width:480px}
+.pn-table-wrap{overflow:visible;min-width:0}
+.pn-table{width:100%;border-collapse:collapse;table-layout:fixed;text-align:left}
+.pn-table th{font-size:11px;font-weight:700;color:var(--text-muted);padding:14px 16px;border-bottom:1px solid var(--border);letter-spacing:.025em}
+.pn-table th:nth-child(1){width:28%}.pn-table th:nth-child(2){width:27%}.pn-table th:nth-child(3){width:27%}.pn-table th:nth-child(4){width:18%}
+.pn-table td{padding:18px 16px;vertical-align:top;overflow-wrap:anywhere;border-bottom:1px solid var(--border-soft)}
+.pn-table tr:last-child td{border-bottom:0}
+.pn-table td>b{font-size:13px;font-weight:700}
+.pn-table small{display:block;font-size:11.5px;color:var(--text-muted);margin-top:6px}
+.pn-table .btn{white-space:normal;text-align:left;max-width:100%;gap:5px}
+.pn-table .pill{white-space:normal}
+.pn-contact+.pn-contact{margin-top:14px}
+.pn-projects{display:flex;flex-direction:column;gap:12px}
+.pn-project{padding:20px;display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.pn-project>div:first-child{flex:1;min-width:min(220px,100%)}
+.pn-project small{display:block;color:var(--text-muted);margin-top:6px}
+.pn-project p{margin:12px 0 0}
+.pn-kabar{border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;display:flex;flex-direction:column;gap:14px;background:var(--surface)}
+.pn-kabar .section-head{margin-bottom:0}
+.pn-kabar-item{display:flex;flex-direction:column;gap:10px;min-width:0}
+.pn-kabar-item+.pn-kabar-item{padding-top:16px;border-top:1px solid var(--border)}
+.pn-kabar-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.pn-kabar small{font-size:12px;overflow-wrap:anywhere}
+.pn-kabar p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.pn-contact-stamp{color:var(--good)}
+.pn-draft{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.pn-draft .ffield{width:100%;min-width:0}
+.pn-draft textarea{width:100%;min-width:0;resize:vertical}
+.pn-kabar .btn{white-space:normal;max-width:100%}
+@container pantauan (max-width:760px){
+  .pn-table,.pn-table tbody{display:block;width:100%}
+  .pn-table thead{display:none}
+  .pn-table tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;padding:18px;border-bottom:1px solid var(--border)}
+  .pn-table tr:last-child{border-bottom:0}
+  .pn-table td{display:block;padding:0;border:0;min-width:0}
+  .pn-table td:first-child,.pn-table td:last-child{grid-column:1/-1}
+  .pn-table td[data-label]::before{content:attr(data-label);display:block;font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px}
+}
+@container pantauan (max-width:500px){
+  .pn-stats{grid-template-columns:minmax(0,1fr)}
+  .pn-table tr{grid-template-columns:minmax(0,1fr)}
+}

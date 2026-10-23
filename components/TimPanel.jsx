@@ -12,11 +12,13 @@ import Drawer from "./Drawer";
 import Icon from "./Icon";
 
 const PERAN_UI = [
-  ["Seleksi", "Pendaftar, kolam & seleksi, corong rekrutmen"],
-  ["Akademik", "Master, katalog, log, pembayaran, pantauan proyek"],
+  ["RAD", "Pantauan RAD, proyek, katalog, ACC, pemeriksaan progres dan QC"],
+  ["CLO", "Pantauan CLO, kabar hasil, reminder, cari guru, reachout dan seleksi"],
+  ["Seleksi", "Akun lama · tugas CLO, pendaftar dan seleksi"],
+  ["Akademik", "Akun lama · tugas RAD, proyek dan pembayaran"],
   ["Pemilik", "Semua menu + kelola akun tim"],
 ];
-const kelasPeran = { Pemilik: "run", Seleksi: "qc", Akademik: "appr" };
+const kelasPeran = { Pemilik: "run", Seleksi: "qc", Akademik: "appr", RAD: "appr", CLO: "qc" };
 
 async function kirim(body) {
   const res = await fetch("/api/admin/tim", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), cache: "no-store" });
@@ -55,7 +57,7 @@ export default function TimPanel({ aksiEl, setErr, emailSaya = "" }) {
   const [data, setData] = useState(null);
   const [busy, setBusy] = useState(false);
   const [tambah, setTambah] = useState(false);
-  const [baru, setBaru] = useState({ nama: "", email: "", peran: ["Seleksi"] });
+  const [baru, setBaru] = useState({ nama: "", email: "", peran: ["CLO"] });
   const [galatForm, setGalatForm] = useState("");
   const [ubah, setUbah] = useState(null); // { email, nama, peran }
   const [kred, setKred] = useState(null); // { …akun, password, reset }
@@ -100,7 +102,7 @@ export default function TimPanel({ aksiEl, setErr, emailSaya = "" }) {
       const j = await kirim({ action: "buat", ...baru });
       await muat();
       setTambah(false);
-      setBaru({ nama: "", email: "", peran: ["Seleksi"] });
+      setBaru({ nama: "", email: "", peran: ["CLO"] });
       setDisalin(false);
       setKred({ ...j.akun, reset: false });
     } catch (e) {

@@ -12,6 +12,33 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.12.0 — Pantauan RAD & CLO dan kabar per revisi (23 Oktober 2026)
+
+- Halaman awal **Pantauan** menyesuaikan akun: RAD mendapat antrean ACC,
+  pemeriksaan progres, QC/QC ulang dan revisi, dengan pintasan proyek baru dan
+  katalog. CLO mendapat progres seluruh RAD, antrean kabar, reminder, serta
+  proyek yang masih memerlukan guru dan akses langsung ke Cari guru/reachout.
+  Kuota yang sudah dipesan pengajuan menunggu ACC tidak ditawarkan kembali.
+- Peran **RAD** dan **CLO** tersedia di Akun tim. Akun lama **Akademik** tetap
+  membuka tugas RAD; **Seleksi** membuka tugas CLO. Pemilik atau anggota dengan
+  kedua peran dapat berpindah tampilan. CLO dapat membaca katalog/pengambilan,
+  sedangkan pemeriksaan, ACC dan pengaturan proyek tetap membutuhkan izin RAD.
+- **Siap dikabari / Sudah dikabari** merujuk satu hasil pemeriksaan, laporan,
+  versi, dan pengambilan. Catatan menyimpan petugas dari sesi login dan waktu WIB.
+  Kiriman revisi baru menunggu QC ulang; hasil QC baru kembali siap dikabari,
+  tanpa menghapus kabar untuk revisi sebelumnya. Permintaan untuk hasil yang
+  sudah berubah ditolak; pengulangan pencatatan hasil yang sama tidak menggandakan
+  riwayat. Riwayat lama yang masih tersimpan disertakan saat pencatatan pertama.
+- Draf pesan dan tombol WhatsApp tidak otomatis menandai terkirim. CLO menekan
+  **Catat sudah dikabari** sesudah mengirim pesan. Reminder juga dikonfirmasi
+  secara eksplisit, per jadwal dan hari WIB, sehingga dapat muncul lagi esok hari
+  jika tugas belum selesai.
+- Tindakan membuka panel detail **di kanan** yang sama dengan Pengambilan Guru.
+  Riwayat laporan, revisi, hasil QC dan kabar tampil bersama. Pantauan diperbarui
+  berkala dan saat kembali ke aplikasi; pergantian bulan membersihkan detail lama.
+- Data disimpan pada tab **Riwayat pengerjaan** yang sudah digunakan sebelumnya;
+  tidak perlu menambah kolom atau memindahkan data secara manual.
+
 ## 3.11.0 — Dropdown Subtes dan Guru dengan pencarian teks (22 Oktober 2026)
 
 - Filter **Subtes**, **Guru**, dan **Status** memiliki pencarian teks di dalam

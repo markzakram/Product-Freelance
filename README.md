@@ -101,6 +101,29 @@ Tanpa mengisi `.env.local`, aplikasi tetap jalan dengan data contoh.
 - **Keamanan**: area `/admin` dilindungi password lewat cookie (12 jam) + `middleware.js`. Kredensial Google & password hanya dipakai di server, tidak pernah terekspos ke browser.
 - **Zero dependency data layer**: koneksi Sheets memakai `fetch` + tanda tangan JWT bawaan Node, tanpa library berat.
 
+## Pantauan RAD & CLO (v3.12.0)
+
+- Semua akun tim membuka **Pantauan** setelah login. RAD mengelola antrean ACC,
+  pemeriksaan progres 30%/50%, QC akhir dan QC ulang, serta proyek/katalog.
+  CLO memantau hasil RAD, mengabari guru, mencatat reminder, dan mencari guru
+  untuk kuota yang belum terisi. Detail terbuka dari kanan dan sama dengan
+  **Pengambilan Guru**.
+  Kuota pengajuan yang masih menunggu ACC diperhitungkan sebelum menawarkan
+  pekerjaan kepada guru lain.
+- Pemilik mengatur **RAD / CLO** pada **Akun tim → Peran**. Akun lama tetap
+  didukung: **Akademik → RAD**, **Seleksi → CLO**. Untuk anggota lama dengan
+  pekerjaan berbeda dari perannya sekarang, ubah perannya di Akun tim; tidak ada
+  perubahan akun otomatis berdasarkan nama atau email. Satu anggota bisa
+  memiliki kedua peran, dengan pilihan tampilan di Pantauan.
+- **Sudah dikabari** adalah konfirmasi manual untuk satu hasil pemeriksaan dan
+  versi tertentu, sesudah pesan dikirim. Membuka draf/WhatsApp belum berarti
+  mengirim. Revisi berikutnya memerlukan konfirmasi baru; nama petugas dan waktu
+  WIB setiap kabar tetap ada dalam riwayat. Catatan WhatsApp lama yang tidak
+  menyebut hasil/versi tertentu tidak diperlakukan sebagai bukti kabar hasil QC.
+- Catatan tersimpan pada tab **Riwayat pengerjaan**, mengikuti penyimpanan jurnal
+  sebelumnya. Pengingat dicatat per jadwal dan hari WIB. Jalankan `npm test`
+  untuk pemeriksaan lingkup versi, penyimpanan, dan izin RAD/CLO.
+
 ## Struktur folder
 
 ```
