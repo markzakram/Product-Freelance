@@ -25,6 +25,55 @@ const time = (day, hour = 9) => Date.UTC(2026, 9, day, hour - 7);
 const base = { id: "PJ-1", bulan: "Oktober_", idProyek: "PU-01", idGuru: "1", nama: "Ayu", email: "ayu@test.invalid", jumlah: 20, status: "Running", laporan: [], riwayat: [], tAcc: time(18), titik: [{ persen: 30, tanggal: "2026-10-19" }, { persen: 50, tanggal: "2026-10-22" }] };
 const report = (id, day, persen, soal, versi = 1, jenis = "laporan") => ({ id: `${id}-v${versi}`, laporanId: id, noLaporan: persen === 30 ? 1 : 2, versi, jenis, persen, soal, waktu: `${day}/10/2026 09:00`, t: time(day), link: "https://docs.google.com/document/d/test" });
 
+test("dashboard separates catalog occupancy, final submissions and approved review quantities", async () => {
+  const m = await load("lib/pengambilanDashboard.js");
+  const projects = [{ id: "PU-01", subtes: "Penalaran Umum", kebutuhan: 100, sisa: 40 }, { id: "PU-02", subtes: " penalaran umum ", kebutuhan: 50, sisa: 30 }];
+  const list = [
+    { ...base, status: "Revisi", jumlah: 20, tepat: 6, telat: 2, riwayat: [{ ...report("final", 22, 100, 20), jenis: "pengumpulan" }] },
+    { ...base, id: "PJ-2", status: "Ready to review", jumlah: 20, riwayat: [{ ...report("final-2", 22, 100, 20), jenis: "pengumpulan" }] },
+    { ...base, id: "PJ-3", status: "Dibatalkan", jumlah: 20, tepat: 20 },
+  ];
+  const s = m.ringkasanPengambilan(projects, list.map((p) => ({ ...p, subtes: "Penalaran Umum" })), time(23));
+  assert.equal(s.target, 150);
+  assert.equal(s.terisi, 80, "occupancy comes from catalog, not reports");
+  assert.equal(s.lolos, 8, "only cumulative approved quantities count, including partial reviews");
+  assert.equal(s.subtes.length, 1, "equivalent subtest names combine multiple catalog outputs");
+  assert.equal(s.subtes[0].periksa, 1);
+  assert.equal(s.subtes[0].revisi, 1);
+  assert.equal(m.soalDisetujui({ jumlah: 20, tepat: 30, telat: 5 }), 20);
+  assert.equal(projects[0].sisa, 40);
+});
+
+test("dashboard clicks and matrix focus share one predicate and exclude closed progress tasks", async () => {
+  const m = await load("lib/pengambilanDashboard.js");
+  const list = [
+    { ...base, id: "pending", status: "Diajukan" },
+    { ...base, id: "progress", riwayat: [report("p1", 22, 30, 6)] },
+    { ...base, id: "qc1", status: "Ready to review", ronde: 0 },
+    { ...base, id: "qc2", status: "Ready to review", ronde: 2 },
+    { ...base, id: "closed", status: "Selesai", tepat: 20, riwayat: [report("old", 19, 30, 6)] },
+  ];
+  const s = m.ringkasanPengambilan([], list, time(23));
+  assert.equal(s.counts.tugas, 4);
+  assert.equal(s.counts.ulang, 1);
+  assert.equal(s.counts.awal, 1);
+  assert.equal(s.counts.periksa, 3);
+  for (const [key, n] of Object.entries(s.counts)) assert.equal(s.baris.filter((r) => m.cocokFokusKerja(r, key)).length, n);
+  assert.equal(m.cocokFokusKerja(s.baris.find((r) => r.p.id === "closed"), "progres"), false);
+});
+
+test("dashboard zero and over-capacity states retain real values without inventing completion", async () => {
+  const m = await load("lib/pengambilanDashboard.js");
+  const empty = m.ringkasanPengambilan([], []);
+  assert.equal(empty.target, 0);
+  assert.equal(empty.terisi, 0);
+  assert.equal(empty.lolos, 0);
+  assert.equal(empty.counts.semua, 0);
+  const extra = m.ringkasanPengambilan([{ id: "PU-01", subtes: "PU", kebutuhan: 10, sisa: -5 }], []);
+  assert.equal(extra.terisi, 15, "actual over-allocation remains visible");
+  assert.equal(extra.lolos, 0, "filling catalog quota does not approve work");
+});
+
 test("dropdown options preserve teacher identities and merge equivalent subtest names", async () => {
   const m = await load("lib/pengambilanFilter.js");
   const rows = [

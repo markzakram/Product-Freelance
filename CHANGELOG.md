@@ -12,6 +12,29 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.13.0 — Dashboard dan matriks dalam satu Pengambilan Guru (23 Oktober 2026)
+
+- **Pengambilan Guru** menjadi halaman awal dan ruang kerja bersama RAD/CLO.
+  Menu **Pantauan RAD & CLO** mengarah ke halaman yang sama, sehingga matriks,
+  sudut pandang dan filter yang sedang dipakai tidak hilang saat memilih menu itu.
+- Dashboard menampilkan kuota terisi dari katalog, soal yang disetujui melalui
+  review pengambilan (termasuk persetujuan parsial), capaian per subtes, serta
+  prioritas RAD/CLO. Soal dilaporkan atau dikumpulkan 100% tidak dianggap otomatis
+  lolos QC. Label menjelaskan sumber dan lingkup angka.
+- Kartu, grafik per subtes, dan prioritas dapat diklik untuk menyaring matriks
+  secara langsung. Fokus dapat digabung dengan dropdown Guru/Subtes/Status yang
+  mendukung pencarian dan tahap 30%/50%/100%; **Reset filter** melepas semuanya.
+  Tampilan awal tetap memperlihatkan seluruh pengambilan untuk kedua tim.
+- Matriks **per subtes / per guru** menampilkan kolom **Kabar CLO** tersendiri:
+  siap dikabari, sudah dikabari beserta waktu/petugas, atau perlu reminder.
+  Status QC, jumlah soal disetujui, nomor revisi, dan tanggal tiap tahap tetap
+  terlihat. Semua tombol membuka panel detail yang sama di kanan.
+- Pencarian guru dan reachout kuota terbuka tersedia dalam ruang kerja yang sama
+  tanpa menggantikan matriks. Kuota pengajuan menunggu ACC tetap diperhitungkan.
+- Rincian grafik/prioritas dapat dilipat; pada ponsel awalnya ringkas agar matriks
+  lebih cepat dicapai. Izin RAD/CLO serta catatan kabar per revisi tetap memakai
+  pemeriksaan server dan jurnal sebelumnya; tidak ada migrasi data manual.
+
 ## 3.12.0 — Pantauan RAD & CLO dan kabar per revisi (23 Oktober 2026)
 
 - Halaman awal **Pantauan** menyesuaikan akun: RAD mendapat antrean ACC,

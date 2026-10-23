@@ -101,9 +101,11 @@ Tanpa mengisi `.env.local`, aplikasi tetap jalan dengan data contoh.
 - **Keamanan**: area `/admin` dilindungi password lewat cookie (12 jam) + `middleware.js`. Kredensial Google & password hanya dipakai di server, tidak pernah terekspos ke browser.
 - **Zero dependency data layer**: koneksi Sheets memakai `fetch` + tanda tangan JWT bawaan Node, tanpa library berat.
 
-## Pantauan RAD & CLO (v3.12.0)
+## Ruang kerja RAD & CLO (v3.13.0)
 
-- Semua akun tim membuka **Pantauan** setelah login. RAD mengelola antrean ACC,
+- Semua akun tim membuka **Pengambilan Guru** setelah login. Dashboard dan matriks
+  berada dalam satu halaman; menu **Pantauan RAD & CLO** juga mengarah ke sana.
+  RAD mengelola antrean ACC,
   pemeriksaan progres 30%/50%, QC akhir dan QC ulang, serta proyek/katalog.
   CLO memantau hasil RAD, mengabari guru, mencatat reminder, dan mencari guru
   untuk kuota yang belum terisi. Detail terbuka dari kanan dan sama dengan
@@ -114,7 +116,13 @@ Tanpa mengisi `.env.local`, aplikasi tetap jalan dengan data contoh.
   didukung: **Akademik → RAD**, **Seleksi → CLO**. Untuk anggota lama dengan
   pekerjaan berbeda dari perannya sekarang, ubah perannya di Akun tim; tidak ada
   perubahan akun otomatis berdasarkan nama atau email. Satu anggota bisa
-  memiliki kedua peran, dengan pilihan tampilan di Pantauan.
+  memiliki kedua peran, dengan pilihan fokus tim di Pengambilan Guru.
+- Dashboard menghitung kuota terisi dari katalog dan soal lolos QC dari jumlah
+  disetujui pada review pengambilan, termasuk persetujuan parsial. Angka QC ini
+  tidak menganggap pengumpulan 100% atau baris log manual tanpa review sebagai
+  hasil yang sudah disetujui. Kartu/grafik/prioritas menyaring matriks lengkap;
+  Reset filter juga menghapus fokus dari dashboard. Kolom Kabar CLO menunjukkan
+  status hasil terbaru tanpa perlu membuka panel. Rincian overview bisa dilipat.
 - **Sudah dikabari** adalah konfirmasi manual untuk satu hasil pemeriksaan dan
   versi tertentu, sesudah pesan dikirim. Membuka draf/WhatsApp belum berarti
   mengirim. Revisi berikutnya memerlukan konfirmasi baru; nama petugas dan waktu

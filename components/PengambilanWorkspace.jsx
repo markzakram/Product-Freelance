@@ -13,13 +13,15 @@ import RiwayatPengambilan from "./RiwayatPengambilan";
 import Drawer from "./Drawer";
 import PengambilanFilters from "./PengambilanFilters";
 import KabarPengambilan from "./KabarPengambilan";
+import { barisPantauan, progresBelumDiperiksa } from "@/lib/pantauanOpsi";
+import { cocokFokusKerja, FOKUS_KERJA } from "@/lib/pengambilanDashboard";
 import { cocokTeksPengambilan, kunciSubtesPengambilan, kunciGuruPengambilan, opsiFilterPengambilan, hitungOpsiPengambilan } from "@/lib/pengambilanFilter";
 
 const SARING = [
   ["semua", "Semua status", () => true],
   ["menunggu", "Menunggu acc", (p) => p.status === ST.diajukan],
   ["jalan", "Sedang dikerjakan", (p) => p.status === ST.running],
-  ["progres", "Laporan baru masuk", (p) => laporanBaru(p).length > 0],
+  ["progres", "Laporan baru masuk", (p) => progresBelumDiperiksa(p).length > 0],
   ["laporan", "Ada laporan progres", (p) => laporanGuru(p).length > 0],
   ["review", "Menunggu review akhir", (p) => p.status === ST.review],
   ["revisi", "Perlu revisi", (p) => p.status === ST.revisi || (p.status === ST.running && revisiProgres(p).length > 0)],
@@ -28,7 +30,7 @@ const SARING = [
   ["tolak", "Ditolak & batal", (p) => [ST.ditolak, ST.dibatalkan].includes(p.status)],
 ];
 
-export default function PengambilanWorkspace({ data, bulan, namaBulan, projects = [], guruDb = [], muatUlang, setErr, aksiEl, onBerubah, FormReview, pesanWa, detailOnly = false, fokus, onTutup }) {
+export default function PengambilanWorkspace({ data, bulan, namaBulan, projects = [], guruDb = [], muatUlang, setErr, aksiEl, onBerubah, FormReview, pesanWa, detailOnly = false, fokus, onTutup, fokusKerja = "semua", onFokusKerja, sorotan, kini, onSegarkan }) {
   const [view, setView] = useState("subtes");
   const [saring, setSaring] = useState("semua");
   const [tahap, setTahap] = useState("semua");
@@ -45,6 +47,7 @@ export default function PengambilanWorkspace({ data, bulan, namaBulan, projects 
   const [info, setInfo] = useState("");
   const [galatDetail, setGalatDetail] = useState("");
   const daftar = useMemo(() => data?.pengerjaan || [], [data]);
+  const pantauanById = useMemo(() => new Map(daftar.map((p) => [p.id, barisPantauan(p, kini)])), [daftar, kini]);
   const proyek = useMemo(() => new Map(projects.map((p) => [String(p.id).toUpperCase(), p])), [projects]);
   const guruById = useMemo(() => new Map(guruDb.filter((g) => g.idGuru).map((g) => [String(g.idGuru), g])), [guruDb]);
   const guruByEmail = useMemo(() => new Map(guruDb.filter((g) => g.email).map((g) => [String(g.email).trim().toLowerCase(), g])), [guruDb]);
@@ -58,7 +61,7 @@ export default function PengambilanWorkspace({ data, bulan, namaBulan, projects 
   const cocokSubtes = (p) => !saringSubtes || kunciSubtesPengambilan(p) === saringSubtes;
   const cocokGuru = (p) => !saringGuru || kunciGuruPengambilan(p) === saringGuru;
   const cocokTahap = (p) => tahap === "semua" || tahapAktif(p) === Number(tahap);
-  const pencarian = daftar.filter((p) => cocokTeksPengambilan(cari, p.nama, p.email, p.idGuru, p.subtes, p.idProyek, p.output));
+  const pencarian = daftar.filter((p) => cocokFokusKerja(pantauanById.get(p.id), fokusKerja) && cocokTeksPengambilan(cari, p.nama, p.email, p.idGuru, p.subtes, p.idProyek, p.output));
   const hasilCari = pencarian.filter((p) => cocokSubtes(p) && cocokGuru(p));
   const kandidatSubtes = pencarian.filter((p) => cocokGuru(p) && cocok(p) && cocokTahap(p));
   const kandidatGuru = pencarian.filter((p) => cocokSubtes(p) && cocok(p) && cocokTahap(p));
@@ -73,6 +76,7 @@ export default function PengambilanWorkspace({ data, bulan, namaBulan, projects 
   const tutup = () => { setPilihan(null); setRevisi(null); setTolak(null); setDinilai(""); onTutup?.(); };
   useEffect(() => { setPilihan(null); setRevisi(null); setTolak(null); setDinilai(""); }, [bulan]);
   useEffect(() => { if (fokus?.id) pilih(fokus.id, fokus.tahap || "semua"); }, [fokus]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (sorotan) { setCari(""); setSaring("semua"); setTahap("semua"); setSaringSubtes(sorotan.subtes || ""); setSaringGuru(""); } }, [sorotan]);
   const jalankan = async (kunci, body, sesudah) => {
     setSibuk(kunci);
     setErr("");
@@ -96,14 +100,15 @@ export default function PengambilanWorkspace({ data, bulan, namaBulan, projects 
   if (!data) return <div className="card empty">Memuat pengambilan…</div>;
 
   return <div className="pg-workspace">
-    {!detailOnly && aksiEl ? createPortal(<><label className="pj-maks"><span>Maks. proyek aktif / guru</span><input aria-label="Maksimum proyek aktif per guru" className="input sm" type="number" min={1} max={50} value={maksIsi === "" ? maks : maksIsi} onChange={(e) => setMaksIsi(e.target.value)} disabled={!bisa || Boolean(sibuk)} />{maksIsi !== "" && Number(maksIsi) !== maks ? <button type="button" className="btn btn-blue sm" disabled={Boolean(sibuk)} onClick={() => jalankan("maks", { action: "maksAktif", nilai: maksIsi }, () => setMaksIsi(""))}>Simpan</button> : null}</label><button type="button" className="btn btn-ghost sm" onClick={muatUlang} disabled={Boolean(sibuk)}><Icon name="refresh" />Segarkan</button></>, aksiEl) : null}
+    {!detailOnly && aksiEl ? createPortal(<><label className="pj-maks"><span>Maks. proyek aktif / guru</span><input aria-label="Maksimum proyek aktif per guru" className="input sm" type="number" min={1} max={50} value={maksIsi === "" ? maks : maksIsi} onChange={(e) => setMaksIsi(e.target.value)} disabled={!bisa || Boolean(sibuk)} />{maksIsi !== "" && Number(maksIsi) !== maks ? <button type="button" className="btn btn-blue sm" disabled={Boolean(sibuk)} onClick={() => jalankan("maks", { action: "maksAktif", nilai: maksIsi }, () => setMaksIsi(""))}>Simpan</button> : null}</label><button type="button" className="btn btn-ghost sm" onClick={onSegarkan || (() => muatUlang(true))} disabled={Boolean(sibuk)}><Icon name="refresh" />Segarkan</button></>, aksiEl) : null}
     {data.error ? <div className="banner err"><Icon name="alert" /><div>Pengambilan belum bisa dibaca: {data.error}</div></div> : null}
     {!detailOnly ? <><div className="pg-viewbar">
       <div className="seg-tab" role="group" aria-label="Sudut pandang utama">{[["subtes", "layers", "Per subtes"], ["guru", "users", "Per guru"]].map(([k, icon, label]) => <button key={k} type="button" className={view === k ? "on" : ""} aria-pressed={view === k} onClick={() => setView(k)}><Icon name={icon} />{label}</button>)}</div>
       <span className="muted" aria-live="polite">{new Set(list.map((p) => p.subtes)).size} subtes · {new Set(list.map((p) => p.idGuru || p.email || p.id)).size} guru · {numberID(list.length)} pengambilan</span>
     </div>
-    <PengambilanFilters cari={cari} setCari={setCari} status={saring} setStatus={setSaring} options={SARING} statusCounts={statusCounts} tahap={tahap} setTahap={setTahap} tahapCounts={tahapCounts} subtes={saringSubtes} setSubtes={setSaringSubtes} opsiSubtes={opsiSubtes} guru={saringGuru} setGuru={setSaringGuru} opsiGuru={opsiGuru} />
-    {!list.length ? <div className="card empty">{daftar.length ? "Tidak ada pengambilan yang cocok dengan filter." : `Belum ada pengambilan untuk ${namaBulan || "bulan ini"}.`}</div> : <MatriksPengambilan daftar={list} view={view} selected={selected?.id} onPilih={pilih} />}</> : null}
+    {fokusKerja !== "semua" ? <div className="pd-active-focus" role="status"><Icon name="filter" size={15} /><span>Fokus: <b>{FOKUS_KERJA[fokusKerja]}</b></span><button type="button" className="btn-link" onClick={() => onFokusKerja?.("semua")}>Lepas fokus</button></div> : null}
+    <PengambilanFilters cari={cari} setCari={setCari} status={saring} setStatus={setSaring} options={SARING} statusCounts={statusCounts} tahap={tahap} setTahap={setTahap} tahapCounts={tahapCounts} subtes={saringSubtes} setSubtes={setSaringSubtes} opsiSubtes={opsiSubtes} guru={saringGuru} setGuru={setSaringGuru} opsiGuru={opsiGuru} fokusAktif={fokusKerja !== "semua"} onReset={() => onFokusKerja?.("semua")} />
+    {!list.length ? <div className="card empty">{daftar.length ? "Tidak ada pengambilan yang cocok dengan filter." : `Belum ada pengambilan untuk ${namaBulan || "bulan ini"}.`}</div> : <MatriksPengambilan daftar={list} view={view} selected={selected?.id} onPilih={pilih} pantauanById={pantauanById} />}</> : null}
     {selected ? (() => {
       const p = selected;
       const pr = proyek.get(p.idProyek);

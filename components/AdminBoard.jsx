@@ -37,8 +37,7 @@ import PantauReachout from "./PantauReachout";
 import CorongRekrutmen from "./CorongRekrutmen";
 import { EVENT_REACHOUT, aturPelaku } from "@/lib/kontakWa";
 import TimPanel from "./TimPanel";
-import PengerjaanPanel from "./PengerjaanPanel";
-import PantauanPanel from "./PantauanPanel";
+import PusatPengambilan from "./PusatPengambilan";
 import { bolehTim } from "@/lib/peranTim";
 import DemoPanel from "./DemoPanel";
 import { MODE_DEMO } from "@/lib/demo";
@@ -124,8 +123,8 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   const akademik = bolehP(pengguna, ["Akademik"]);
   const operasional = bolehP(pengguna, ["Akademik", "Seleksi"]);
   const [board, setBoard] = useState(initial);
-  // Semua akun mulai dari antrean Pantauan sesuai peran login.
-  const [tab, setTab] = useState("ringkasan");
+  // Satu ruang kerja: dashboard dan matriks ada di Pengambilan Guru.
+  const [tab, setTab] = useState("ambil");
   const [f, setF] = useState(F0);
   const [err, setErr] = useState("");
   const [expired, setExpired] = useState(false);
@@ -493,7 +492,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   // Pindah halaman selalu mulai dari atas — di HP halaman sebelumnya
   // biasanya sudah tergulir jauh.
   const pilihTab = (k) => {
-    setTab(k);
+    setTab(k === "ringkasan" ? "ambil" : k);
     setNavOpen(false);
     window.scrollTo(0, 0);
   };
@@ -627,8 +626,6 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
               </div>
             ) : null}
 
-            {tab === "ringkasan" && <PantauanPanel data={pengerjaan} bulan={board.tab} namaBulan={namaBulan} pengguna={pengguna} projects={projects} guruDb={guru.rows || []} master={master.rows || []} log={assignments} riwayat={allMonths.log || []} akun={akses?.akun || []} kontak={reachout?.kontak || []} penanda={akses?.penanda || {}} wajibLogin={Boolean(akses?.wajibLogin)} muatUlang={muatPengerjaan} muatReachout={muatReachout} setErr={setErr} aksiEl={aksiEl} onBerubah={refresh} pilihTab={pilihTab} />}
-
             {tab === "log" && <StatBulan stat={stat} projects={projects} teachers={teachers} />}
 
             {(tab === "log" || tab === "bayar") && (
@@ -705,7 +702,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
             {tab === "demo" && MODE_DEMO && <DemoPanel />}
 
             {tab === "ambil" && (
-              <PengerjaanPanel
+              <PusatPengambilan
                 data={pengerjaan}
                 bulan={board.tab}
                 namaBulan={namaBulan}
@@ -715,6 +712,16 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
                 setErr={setErr}
                 aksiEl={aksiEl}
                 onBerubah={refresh}
+                pengguna={pengguna}
+                master={master.rows || []}
+                log={assignments}
+                riwayat={allMonths.log || []}
+                akun={akses?.akun || []}
+                kontak={reachout?.kontak || []}
+                penanda={akses?.penanda || {}}
+                wajibLogin={Boolean(akses?.wajibLogin)}
+                muatReachout={muatReachout}
+                pilihTab={pilihTab}
               />
             )}
 
@@ -870,7 +877,7 @@ NAV.forEach((g) =>
   g.item.forEach((it) => {
     PAGE[it.k] = {
       judul: it.judul,
-      crumb: it.langkah ? `Alur kerja · Langkah ${it.langkah} dari ${JUMLAH_LANGKAH}` : g.grup,
+      crumb: it.k === "ambil" ? "Ruang kerja RAD & CLO" : it.langkah ? `Alur kerja · Langkah ${it.langkah} dari ${JUMLAH_LANGKAH}` : g.grup,
     };
   })
 );
@@ -879,16 +886,16 @@ NAV.forEach((g) =>
 // baru (dikerjakan sebulan sekali, di laptop) ada di "Lainnya" bersama
 // Analisis dan Database guru.
 const TABBAR = [
-  { k: "ringkasan", label: "Pantauan", ikon: "home" },
+  { k: "ambil", label: "Pengambilan", ikon: "home" },
   { k: "katalog", label: "Katalog", ikon: "layers" },
-  { k: "ambil", label: "Ambilan", ikon: "userCheck" },
+  { k: "baru", label: "Proyek", ikon: "plus" },
   { k: "log", label: "Log", ikon: "clipboard" },
 ];
 
 // Menu harian CLO: Pantauan, Pengambilan, reachout dan pendaftar.
 const TABBAR_CLO = [
-  { k: "ringkasan", label: "Pantauan", ikon: "home" },
-  { k: "ambil", label: "Ambilan", ikon: "userCheck" },
+  { k: "ambil", label: "Pengambilan", ikon: "home" },
+  { k: "katalog", label: "Katalog", ikon: "layers" },
   { k: "reachout", label: "Reachout", ikon: "send" },
   { k: "akses", label: "Pendaftar", ikon: "users" },
 ];
