@@ -1,6 +1,6 @@
 # Dashboard Proyek Guru Freelance
 
-Dashboard untuk mengelola proyek guru freelance, dibangun dengan **Next.js** dan siap **deploy ke Vercel**. Data dibaca **langsung (real-time) dari Google Sheets**.
+Dashboard untuk mengelola proyek guru freelance, dibangun dengan **Next.js** dan siap **deploy ke Vercel**. Data bersumber dari **Google Sheets**, dengan sinkronisasi berkala dan tombol Segarkan.
 
 Ada dua area:
 
@@ -28,6 +28,29 @@ Halaman depan (`/`) berisi dua pintu masuk tersebut.
   target dan sisa kuota berasal dari katalog proyek yang terkait dengan hasil
   filter. Sisa kuota tetap memperhitungkan pengambilan guru lain pada proyek itu.
 
+### Gangguan spreadsheet dan sinkronisasi (v3.16.0)
+
+Dashboard mempertahankan data terakhir saat refresh gagal, dengan banner
+**Sinkronisasi tertunda**, nama bagian yang gagal, dan waktu sinkronisasi terakhir
+dalam WIB. **Coba lagi** membaca ulang data; kegagalan tidak berarti tabel kosong.
+Data contoh hanya tampil ketika aplikasi belum diberi kredensial.
+
+Polling aktif sekitar 45 detik, berhenti saat tab tersembunyi atau offline, lalu
+melambat hingga 180 detik saat gagal. Pemicu fokus/visibility digabung. Hasil RAD
+baru tetap muncul sebagai notifikasi setelah sinkronisasi berikutnya berhasil.
+
+GET tampilan memakai **Data Cache Next.js**, revalidasi 15 detik, serta timestamp
+snapshot. Ketersediaan cache lintas instans mengikuti penyedia hosting (Vercel/Data
+Cache); tidak perlu layanan Redis baru. Cache bukan penyimpanan permanen: pada
+pembukaan pertama tanpa cache dan tanpa koneksi, aplikasi menampilkan keadaan gagal
+memuat, bukan mengarang data. Cache tampilan diinvalidasi saat penyimpanan; validasi
+transaksi tetap membaca langsung. Baca yang gagal dicoba ulang sampai 4 percobaan,
+maksimum 6 detik per percobaan dan anggaran 22 detik per panggilan Google. Retry-After
+yang melampaui anggaran dihormati dengan mengakhiri panggilan, bukan mencoba terlalu dini.
+Log server `[sheets-read]` membantu membedakan `HTTP_429`, `HTTP_503`, `NETWORK`, dan
+`TIMEOUT` tanpa mencatat kredensial atau isi sel. Keberhasilan tulis hanya mengikuti
+respons server; append/struktur tidak diulang otomatis setelah koneksi terputus.
+
 ---
 
 ## Sumber data (3 Google Sheets)
@@ -40,7 +63,7 @@ Halaman depan (`/`) berisi dua pintu masuk tersebut.
 
 ID ketiga sheet sudah diisi default (lihat `.env.example`), jadi tidak perlu diubah kecuali Anda memakai file lain.
 
-> **Sebelum kredensial dipasang**, dashboard otomatis menampilkan **data contoh** (nama guru sudah dianonimkan) supaya tetap bisa dilihat. Setelah kredensial dipasang, data berganti otomatis ke real-time.
+> **Sebelum kredensial dipasang**, dashboard otomatis menampilkan **data contoh** (nama guru sudah dianonimkan) supaya tetap bisa dilihat. Setelah kredensial dipasang, data bersumber dari spreadsheet.
 
 ---
 
@@ -113,7 +136,7 @@ Tanpa mengisi `.env.local`, aplikasi tetap jalan dengan data contoh.
 
 ## Catatan teknis
 
-- **Refresh data**: halaman di-cache dan menyegarkan data dari Sheets tiap **5 menit** (`revalidate = 300`). Ubah di `app/open/page.js` & `app/admin/page.js` bila perlu.
+- **Refresh data**: GET tampilan memakai Data Cache dengan revalidasi **15 detik** (`lib/cacheTampilan.js`). Admin menyinkronkan data sekitar **45 detik** saat halaman aktif; saat gagal, interval bertambah. Tombol Segarkan dan pembacaan setelah penyimpanan melewati cache tampilan.
 - **Nama tab sheet dibaca fleksibel**: parser mencari tab "Detail/Detil proyek", "Master_Proyek", "Data guru freelance", dan tab rekap berpola `Live Class <Bulan>`, `Freelance Soal <Bulan>`, `Freelance Produk <Bulan>`. Bulan baru (mis. `Live Class Juli`) otomatis ikut terbaca — tidak perlu ubah kode.
 - **Keamanan**: area `/admin` dilindungi password lewat cookie (12 jam) + `middleware.js`. Kredensial Google & password hanya dipakai di server, tidak pernah terekspos ke browser.
 - **Zero dependency data layer**: koneksi Sheets memakai `fetch` + tanda tangan JWT bawaan Node, tanpa library berat.

@@ -11,9 +11,10 @@ import { adminSah } from "@/lib/authServer";
 import { bacaPengerjaan, dipesanPerProyek, maksAktif, lengkapiTitik } from "@/lib/pengerjaan";
 import { aturanBulan } from "@/lib/aturanProyek";
 import { AKTIF, ST, hitungMundur, titikBerikut } from "@/lib/pengerjaanOpsi";
+import { bacaTampilan } from "@/lib/cacheTampilan";
 
-// Katalog dibaca langsung dari sheet bulan terbaru pada tiap request, supaya
-// stok (kolom Sisa) yang dilihat guru selalu sama dengan spreadsheet.
+// Halaman tetap dinamis untuk sesi guru. Katalog memakai cache tampilan singkat;
+// pengajuan memvalidasi kuota langsung dari spreadsheet.
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const metadata = { title: "Proyek terbuka" };
@@ -28,7 +29,12 @@ export default async function OpenPage({ searchParams }) {
   // "Halaman guru" di sidebar) tanpa perlu punya akun guru.
   if (wajib && !sesi && !admin) redirect("/open/masuk");
 
-  const [board, panduan, guruDb] = await Promise.all([getBoard(), getPanduan(), sesi ? getTeachers() : null]);
+  let board, panduan, guruDb;
+  try {
+    [board, panduan, guruDb] = await Promise.all([bacaTampilan("board:", () => getBoard()), getPanduan(), sesi ? getTeachers() : null]);
+  } catch {
+    return <div className="login-wrap"><div className="login-card"><h1>Data proyek belum dapat diperbarui</h1><p>Koneksi spreadsheet sedang terganggu. Silakan coba kembali beberapa saat lagi.</p><a className="btn btn-blue block" href="/open">Coba lagi</a></div></div>;
+  }
   const bulan = (board.months || []).find((m) => m.tab === board.tab)?.bulan || "";
   // Pengajuan yang menunggu acc memesan kuota: Sisa yang dilihat guru = Sisa
   // sheet − pesanan itu. Deadline per proyek dari tab "Aturan proyek".
@@ -93,6 +99,8 @@ export default async function OpenPage({ searchParams }) {
     <OpenBoard
       projects={open}
       source={board.source}
+      tertunda={board.tertunda}
+      waktuData={board.at}
       bulan={bulan}
       waNumber={WA_ADMIN}
       panduan={panduan.rows}

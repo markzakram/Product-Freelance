@@ -7,6 +7,7 @@ import { bacaPengerjaan, putuskan, maksAktif, aturMaksAktif, review, terapkanDen
 import { aturanBulan, aturDeadline, aturLapor, aturPaket, aturTipe, aturSemua } from "@/lib/aturanProyek";
 import { AKTIF } from "@/lib/pengerjaanOpsi";
 import { bacaAkun } from "@/lib/akun";
+import { bacaTampilan } from "@/lib/cacheTampilan";
 
 export const dynamic = "force-dynamic";
 
@@ -15,22 +16,27 @@ export async function GET(req) {
   if (tolak) return tolak;
   const bulan = req.nextUrl.searchParams.get("bulan") || "";
   try {
-    const [semua, aturan, maks, akun] = await Promise.all([bacaPengerjaan({ segar: req.nextUrl.searchParams.get("segar") === "1" }), bulan ? aturanBulan(bulan) : {}, maksAktif(), bacaAkun().catch(() => [])]);
+    const data = await bacaTampilan(`pengerjaan:${bulan}`, async () => {
+    const [semua, aturan, maks, akun] = await Promise.all([bacaPengerjaan({ segar: true }), bulan ? aturanBulan(bulan) : {}, maksAktif(), bacaAkun()]);
     const uji = akun.filter((a) => a.uji);
     const akunUji = (p) => uji.some((a) => (a.idGuru && p.idGuru === a.idGuru) || p.email === a.email);
     // beban tiap guru dihitung lintas bulan — batasnya berlaku untuk semua proyek aktif
     const aktifPerGuru = {};
     semua.forEach((p) => AKTIF.has(p.status) && (aktifPerGuru[p.idGuru || p.email] = (aktifPerGuru[p.idGuru || p.email] || 0) + 1));
-    return NextResponse.json({
+    return {
       pengerjaan: (await lengkapiTitik(semua.filter((p) => !bulan || p.bulan === bulan))).map((p) => (akunUji(p) ? { ...p, uji: true } : p)),
       aturan,
       maksAktif: maks,
       aktifPerGuru,
+    };
+    }, { segar: req.nextUrl.searchParams.get("segar") === "1" });
+    return NextResponse.json({
+      ...data,
       canWrite: canWrite() && bolehPeran(sesi, ["Akademik"]),
       canKabari: canWrite() && bolehPeran(sesi, ["Seleksi"]),
     });
   } catch (e) {
-    return NextResponse.json({ error: e.message || "Gagal membaca pengerjaan." }, { status: 500 });
+    return NextResponse.json({ error: e.message || "Gagal membaca pengerjaan.", code: e.code || "READ_FAILED" }, { status: 503 });
   }
 }
 

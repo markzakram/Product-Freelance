@@ -40,6 +40,7 @@ import TimPanel from "./TimPanel";
 import PusatPengambilan from "./PusatPengambilan";
 import NotifikasiClo from "./NotifikasiClo";
 import { ringkasanLog } from "@/lib/ringkasanLog";
+import { bacaApi, buatAntrianSinkron, jadwalkanSinkron } from "@/lib/sinkronisasi";
 import { bolehTim } from "@/lib/peranTim";
 import DemoPanel from "./DemoPanel";
 import { MODE_DEMO } from "@/lib/demo";
@@ -82,12 +83,8 @@ class SesiBerakhir extends Error {
   }
 }
 
-async function apiGet(bulan) {
-  const qs = bulan ? "?bulan=" + encodeURIComponent(bulan) : "";
-  const res = await fetch("/api/admin/board" + qs, { cache: "no-store" });
-  if (res.status === 401) throw new SesiBerakhir();
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+async function apiGet(bulan, segar = false) {
+  return bacaApi("/api/admin/board?bulan=" + encodeURIComponent(bulan || "") + (segar ? "&segar=1" : ""));
 }
 
 async function apiPost(payload) {
@@ -159,6 +156,27 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   // Lompatan dari halaman lain ke Pendaftaran & akun: { email?, tampil, saringA?, tinjau? }
   const [fokusAkses, setFokusAkses] = useState(null);
   const [extraLoaded, setExtraLoaded] = useState(false);
+  const [syncInfo, setSyncInfo] = useState({ board: { at: initial.at || 0, error: initial.error || (initial.tertunda ? "Pembaruan spreadsheet tertunda." : "") } });
+  const syncInfoRef = useRef(syncInfo);
+  syncInfoRef.current = syncInfo;
+  const pembaca = useRef(null);
+  if (!pembaca.current) pembaca.current = buatAntrianSinkron();
+  const waktuData = useRef(new Map(initial.at ? [[`board:${initial.tab}`, initial.at]] : []));
+  const bulanDiminta = useRef(bulanAktif);
+  bulanDiminta.current = bulanAktif;
+  const bulanTerlihat = useRef(board.tab);
+  bulanTerlihat.current = board.tab;
+  const catatSukses = useCallback((key, data, scope = key) => {
+    const at = data.at || Date.now();
+    if (at < (waktuData.current.get(scope) || 0)) return false;
+    waktuData.current.set(scope, at);
+    setSyncInfo((s) => ({ ...s, [key]: { at, error: data.tertunda ? "Pembaruan spreadsheet tertunda; masih memakai data terakhir." : "" } }));
+    return true;
+  }, []);
+  const catatGagal = useCallback((key, e) => {
+    if (e.expired || e.status === 401) { setExpired(true); return; }
+    setSyncInfo((s) => ({ ...s, [key]: { ...s[key], error: e.message || "Koneksi pembaruan terputus." } }));
+  }, []);
 
   const { projects = [], assignments = [], teachers = [], source, canWrite, diag, sheetWritable, serviceAccount } = board;
   const readOnly = !canWrite;
@@ -167,50 +185,43 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   const kurangIzin = source === "live" && sheetWritable === false;
 
   const permintaanBoard = useRef(0);
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (segar = true) => {
     const requestId = ++permintaanBoard.current;
     setSyncing(true);
     try {
-      const j = await apiGet(bulanAktif);
-      if (requestId !== permintaanBoard.current) return;
-      setBoard(j);
-      setSyncedAt(new Date());
-      setErr("");
+      const j = await pembaca.current(`board:${bulanAktif}`, () => apiGet(bulanAktif, segar !== false), segar !== false);
+      if (requestId !== permintaanBoard.current || bulanDiminta.current !== bulanAktif) return true;
+      if (board.source === "live" && j.source === "sample") throw new Error("Koneksi spreadsheet belum tersedia. Data terakhir tetap ditampilkan.");
+      if (catatSukses("board", j, `board:${j.tab}`)) { setBoard(j); setSyncedAt(new Date(j.at || Date.now())); }
+      return !j.tertunda;
     } catch (e) {
       if (requestId !== permintaanBoard.current) return;
       if (e.expired) setExpired(true);
-      else setErr("Gagal menyegarkan data: " + e.message);
+      else catatGagal("board", e);
+      return false;
     } finally {
       if (requestId === permintaanBoard.current) setSyncing(false);
     }
-  }, [bulanAktif]);
+  }, [bulanAktif, board.source, catatSukses, catatGagal]);
 
   // Sekali sesi habis, berhenti polling — kalau tidak, banner error akan
   // muncul berulang tiap 45 detik tanpa pernah bisa berhasil.
   // Master & data lintas bulan ditarik terpisah, hanya sekali di awal dan
   // setiap ada perubahan — supaya polling 45 detik tetap ringan.
-  const refreshExtra = useCallback(async () => {
-    try {
-      const [m, mo, gu, ak] = await Promise.all([
-        fetch("/api/admin/master", { cache: "no-store" }),
-        fetch("/api/admin/months", { cache: "no-store" }),
-        fetch("/api/admin/teachers", { cache: "no-store" }),
-        fetch("/api/admin/akun", { cache: "no-store" }),
-      ]);
-      if ([m, mo, gu, ak].some((r) => r.status === 401)) return setExpired(true);
-      if (m.ok) setMaster(await m.json());
-      if (mo.ok) setAllMonths(await mo.json());
-      if (gu.ok) setGuru(await gu.json());
-      if (ak.ok) setAkses(await ak.json());
-      else setErr("Gagal memuat pendaftaran & akun: " + ((await ak.json().catch(() => ({}))).error || "HTTP " + ak.status));
-      setExtraLoaded(true);
-    } catch (e) {
-      setErr("Gagal memuat master/analisis: " + e.message);
-    }
-  }, []);
+  const refreshExtra = useCallback(async (segar = true, keys) => {
+    const hasil = await Promise.allSettled([["master", setMaster], ["months", setAllMonths], ["teachers", setGuru], ["akun", setAkses]].filter(([key]) => !keys || keys.includes(key)).map(async ([key, setData]) => {
+      try {
+        const j = await pembaca.current(key, () => bacaApi(`/api/admin/${key}${segar ? "?segar=1" : ""}`), Boolean(segar));
+        if (catatSukses(key, j)) setData(j);
+        return !j.tertunda;
+      } catch (e) { catatGagal(key, e); return false; }
+    }));
+    setExtraLoaded(true);
+    return hasil.every((r) => r.status === "fulfilled" && r.value);
+  }, [catatSukses, catatGagal]);
 
   useEffect(() => {
-    if (!expired) refreshExtra();
+    if (!expired) refreshExtra(false);
   }, [refreshExtra, expired]);
 
   // Pengambilan guru & deadline per proyek untuk bulan yang sedang dibuka.
@@ -220,29 +231,31 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
     const requestId = ++permintaanPengerjaan.current;
     if (!tabBoard) { setPengerjaan({ pengerjaan: [], canWrite: false, canKabari: false }); return; }
     try {
-      const r = await fetch("/api/admin/pengerjaan?bulan=" + encodeURIComponent(tabBoard) + (segar === true ? "&segar=1" : ""), { cache: "no-store" });
-      if (r.status === 401) return setExpired(true);
-      const j = await r.json().catch(() => ({}));
-      if (requestId !== permintaanPengerjaan.current) return;
-      setPengerjaan(r.ok ? { ...j, bulan: tabBoard } : { bulan: tabBoard, pengerjaan: [], aturan: {}, error: j.error || "HTTP " + r.status });
+      const j = await pembaca.current(`pengerjaan:${tabBoard}`, () => bacaApi("/api/admin/pengerjaan?bulan=" + encodeURIComponent(tabBoard) + (segar === true ? "&segar=1" : "")), segar === true);
+      if (requestId !== permintaanPengerjaan.current || bulanTerlihat.current !== tabBoard) return true;
+      if (catatSukses("pengerjaan", j, `pengerjaan:${tabBoard}`)) setPengerjaan({ ...j, bulan: tabBoard });
+      return !j.tertunda;
     } catch (e) {
-      if (requestId !== permintaanPengerjaan.current) return;
-      setPengerjaan({ bulan: tabBoard, pengerjaan: [], aturan: {}, error: e.message });
+      if (requestId !== permintaanPengerjaan.current || bulanTerlihat.current !== tabBoard) return true;
+      catatGagal("pengerjaan", e);
+      setPengerjaan((p) => p?.bulan === tabBoard && !p.error && e.status !== 403 ? p : { bulan: tabBoard, pengerjaan: [], aturan: {}, error: e.message });
+      return false;
     }
-  }, [tabBoard]);
+  }, [tabBoard, catatSukses, catatGagal]);
 
-  const muatReachout = useCallback(async () => {
+  const muatReachout = useCallback(async (segar = true) => {
     try {
-      const r = await fetch("/api/admin/reachout", { cache: "no-store" });
-      if (r.status === 401) return setExpired(true);
-      const j = await r.json().catch(() => ({}));
-      setReachout(r.ok ? j : { kontak: [], error: j.error || "HTTP " + r.status });
+      const j = await pembaca.current("reachout", () => bacaApi(`/api/admin/reachout${segar ? "?segar=1" : ""}`), Boolean(segar));
+      if (catatSukses("reachout", j)) setReachout(j);
+      return !j.tertunda;
     } catch (e) {
-      setReachout({ kontak: [], error: e.message });
+      catatGagal("reachout", e);
+      setReachout((r) => r && !r.error && e.status !== 403 ? r : { kontak: [], error: e.message });
+      return false;
     }
-  }, []);
+  }, [catatSukses, catatGagal]);
   useEffect(() => {
-    if (!expired) muatReachout();
+    if (!expired) muatReachout(false);
   }, [muatReachout, expired]);
 
   useEffect(() => {
@@ -250,19 +263,19 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   }, [pengguna.nama]);
 
   useEffect(() => {
-    setPengerjaan(null);
+    setPengerjaan((p) => p?.bulan === tabBoard ? p : null);
+    setSyncInfo((s) => { const { pengerjaan: _, ...lain } = s; return lain; });
     if (!expired && operasional) muatPengerjaan();
   }, [muatPengerjaan, expired, operasional]);
 
   useEffect(() => {
     if (expired || !operasional) return;
-    const segar = () => { muatPengerjaan(); muatReachout(); };
-    const visible = () => document.visibilityState === "visible" && segar();
-    const interval = setInterval(segar, POLL_MS);
-    window.addEventListener("focus", segar);
-    document.addEventListener("visibilitychange", visible);
-    return () => { clearInterval(interval); window.removeEventListener("focus", segar); document.removeEventListener("visibilitychange", visible); };
-  }, [muatPengerjaan, muatReachout, expired, operasional]);
+    return jadwalkanSinkron(async () => {
+      const gagalExtra = ["master", "months", "teachers", "akun"].filter((k) => syncInfoRef.current[k]?.error);
+      const hasil = await Promise.allSettled([refresh(false), muatPengerjaan(false), muatReachout(false), ...(gagalExtra.length ? [refreshExtra(false, gagalExtra)] : [])]);
+      return hasil.every((r) => r.status === "fulfilled" && r.value !== false);
+    }, { interval: POLL_MS });
+  }, [refresh, muatPengerjaan, muatReachout, refreshExtra, expired, operasional]);
 
   // Tombol WA di mana pun (Cari guru, Tinjau, kirim akun, profil) mengumumkan
   // kontak barunya lewat event — lihat lib/kontakWa.js.
@@ -286,7 +299,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   // Data sudah dibaca server saat halaman dibuka — itu sinkron pertama. Diset
   // setelah mount, bukan nilai awal state, supaya jam server & browser tidak
   // bentrok saat hidrasi.
-  useEffect(() => setSyncedAt(new Date()), []);
+  useEffect(() => { if (initial.source !== "error") setSyncedAt(new Date(initial.at || Date.now())); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Ganti bulan -> muat ulang papan untuk bulan itu.
   const pertama = useRef(true);
@@ -295,22 +308,9 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
     refresh();
   }, [bulanAktif]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    // Katalog juga dibaca CLO untuk pemenuhan guru; papan mengikuti bulan aktif.
-    if (expired || !operasional) return undefined;
-    const id = setInterval(refresh, POLL_MS);
-    const onFocus = () => refresh();
-    // Di HP (terutama aplikasi terpasang) kembali ke aplikasi jarang memicu
-    // "focus"; yang pasti terpicu adalah perubahan visibilitas.
-    const onVisible = () => document.visibilityState === "visible" && refresh();
-    window.addEventListener("focus", onFocus);
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      clearInterval(id);
-      window.removeEventListener("focus", onFocus);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, [refresh, expired, operasional]);
+  const segarkanSemua = useCallback(async () => {
+    await Promise.allSettled([refresh(true), muatPengerjaan(true), muatReachout(true), refreshExtra(true)]);
+  }, [refresh, muatPengerjaan, muatReachout, refreshExtra]);
 
   const run = useCallback(
     async (payload) => {
@@ -496,7 +496,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   const info = PAGE[tab] || {};
   const namaBulan = (board.months || []).find((m) => m.tab === board.tab)?.bulan || "";
   const months = board.months || [];
-  const bulanTab = bulanAktif || board.tab || "";
+  const bulanTab = board.tab || bulanAktif || "";
   // pendaftar yang masih perlu ditindaklanjuti (menunggu, ditinjau, sampel, lolos sampel)
   // Penanda "ada yang perlu dikerjakan" hanya untuk tim yang berwenang:
   // pendaftar -> tim seleksi; ajuan perubahan data (rekening dll.) -> tim akademik.
@@ -539,7 +539,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
           kunciBulan={syncing || busy}
           syncedAt={syncedAt}
           syncing={syncing}
-          refresh={refresh}
+          refresh={segarkanSemua}
           pengguna={pengguna}
         />
 
@@ -588,6 +588,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
               </div>
             ) : null}
             <DataBanner source={source} />
+            {Object.values(syncInfo).some((s) => s.error) ? <div className="banner sync-warning" role="status"><Icon name="alert" /><div><b>Sinkronisasi tertunda</b><p>Data terakhir yang berhasil dibaca tetap ditampilkan. Pembaruan akan dicoba kembali saat halaman aktif.</p><ul>{Object.entries(syncInfo).filter(([, s]) => s.error).map(([key, s]) => <li key={key}><b>{{ board: "Katalog & log", pengerjaan: "Pengambilan Guru", reachout: "Reachout", master: "Master subtes", months: "Laporan lintas bulan", teachers: "Database guru", akun: "Pendaftaran & akun" }[key]}</b>: {s.error}<small>{s.at ? `Terakhir berhasil ${new Date(s.at).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })} WIB` : "Belum ada data yang berhasil dibaca untuk bagian ini."}</small></li>)}</ul></div><button type="button" className="btn btn-ghost sm" onClick={segarkanSemua} disabled={syncing}><Icon name="refresh" />Coba lagi</button></div> : null}
             {kurangIzin ? (
               <div className="banner err">
                 <Icon name="lock" />

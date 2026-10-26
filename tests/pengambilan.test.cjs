@@ -551,10 +551,12 @@ test("admin API enforces RAD and CLO actions and takes the contact author from t
   const decision = model.keputusanPengambilan(await read())[0];
   let session = { peran: ["CLO"], nama: "Rani dari sesi" };
   const full = (f) => path.join(root, "lib", f + ".js");
+  const tampilan = new Map();
   const route = await load("app/api/admin/pengerjaan/route.js", {
     "next/server": { NextResponse: { json: (body, opts) => ({ body, status: opts?.status || 200 }) } },
     [full("authServer")]: { izinAdmin: async () => ({ sesi: session }), bolehPeran: roles.bolehTim },
     [full("gauth")]: { canWrite: () => true },
+    [full("cacheTampilan")]: { bacaTampilan: async (key, read) => { if (!tampilan.has(key)) tampilan.set(key, await read()); return tampilan.get(key); } },
     [full("pengerjaan")]: { ...m },
     [full("juli")]: { getBoard: async () => ({}) },
     [full("aturanProyek")]: Object.fromEntries(["aturanBulan", "aturDeadline", "aturLapor", "aturPaket", "aturTipe", "aturSemua"].map((k) => [k, async () => ({})])),

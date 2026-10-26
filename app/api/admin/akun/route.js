@@ -22,12 +22,12 @@ export async function GET() {
   if (bukan) return bukan;
   try {
     const [pendaftar, akun, guru, wajib, perubahan, penanda] = await Promise.all([
-      daftarPendaftar().catch((e) => ({ error: e.message })),
+      daftarPendaftar(),
       bacaAkun({ segar: true }),
       getTeachers(),
       wajibLoginGuru(),
-      daftarPerubahan({ status: "Menunggu" }).catch(() => []),
-      bacaPenanda().catch(() => new Map()),
+      daftarPerubahan({ status: "Menunggu" }),
+      bacaPenanda(),
     ]);
     // Akun uji: berapa pengambilan yang akan ikut terhapus bila dibersihkan
     const uji = akun.filter((a) => a.uji);

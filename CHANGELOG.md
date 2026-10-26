@@ -12,6 +12,34 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.16.0 — Pembacaan spreadsheet & sinkronisasi tahan gangguan (26 Oktober 2026)
+
+- Refresh yang gagal mempertahankan katalog, log, Pengambilan Guru, panel detail,
+  reachout, dan data pendukung terakhir yang berhasil dibaca. Banner **Sinkronisasi
+  tertunda** menampilkan bagian yang gagal, waktu berhasil terakhir (WIB), dan tombol
+  **Coba lagi**; keberhasilan bagian lain tidak menghapus peringatan yang belum pulih.
+- Koneksi produksi yang gagal tidak lagi diganti data contoh. Bulan dengan data
+  kosong tetap dianggap bulan live yang sah. Data contoh hanya untuk konfigurasi
+  tanpa kredensial. Gagal berpindah bulan tetap menampilkan nama bulan data yang ada.
+- Satu penjadwal refresh menggantikan dua interval. Polling berhenti ketika tab
+  tersembunyi/offline, menggabungkan focus + visibility, tidak bertumpuk, dan
+  memperpanjang interval saat gagal (45 → 90 → 180 detik, ditambah jeda acak).
+  Data pendukung yang gagal ikut dicoba ulang; tombol Segarkan tetap tersedia.
+- Pembacaan Google/OAuth memakai batas waktu, retry bertahap dengan jeda acak,
+  dan Retry-After untuk gangguan jaringan, 429, serta 5xx sementara. HTTP 400/401/403/404
+  tidak diulang oleh transport. Log `[sheets-read]` berisi jenis operasi, kode error,
+  percobaan dan durasi, tanpa URL, token, kredensial atau isi spreadsheet.
+- Pembacaan range yang bersamaan digabung melalui batchGet dan permintaan identik
+  memakai pembacaan yang sama. Data Cache Next.js menyimpan hasil GET tampilan
+  selama 15 detik dengan waktu snapshot, dipisahkan per sumber/bulan. Cache tampilan
+  diinvalidasi saat menulis; refresh setelah simpan melewati cache dan menunggu
+  pembacaan sebelumnya selesai. Snapshot lama tidak menimpa data yang lebih baru.
+- Cache tampilan tidak dipakai untuk validasi ACC, QC, atau kuota. Izin pengguna
+  diperiksa di luar cache. Operasi append/struktur tetap tidak dicoba ulang otomatis
+  agar hasil yang sebenarnya sudah tersimpan tidak tercatat dua kali.
+- Pemeriksaan izin menulis membedakan gangguan koneksi dari akses Viewer;
+  respons gangguan tidak lagi disimpan sebagai hasil pemeriksaan izin.
+
 ## 3.15.0 — Notifikasi hasil RAD untuk CLO & ringkasan log dinamis (26 Oktober 2026)
 
 - Lonceng **Hasil RAD** tersedia di setiap halaman admin untuk CLO, Seleksi, dan

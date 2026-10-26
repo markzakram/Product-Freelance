@@ -4,18 +4,21 @@ import { tolakBukanAdmin } from "@/lib/authServer";
 import { getTeachers, createTeacher, updateTeacher } from "@/lib/teachers";
 import { pindahkanEmail } from "@/lib/akun";
 import { canWrite } from "@/lib/gauth";
+import { bacaTampilan } from "@/lib/cacheTampilan";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function GET() {
+export async function GET(req) {
   const bukan = await tolakBukanAdmin();
   if (bukan) return bukan;
-  const t = await getTeachers();
+  try {
+  const t = await bacaTampilan("teachers", getTeachers, { segar: req?.nextUrl.searchParams.get("segar") === "1" });
   return NextResponse.json(
     { ...t, canWrite: t.source === "live" && canWrite() },
     { headers: { "Cache-Control": "no-store" } }
   );
+  } catch (e) { return NextResponse.json({ error: e.message }, { status: 503 }); }
 }
 
 export async function POST(req) {

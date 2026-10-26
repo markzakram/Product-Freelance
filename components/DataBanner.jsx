@@ -5,6 +5,7 @@ import Icon from "./Icon";
 // status sinkron sekarang ada di kaki sidebar.
 export default function DataBanner({ source }) {
   if (source === "live") return null;
+  if (source === "error") return null; // banner sinkronisasi menjelaskan kegagalan tanpa data contoh
   return (
     <div className="banner sample">
       <Icon name="alert" />

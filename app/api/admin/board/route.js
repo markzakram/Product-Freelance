@@ -18,6 +18,7 @@ import {
   deleteProject,
 } from "@/lib/juli";
 import { canWrite, credsDiagnosis, probeWriteAccess, getCreds } from "@/lib/gauth";
+import { bacaTampilan } from "@/lib/cacheTampilan";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -26,7 +27,8 @@ export async function GET(req) {
   const bukan = await tolakBukanAdmin();
   if (bukan) return bukan;
   const bulan = req.nextUrl.searchParams.get("bulan") || "";
-  const board = await getBoard(bulan);
+  try {
+  const board = await bacaTampilan(`board:${bulan}`, () => getBoard(bulan), { segar: req.nextUrl.searchParams.get("segar") === "1" });
   const diag = board.source === "sample" ? await credsDiagnosis() : null;
 
   // Kredensial bisa saja ada tapi spreadsheet hanya dibagikan sebagai Viewer.
@@ -41,10 +43,11 @@ export async function GET(req) {
       sheetWritable,
       serviceAccount: getCreds()?.client_email || "",
       diag,
-      at: Date.now(),
+      at: board.at,
     },
     { headers: { "Cache-Control": "no-store" } }
   );
+  } catch (e) { return NextResponse.json({ error: e.message, code: e.code || "READ_FAILED" }, { status: 503, headers: { "Cache-Control": "no-store" } }); }
 }
 
 const HANDLERS = {

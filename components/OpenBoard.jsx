@@ -283,7 +283,7 @@ function WajibLapor({ daftar }) {
   );
 }
 
-export default function OpenBoard({ projects, source, bulan, waNumber, panduan = [], brand = "Cerebrum", guru = null, bisaMasuk = false, pesan = "", milikku = {}, aktif = 0, maks = 3, laporku = [] }) {
+export default function OpenBoard({ projects, source, bulan, waNumber, panduan = [], brand = "Cerebrum", guru = null, bisaMasuk = false, pesan = "", milikku = {}, aktif = 0, maks = 3, laporku = [], tertunda = false, waktuData }) {
   const milikDari = (p) => milikku[String(p.id).toUpperCase()];
   const [q, setQ] = useState("");
   const [jenis, setJenis] = useState(SEMUA);
@@ -402,6 +402,7 @@ export default function OpenBoard({ projects, source, bulan, waNumber, panduan =
 
       <main className="pub-body">
         {source !== "live" ? <DataBanner source={source} /> : null}
+        {tertunda ? <div className="banner sync-warning" role="status"><Icon name="alert" /><div><b>Pembaruan proyek tertunda</b><p>Menampilkan data terakhir{waktuData ? ` dari ${new Date(waktuData).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })} WIB` : ""}. Ketersediaan kuota diperiksa kembali saat pengajuan.</p></div></div> : null}
         {pesan ? (
           <div className="banner live" role="status">
             <Icon name="check" />

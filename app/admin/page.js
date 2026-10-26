@@ -4,9 +4,10 @@ import { canWrite, credsDiagnosis } from "@/lib/gauth";
 import { passwordConfigured } from "@/lib/auth";
 import { sesiAdmin } from "@/lib/authServer";
 import { redirect } from "next/navigation";
+import { bacaTampilan } from "@/lib/cacheTampilan";
 
-// Selalu dibaca ulang dari spreadsheet — tanpa cache — supaya angka di admin
-// persis sama dengan isi sheet saat halaman dibuka.
+// Halaman/sesi tetap dinamis. Hanya data tampilan yang memakai cache singkat;
+// validasi penyimpanan membaca spreadsheet langsung.
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const metadata = { title: "Dashboard admin" };
@@ -31,7 +32,7 @@ export default async function AdminPage() {
   }
   if (!sesi) redirect("/admin/login?next=%2Fadmin");
   if (sesi.wajibGanti) redirect("/admin/ganti-password");
-  const board = await getBoard();
+  const board = await bacaTampilan("board:", () => getBoard()).catch((e) => ({ source: "error", error: e.message, projects: [], assignments: [], teachers: [], months: [], tab: "" }));
   const diag = board.source === "sample" ? await credsDiagnosis() : null;
   const brand = process.env.NEXT_PUBLIC_BRAND || "Cerebrum";
 
