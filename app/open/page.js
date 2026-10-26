@@ -11,7 +11,7 @@ import { adminSah } from "@/lib/authServer";
 import { bacaPengerjaan, dipesanPerProyek, maksAktif, lengkapiTitik } from "@/lib/pengerjaan";
 import { aturanBulan } from "@/lib/aturanProyek";
 import { AKTIF, ST, hitungMundur, titikBerikut } from "@/lib/pengerjaanOpsi";
-import { bacaTampilan } from "@/lib/cacheTampilan";
+import { bacaTampilan, UMUR } from "@/lib/cacheTampilan";
 
 // Halaman tetap dinamis untuk sesi guru. Katalog memakai cache tampilan singkat;
 // pengajuan memvalidasi kuota langsung dari spreadsheet.
@@ -31,7 +31,11 @@ export default async function OpenPage({ searchParams }) {
 
   let board, panduan, guruDb;
   try {
-    [board, panduan, guruDb] = await Promise.all([bacaTampilan("board:", () => getBoard()), getPanduan(), sesi ? getTeachers() : null]);
+    [board, panduan, guruDb] = await Promise.all([
+      bacaTampilan("board:", () => getBoard(), { grup: ["bulan", "guru"] }),
+      bacaTampilan("panduan", getPanduan, { grup: ["panduan"], umur: UMUR.jarang }),
+      sesi ? bacaTampilan("teachers", getTeachers, { grup: ["guru"], umur: UMUR.jarang }) : null,
+    ]);
   } catch {
     return <div className="login-wrap"><div className="login-card"><h1>Data proyek belum dapat diperbarui</h1><p>Koneksi spreadsheet sedang terganggu. Silakan coba kembali beberapa saat lagi.</p><a className="btn btn-blue block" href="/open">Coba lagi</a></div></div>;
   }
@@ -40,8 +44,8 @@ export default async function OpenPage({ searchParams }) {
   // sheet − pesanan itu. Deadline per proyek dari tab "Aturan proyek".
   // Gagal membaca keduanya tidak boleh mematikan halaman proyek.
   const [semuaPj, aturan, maks] = await Promise.all([
-    bacaPengerjaan().catch(() => []),
-    board.source === "live" ? aturanBulan(board.tab).catch(() => ({})) : {},
+    bacaTampilan("open:pengerjaan", async () => ({ rows: await bacaPengerjaan() }), { grup: ["pengerjaan"] }).then((d) => d.rows, () => []),
+    board.source === "live" ? bacaTampilan(`open:aturan:${board.tab}`, async () => ({ aturan: await aturanBulan(board.tab) }), { grup: ["pengerjaan"] }).then((d) => d.aturan, () => ({})) : {},
     maksAktif(),
   ]);
   const dipesan = dipesanPerProyek(semuaPj, board.tab);

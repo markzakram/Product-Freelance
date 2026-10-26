@@ -19,10 +19,10 @@ const full = (f) => path.join(root, 'lib', f + '.js');
 const response = (status, value = {}, retryAfter = null) => ({ status, ok: status >= 200 && status < 300, headers: { get: () => retryAfter }, json: async () => value });
 const flush = () => new Promise(r => setImmediate(r));
 
-test('Google reads recover from network failures, 429 and 503 with jitter; logs contain no URL or cell data', async () => {
+test('Google reads recover from network failures, 502 and 503 with jitter; logs contain no URL or cell data', async () => {
   const m = await load('lib/sheetsRead.js');
   let n=0, clock=0; const waits=[], logs=[];
-  const value = await m.bacaJsonGoogle('https://test.invalid/private?key=SECRET', {}, { fetcher: async () => { n++; if(n===1) throw TypeError('fetch failed SECRET'); if(n===2) return response(429, {}, '3'); if(n===3) return response(503); return response(200, { cells: ['PRIVATE'] }); }, now:()=>clock, random:()=>0.5, sleep:async ms=>{waits.push(ms);clock+=ms;}, log:e=>logs.push(e) });
+  const value = await m.bacaJsonGoogle('https://test.invalid/private?key=SECRET', {}, { fetcher: async () => { n++; if(n===1) throw TypeError('fetch failed SECRET'); if(n===2) return response(502, {}, '3'); if(n===3) return response(503); return response(200, { cells: ['PRIVATE'] }); }, now:()=>clock, random:()=>0.5, sleep:async ms=>{waits.push(ms);clock+=ms;}, log:e=>logs.push(e) });
   assert.equal(value.cells[0], 'PRIVATE'); assert.equal(n,4);
   assert.deepEqual(waits,[1500,3000,4500]);
   assert.equal(logs.at(-1).hasil,'pulih'); assert.equal(logs.at(-1).durasiMs,9000);
@@ -136,4 +136,65 @@ test('permission probe does not misclassify an outage as Viewer access and cache
   status=400;assert.equal(await m.probeWriteAccess('A'),true);assert.equal(calls,2);
   assert.equal(await m.probeWriteAccess('A'),true);assert.equal(calls,2);
   status=403;assert.equal(await m.probeWriteAccess('B'),false);assert.equal(calls,3,'another spreadsheet has independent permissions');
+});
+
+test('quota errors are not retried and each minute logs a per-section read summary without URLs', async () => {
+  const m = await load('lib/sheetsRead.js');
+  let n=0, clock=0; const logs=[];
+  const opsi = (status) => ({ operasi:'batchGet', bagian:'Pengerjaan+Riwayat pengerjaan', fetcher:async()=>{n++;return response(status,{ok:1});}, now:()=>clock, sleep:async()=>{}, log:e=>logs.push(e) });
+  await assert.rejects(m.bacaJsonGoogle('https://test.invalid/x?key=SECRET', {}, opsi(429)), e=>e.status===429);
+  assert.equal(n,1,'429 is not retried within the same minute');
+  await m.bacaJsonGoogle('https://test.invalid/x?key=SECRET', {}, opsi(200));
+  clock=61000;
+  await m.bacaJsonGoogle('https://test.invalid/x?key=SECRET', {}, { ...opsi(200), bagian:'Reachout' });
+  const ringkas = logs.find(e=>e.jenis==='ringkasan-menit');
+  assert.equal(ringkas.total,2); assert.equal(ringkas.ditolakKuota,1);
+  assert.equal(ringkas.per['batchGet Pengerjaan+Riwayat pengerjaan'],2);
+  assert.doesNotMatch(JSON.stringify(logs), /SECRET|test.invalid/);
+});
+
+test('writes invalidate only the cache groups of the tabs they touch; unknown or structural writes clear everything', async () => {
+  const m = await load('lib/grupCache.js');
+  assert.equal(m.grupTab('Pengerjaan'),'pengerjaan'); assert.equal(m.grupTab('Riwayat pengerjaan'),'pengerjaan');
+  assert.equal(m.grupTab('Reachout'),'reachout'); assert.equal(m.grupTab('Data guru freelance'),'guru');
+  assert.equal(m.grupTab('Oktober_Freelance'),'bulan'); assert.equal(m.grupTab('Juli_Proyek ASN & Bappenas_Freelance'),'bulan');
+  assert.equal(m.grupTab('Akun guru'),'akun'); assert.equal(m.grupTab('Tab lain'),null);
+  assert.equal(m.tabDariRange("'Tab ''A'''!A1:B2"),"Tab 'A'");
+  const body = (data) => ({ body: JSON.stringify(data) });
+  assert.deepEqual([...m.grupTulisan('https://x/values/'+encodeURIComponent("'Reachout'!A1")+':append?valueInputOption=RAW', {})],['reachout']);
+  assert.deepEqual([...m.grupTulisan('https://x/values:batchUpdate', body({ data:[{range:"'Pengerjaan'!A2"},{range:"'Oktober_'!J10"}] }))].sort(),['bulan','pengerjaan']);
+  assert.deepEqual([...m.grupTulisan('https://x/values:batchClear', body({ ranges:["'Akun guru'!A2:B2"] }))],['akun']);
+  assert.equal(m.grupTulisan('https://x/values:batchUpdate', body({ data:[{range:"'Pengerjaan'!A2"},{range:"'Tab lain'!A1"}] })),null);
+  assert.equal(m.grupTulisan('https://x/id:batchUpdate', body({ requests:[] })),null);
+
+  const crypto=require('node:crypto'); const hapus=[];
+  const g = await load('lib/gauth.js', {
+    'node:crypto':{default:{...crypto,createSign:()=>({update(){},end(){},sign:()=>Buffer.from('test-signature')})}},
+    [full('cacheTampilan')]:{hapusCacheTampilan:(grup)=>hapus.push(grup)},
+  }, {Buffer,process:{env:{NODE_ENV:'test',GOOGLE_SERVICE_ACCOUNT_JSON:JSON.stringify({client_email:'fixture@example.invalid',private_key:'TEST'})}},fetch:async url=>url.includes('oauth2')?response(200,{access_token:'fixture-token',expires_in:3600}):response(200,{}),console:{warn:()=>{}}});
+  await g.appendRows('test',"'Reachout'!A1",[['x']]);
+  assert.equal(hapus.length,2); assert.deepEqual([...hapus[0]],['reachout']);
+  await g.structuralUpdate('test',[{appendCells:{}}]);
+  assert.equal(hapus[2],undefined,'structural change clears every display cache');
+});
+
+test('display cache tags groups, refreshes only its own key and serves the last good data when Google refuses', async () => {
+  const saved=new Map(), tagsOf=new Map(), revalidated=[];
+  const cache = {
+    unstable_cache:(fn,key,opt)=>async()=>{const k=JSON.stringify(key);tagsOf.set(k,opt.tags);if(!saved.has(k))saved.set(k,await fn());return saved.get(k);},
+    revalidateTag:(t)=>{revalidated.push(t);for(const [k,tags] of tagsOf) if(tags.includes(t)) saved.delete(k);},
+  };
+  const m=await load('lib/cacheTampilan.js',{'next/cache':cache});
+  let n=0, gagal=false; const read=async()=>{ if(gagal) throw Error('HTTP 429'); return {value:++n}; };
+  await m.bacaTampilan('master',read,{grup:['master'],umur:m.UMUR.jarang});
+  await m.bacaTampilan('reachout',read,{grup:['reachout'],umur:m.UMUR.reachout});
+  m.hapusCacheTampilan(['reachout']);
+  assert.equal((await m.bacaTampilan('master',read,{grup:['master']})).value,1,'unrelated group stays cached');
+  assert.equal((await m.bacaTampilan('reachout',read,{grup:['reachout']})).value,3);
+  assert.equal((await m.bacaTampilan('master',read,{grup:['master'],segar:true})).value,4);
+  assert.equal(revalidated.at(-1).includes(':kunci:master'),true,'refresh only invalidates its own entry');
+  gagal=true;
+  const lama=await m.bacaTampilan('master',read,{grup:['master'],segar:true});
+  assert.equal(lama.value,4); assert.equal(lama.tertunda,true);
+  await assert.rejects(m.bacaTampilan('belum-pernah',read),/429/);
 });

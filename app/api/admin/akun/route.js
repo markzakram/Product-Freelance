@@ -12,67 +12,71 @@ import { simpanSeleksi, catatQc } from "@/lib/seleksi";
 import { daftarPendaftar, masukkanDataGuru, beriAkses, perluSampel } from "@/lib/pendaftaran";
 import { loginGuruSiap } from "@/lib/sesiGuru";
 import { bacaPenanda, penandaPublik } from "@/lib/penandaGuru";
+import { bacaTampilan, hapusKunciTampilan, UMUR } from "@/lib/cacheTampilan";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 
-export async function GET() {
+export async function GET(req) {
   const bukan = await tolakBukanAdmin();
   if (bukan) return bukan;
   try {
-    const [pendaftar, akun, guru, wajib, perubahan, penanda] = await Promise.all([
-      daftarPendaftar(),
-      bacaAkun({ segar: true }),
-      getTeachers(),
-      wajibLoginGuru(),
-      daftarPerubahan({ status: "Menunggu" }),
-      bacaPenanda(),
-    ]);
-    // Akun uji: berapa pengambilan yang akan ikut terhapus bila dibersihkan
-    const uji = akun.filter((a) => a.uji);
-    const dataUji = {};
-    if (uji.length) {
-      const pj = await bacaPengerjaan().catch(() => []);
-      uji.forEach((a) => {
-        const milik = pj.filter((p) => (a.idGuru && p.idGuru === a.idGuru) || p.email === a.email);
-        dataUji[a.email] = { pengambilan: milik.length, soal: milik.reduce((n, p) => n + (p.jumlah || 0), 0) };
-      });
-    }
-    return NextResponse.json(
-      {
-        dataUji,
-        pendaftar: Array.isArray(pendaftar) ? pendaftar : [],
-        errorPendaftar: pendaftar.error || "",
-        akun: akun.map(akunPublik),
-        // + keahlian untuk saringan "Ketersediaan guru" (bidang, jenjang, jurusan, universitas)
-        guru: (guru.rows || []).map((g) => ({
-          row: g.row,
-          idGuru: g.idGuru,
-          nama: g.nama,
-          email: g.email,
-          wa: g.wa,
-          status: g.status,
-          pendidikan: g.pendidikan,
-          jurusan: g.jurusan,
-          universitas: g.universitas,
-          bidang: g.bidang,
-          liveclass: g.liveclass, // jawaban form guru (Ya/Mungkin/Tidak) — bukan penanda tim
-          jadwalLive: g.jadwalLive,
-        })),
-        penanda: penandaPublik(penanda), // ID guru -> { liveclass, diubah, oleh } (dipasang tim)
-        wajibLogin: wajib,
-        perubahan, // ajuan "Profil saya" yang menunggu persetujuan
-        loginSiap: loginGuruSiap(),
-        tabAkun: TAB_AKUN,
-        canWrite: canWrite(),
-      },
-      { headers: { "Cache-Control": "no-store" } }
-    );
+    const data = await bacaTampilan("akun", bacaAkunAdmin, { grup: ["akun", "guru"], umur: UMUR.jarang, segar: req?.nextUrl?.searchParams.get("segar") === "1" });
+    // Pendaftar gagal dibaca: tampilkan bagian lain, tapi jangan simpan keadaan gagal 5 menit.
+    if (data.errorPendaftar) hapusKunciTampilan("akun");
+    return NextResponse.json({ ...data, loginSiap: loginGuruSiap(), canWrite: canWrite() }, { headers: { "Cache-Control": "no-store" } });
   } catch (e) {
     console.error("akun GET:", e);
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
+}
+
+// Isi tampilan Pendaftaran & akun (tanpa hash password; aman disimpan di cache tampilan).
+async function bacaAkunAdmin() {
+  const [pendaftar, akun, guru, wajib, perubahan, penanda] = await Promise.all([
+    daftarPendaftar(),
+    bacaAkun({ segar: true }),
+    getTeachers(),
+    wajibLoginGuru(),
+    daftarPerubahan({ status: "Menunggu" }),
+    bacaPenanda(),
+  ]);
+  // Akun uji: berapa pengambilan yang akan ikut terhapus bila dibersihkan
+  const uji = akun.filter((a) => a.uji);
+  const dataUji = {};
+  if (uji.length) {
+    const pj = await bacaPengerjaan().catch(() => []);
+    uji.forEach((a) => {
+      const milik = pj.filter((p) => (a.idGuru && p.idGuru === a.idGuru) || p.email === a.email);
+      dataUji[a.email] = { pengambilan: milik.length, soal: milik.reduce((n, p) => n + (p.jumlah || 0), 0) };
+    });
+  }
+  return {
+    dataUji,
+    pendaftar: Array.isArray(pendaftar) ? pendaftar : [],
+    errorPendaftar: pendaftar.error || "",
+    akun: akun.map(akunPublik),
+    // + keahlian untuk saringan "Ketersediaan guru" (bidang, jenjang, jurusan, universitas)
+    guru: (guru.rows || []).map((g) => ({
+      row: g.row,
+      idGuru: g.idGuru,
+      nama: g.nama,
+      email: g.email,
+      wa: g.wa,
+      status: g.status,
+      pendidikan: g.pendidikan,
+      jurusan: g.jurusan,
+      universitas: g.universitas,
+      bidang: g.bidang,
+      liveclass: g.liveclass, // jawaban form guru (Ya/Mungkin/Tidak) — bukan penanda tim
+      jadwalLive: g.jadwalLive,
+    })),
+    penanda: penandaPublik(penanda), // ID guru -> { liveclass, diubah, oleh } (dipasang tim)
+    wajibLogin: wajib,
+    perubahan, // ajuan "Profil saya" yang menunggu persetujuan
+    tabAkun: TAB_AKUN,
+  };
 }
 
 export async function POST(req) {

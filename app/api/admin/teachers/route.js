@@ -4,7 +4,7 @@ import { tolakBukanAdmin } from "@/lib/authServer";
 import { getTeachers, createTeacher, updateTeacher } from "@/lib/teachers";
 import { pindahkanEmail } from "@/lib/akun";
 import { canWrite } from "@/lib/gauth";
-import { bacaTampilan } from "@/lib/cacheTampilan";
+import { bacaTampilan, UMUR } from "@/lib/cacheTampilan";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -13,7 +13,7 @@ export async function GET(req) {
   const bukan = await tolakBukanAdmin();
   if (bukan) return bukan;
   try {
-  const t = await bacaTampilan("teachers", getTeachers, { segar: req?.nextUrl.searchParams.get("segar") === "1" });
+  const t = await bacaTampilan("teachers", getTeachers, { grup: ["guru"], umur: UMUR.jarang, segar: req?.nextUrl.searchParams.get("segar") === "1" });
   return NextResponse.json(
     { ...t, canWrite: t.source === "live" && canWrite() },
     { headers: { "Cache-Control": "no-store" } }

@@ -32,7 +32,7 @@ export default async function AdminPage() {
   }
   if (!sesi) redirect("/admin/login?next=%2Fadmin");
   if (sesi.wajibGanti) redirect("/admin/ganti-password");
-  const board = await bacaTampilan("board:", () => getBoard()).catch((e) => ({ source: "error", error: e.message, projects: [], assignments: [], teachers: [], months: [], tab: "" }));
+  const board = await bacaTampilan("board:", () => getBoard(), { grup: ["bulan", "guru"] }).catch((e) => ({ source: "error", error: e.message, projects: [], assignments: [], teachers: [], months: [], tab: "" }));
   const diag = board.source === "sample" ? await credsDiagnosis() : null;
   const brand = process.env.NEXT_PUBLIC_BRAND || "Cerebrum";
 

@@ -12,6 +12,35 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.16.1 — Hemat kuota baca Google Sheets (26 Oktober 2026)
+
+Google membatasi **60 pembacaan per menit** untuk satu service account, dipakai bersama
+seluruh tim, halaman guru, dan pengecekan akun. Versi ini mengurangi pembacaan:
+
+- **Umur cache per jenis data**: master subtes, data lintas bulan, database guru,
+  pendaftaran & akun, dan panduan 5 menit; katalog/log dan Pengambilan Guru 30 detik;
+  reachout 1 menit. Simpan lewat dashboard tetap langsung terlihat; umur cache hanya
+  memengaruhi perubahan yang diketik langsung di spreadsheet.
+- **Invalidasi per kelompok tab**: penyimpanan hanya menghapus cache tab yang ditulis
+  (mis. mencatat klik WA hanya menyegarkan Reachout), bukan seluruh cache. Perubahan
+  struktur atau tab yang tidak dikenali tetap menghapus semua. **Segarkan** hanya
+  membaca ulang bagian yang diminta.
+- **Pendaftaran & akun** (6–7 pembacaan, dibaca tiap dashboard dibuka) kini lewat cache.
+- **Halaman guru**: panduan (sebelumnya 2 pembacaan tiap kunjungan), data guru,
+  pengambilan, dan aturan proyek memakai cache bersama.
+- **Pengecekan akun** tim & guru disimpan 2 menit per server (sebelumnya 20–30 detik).
+  Akun yang tidak cocok di cache dibaca ulang sekali sebelum sesi ditolak (maks. sekali
+  per menit per email), jadi akun/sandi baru langsung bisa dipakai. Penonaktifan dari
+  dashboard berlaku paling lambat 2 menit di server lain.
+- **Kuota penuh (429) tidak dicoba ulang** dalam hitungan detik; tampilan memakai data
+  terakhir yang berhasil dibaca (banner Sinkronisasi tertunda) dan mencoba lagi pada
+  sinkron berikutnya. Gangguan jaringan / 5xx tetap dicoba ulang.
+- **Sinkron berkala 60 detik** (sebelumnya 45). Reachout tidak ikut setiap sinkron —
+  dibaca saat Katalog, tab Butuh guru, atau Laporan reachout/corong dibuka. Kembali ke
+  aplikasi tidak memicu sinkron bila sinkron terakhir < 15 detik lalu.
+- Log Vercel `[sheets-read]` kini menulis **ringkasan per menit** per server: jumlah
+  permintaan ke Google per bagian/tab dan berapa yang ditolak kuota.
+
 ## 3.16.0 — Pembacaan spreadsheet & sinkronisasi tahan gangguan (26 Oktober 2026)
 
 - Refresh yang gagal mempertahankan katalog, log, Pengambilan Guru, panel detail,

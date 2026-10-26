@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { tolakBukanAdmin } from "@/lib/authServer";
 import { getAllMonths, createMonth, addLines } from "@/lib/months";
 import { canWrite } from "@/lib/gauth";
-import { bacaTampilan } from "@/lib/cacheTampilan";
+import { bacaTampilan, UMUR } from "@/lib/cacheTampilan";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -12,7 +12,7 @@ export async function GET(req) {
   const bukan = await tolakBukanAdmin();
   if (bukan) return bukan;
   try {
-  const d = await bacaTampilan("months", getAllMonths, { segar: req?.nextUrl.searchParams.get("segar") === "1" });
+  const d = await bacaTampilan("months", getAllMonths, { grup: ["bulan"], umur: UMUR.jarang, segar: req?.nextUrl.searchParams.get("segar") === "1" });
   return NextResponse.json(
     { ...d, canWrite: d.source === "live" && canWrite() },
     { headers: { "Cache-Control": "no-store" } }

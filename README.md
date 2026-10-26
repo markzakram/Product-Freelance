@@ -18,7 +18,7 @@ Halaman depan (`/`) berisi dua pintu masuk tersebut.
   Contoh: **QC revisi 1 selesai → Revisi 2 diminta**. Klik hasil untuk membuka
   panel kanan pada pengambilan dan hasil pemeriksaan yang sama.
 - Hasil baru menampilkan pemberitahuan saat sinkronisasi berikutnya (aplikasi
-  mengecek tiap 45 detik, saat kembali aktif, atau melalui Segarkan). Daftar
+  mengecek tiap 60 detik, saat kembali aktif, atau melalui Segarkan). Daftar
   tetap tersedia setelah memuat ulang; membuka notifikasi tidak mencatat kabar.
   Setelah pesan dikirim, CLO memilih **Catat sudah dikabari**. Hasil revisi
   berikutnya memiliki status kabarnya sendiri. Ini notifikasi dalam aplikasi,
@@ -35,20 +35,25 @@ Dashboard mempertahankan data terakhir saat refresh gagal, dengan banner
 dalam WIB. **Coba lagi** membaca ulang data; kegagalan tidak berarti tabel kosong.
 Data contoh hanya tampil ketika aplikasi belum diberi kredensial.
 
-Polling aktif sekitar 45 detik, berhenti saat tab tersembunyi atau offline, lalu
-melambat hingga 180 detik saat gagal. Pemicu fokus/visibility digabung. Hasil RAD
+Polling aktif sekitar 60 detik (v3.16.1), berhenti saat tab tersembunyi atau offline, lalu
+melambat hingga 180 detik saat gagal. Kembali ke aplikasi < 15 detik setelah sinkron
+terakhir tidak memicu sinkron baru. Pemicu fokus/visibility digabung. Hasil RAD
 baru tetap muncul sebagai notifikasi setelah sinkronisasi berikutnya berhasil.
 
-GET tampilan memakai **Data Cache Next.js**, revalidasi 15 detik, serta timestamp
-snapshot. Ketersediaan cache lintas instans mengikuti penyedia hosting (Vercel/Data
+GET tampilan memakai **Data Cache Next.js** dengan umur per jenis data (v3.16.1):
+katalog/log & Pengambilan Guru 30 detik, reachout 1 menit, master/lintas bulan/data guru/
+pendaftaran & akun/panduan 5 menit, serta timestamp snapshot. Penyimpanan hanya
+menghapus cache kelompok tab yang ditulis (`lib/grupCache.js`). Ketersediaan cache lintas instans mengikuti penyedia hosting (Vercel/Data
 Cache); tidak perlu layanan Redis baru. Cache bukan penyimpanan permanen: pada
 pembukaan pertama tanpa cache dan tanpa koneksi, aplikasi menampilkan keadaan gagal
 memuat, bukan mengarang data. Cache tampilan diinvalidasi saat penyimpanan; validasi
-transaksi tetap membaca langsung. Baca yang gagal dicoba ulang sampai 4 percobaan,
+transaksi tetap membaca langsung. Baca yang gagal karena jaringan/5xx dicoba ulang sampai 4 percobaan; 429 (kuota
+menit itu habis) tidak dicoba ulang dan tampilan memakai data terakhir,
 maksimum 6 detik per percobaan dan anggaran 22 detik per panggilan Google. Retry-After
 yang melampaui anggaran dihormati dengan mengakhiri panggilan, bukan mencoba terlalu dini.
 Log server `[sheets-read]` membantu membedakan `HTTP_429`, `HTTP_503`, `NETWORK`, dan
-`TIMEOUT` tanpa mencatat kredensial atau isi sel. Keberhasilan tulis hanya mengikuti
+`TIMEOUT` tanpa mencatat kredensial atau isi sel, plus ringkasan per menit (jumlah
+permintaan per tab dan yang ditolak kuota) untuk melihat sumber pembacaan terbesar. Keberhasilan tulis hanya mengikuti
 respons server; append/struktur tidak diulang otomatis setelah koneksi terputus.
 
 ---
@@ -136,7 +141,7 @@ Tanpa mengisi `.env.local`, aplikasi tetap jalan dengan data contoh.
 
 ## Catatan teknis
 
-- **Refresh data**: GET tampilan memakai Data Cache dengan revalidasi **15 detik** (`lib/cacheTampilan.js`). Admin menyinkronkan data sekitar **45 detik** saat halaman aktif; saat gagal, interval bertambah. Tombol Segarkan dan pembacaan setelah penyimpanan melewati cache tampilan.
+- **Refresh data**: GET tampilan memakai Data Cache dengan umur per jenis data (`UMUR` di `lib/cacheTampilan.js`: 30 detik / 1 menit / 5 menit). Admin menyinkronkan data sekitar **60 detik** saat halaman aktif; saat gagal, interval bertambah. Tombol Segarkan dan pembacaan setelah penyimpanan melewati cache bagian itu saja.
 - **Nama tab sheet dibaca fleksibel**: parser mencari tab "Detail/Detil proyek", "Master_Proyek", "Data guru freelance", dan tab rekap berpola `Live Class <Bulan>`, `Freelance Soal <Bulan>`, `Freelance Produk <Bulan>`. Bulan baru (mis. `Live Class Juli`) otomatis ikut terbaca — tidak perlu ubah kode.
 - **Keamanan**: area `/admin` dilindungi password lewat cookie (12 jam) + `middleware.js`. Kredensial Google & password hanya dipakai di server, tidak pernah terekspos ke browser.
 - **Zero dependency data layer**: koneksi Sheets memakai `fetch` + tanda tangan JWT bawaan Node, tanpa library berat.

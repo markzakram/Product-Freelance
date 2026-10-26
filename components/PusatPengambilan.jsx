@@ -33,6 +33,8 @@ export default function PusatPengambilan({ data, bulan, namaBulan, pengguna, pro
   const antreanRef = useRef(null), produksiRef = useRef(null);
   useEffect(() => { setSorotan(null); setCariGuru(null); }, [bulan]);
   useEffect(() => { if (fokusNotifikasi) { setTim("clo"); setTabClo("kabar"); } }, [fokusNotifikasi]);
+  // Reachout tidak ikut sinkron berkala (hemat kuota): diperbarui saat tab Butuh guru dibuka.
+  useEffect(() => { if (tim === "clo" && tabClo === "kuota") muatReachout?.(false); }, [tim, tabClo]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { const tick = setInterval(() => setKini(Date.now()), 60000); return () => clearInterval(tick); }, []);
   const s = useMemo(() => ringkasanPengambilan(projects, data?.pengerjaan || [], kini), [projects, data, kini]);
   const tugas = useMemo(() => (tim === "rad" ? tugasRad(s.baris) : tugasClo(s.baris)), [tim, s]);

@@ -29,7 +29,7 @@ export async function GET(req) {
       maksAktif: maks,
       aktifPerGuru,
     };
-    }, { segar: req.nextUrl.searchParams.get("segar") === "1" });
+    }, { grup: ["pengerjaan", "akun"], segar: req.nextUrl.searchParams.get("segar") === "1" });
     return NextResponse.json({
       ...data,
       canWrite: canWrite() && bolehPeran(sesi, ["Akademik"]),

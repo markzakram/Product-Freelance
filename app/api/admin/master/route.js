@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { tolakBukanAdmin } from "@/lib/authServer";
 import { getMaster, createSubtes, updateSubtes, archiveSubtes, deleteSubtes, pemakaianSubtes, findSimilar } from "@/lib/master";
 import { canWrite } from "@/lib/gauth";
-import { bacaTampilan } from "@/lib/cacheTampilan";
+import { bacaTampilan, UMUR } from "@/lib/cacheTampilan";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -12,7 +12,7 @@ export async function GET(req) {
   const bukan = await tolakBukanAdmin();
   if (bukan) return bukan;
   try {
-  const m = await bacaTampilan("master", getMaster, { segar: req?.nextUrl.searchParams.get("segar") === "1" });
+  const m = await bacaTampilan("master", getMaster, { grup: ["master"], umur: UMUR.jarang, segar: req?.nextUrl.searchParams.get("segar") === "1" });
   return NextResponse.json(
     { ...m, canWrite: m.source === "live" && canWrite() },
     { headers: { "Cache-Control": "no-store" } }

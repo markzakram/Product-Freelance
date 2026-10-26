@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { tolakBukanAdmin, izinAdmin } from "@/lib/authServer";
 import { canWrite } from "@/lib/gauth";
 import { bacaReachout, catatKontak, tandaiHasil, TAB_REACHOUT } from "@/lib/reachout";
-import { bacaTampilan } from "@/lib/cacheTampilan";
+import { bacaTampilan, UMUR } from "@/lib/cacheTampilan";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +11,7 @@ export async function GET(req) {
   const bukan = await tolakBukanAdmin();
   if (bukan) return bukan;
   try {
-    const data = await bacaTampilan("reachout", async () => ({ kontak: await bacaReachout({ segar: true }), tab: TAB_REACHOUT }), { segar: req?.nextUrl.searchParams.get("segar") === "1" });
+    const data = await bacaTampilan("reachout", async () => ({ kontak: await bacaReachout({ segar: true }), tab: TAB_REACHOUT }), { grup: ["reachout"], umur: UMUR.reachout, segar: req?.nextUrl.searchParams.get("segar") === "1" });
     return NextResponse.json({ ...data, canWrite: canWrite() });
   } catch (e) {
     return NextResponse.json({ error: e.message || "Gagal membaca tab Reachout." }, { status: 503 });

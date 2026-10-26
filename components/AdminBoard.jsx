@@ -51,7 +51,9 @@ import { susunLaporan, unduhLaporan } from "@/lib/laporanPengambilan";
 
 const STATUS_KNOWN = ["Running Soal", "QC Soal", "Revisi Soal", "Approved", "Running Video", STATUS_BATAL];
 const SEMUA = "Semua";
-const POLL_MS = 45000;
+// Sinkron berkala 60 detik (v3.16.1): kuota baca Google 60/menit dipakai bersama
+// seluruh tim dan halaman guru. Simpan & tombol Segarkan tetap langsung.
+const POLL_MS = 60000;
 const LOGIN_URL = "/admin/login?next=%2Fadmin";
 
 const F0 = { q: "", from: "", to: "", platform: SEMUA, guru: SEMUA, subtes: SEMUA, status: SEMUA, pic: SEMUA };
@@ -272,10 +274,16 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
     if (expired || !operasional) return;
     return jadwalkanSinkron(async () => {
       const gagalExtra = ["master", "months", "teachers", "akun"].filter((k) => syncInfoRef.current[k]?.error);
-      const hasil = await Promise.allSettled([refresh(false), muatPengerjaan(false), muatReachout(false), ...(gagalExtra.length ? [refreshExtra(false, gagalExtra)] : [])]);
+      // Reachout tidak ikut setiap sinkron — dibaca saat halaman yang memakainya dibuka.
+      const hasil = await Promise.allSettled([refresh(false), muatPengerjaan(false), ...(gagalExtra.length ? [refreshExtra(false, gagalExtra)] : [])]);
       return hasil.every((r) => r.status === "fulfilled" && r.value !== false);
     }, { interval: POLL_MS });
-  }, [refresh, muatPengerjaan, muatReachout, refreshExtra, expired, operasional]);
+  }, [refresh, muatPengerjaan, refreshExtra, expired, operasional]);
+
+  // Halaman yang menampilkan kontak/tawaran membaca reachout saat dibuka (cache server 1 menit).
+  useEffect(() => {
+    if (!expired && (tab === "katalog" || (tab === "laporan" && ["reachout", "corong"].includes(laporanSub)))) muatReachout(false);
+  }, [tab, laporanSub, expired, muatReachout]);
 
   // Tombol WA di mana pun (Cari guru, Tinjau, kirim akun, profil) mengumumkan
   // kontak barunya lewat event — lihat lib/kontakWa.js.

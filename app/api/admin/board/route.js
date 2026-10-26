@@ -28,7 +28,7 @@ export async function GET(req) {
   if (bukan) return bukan;
   const bulan = req.nextUrl.searchParams.get("bulan") || "";
   try {
-  const board = await bacaTampilan(`board:${bulan}`, () => getBoard(bulan), { segar: req.nextUrl.searchParams.get("segar") === "1" });
+  const board = await bacaTampilan(`board:${bulan}`, () => getBoard(bulan), { grup: ["bulan", "guru"], segar: req.nextUrl.searchParams.get("segar") === "1" });
   const diag = board.source === "sample" ? await credsDiagnosis() : null;
 
   // Kredensial bisa saja ada tapi spreadsheet hanya dibagikan sebagai Viewer.
