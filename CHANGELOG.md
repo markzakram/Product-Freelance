@@ -12,6 +12,41 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.15.0 — Notifikasi hasil RAD untuk CLO & ringkasan log dinamis (26 Oktober 2026)
+
+- Lonceng **Hasil RAD** tersedia di setiap halaman admin untuk CLO, Seleksi, dan
+  Pemilik. Daftar berisi hasil QC/pemeriksaan progres yang masih perlu dikabari
+  pada bulan aktif, lengkap nama guru, proyek, waktu, dan pemeriksa.
+- Nomor kiriman yang diperiksa dibedakan dari revisi yang diminta: misalnya
+  **QC revisi 1 selesai** dengan hasil **Revisi 2 diminta**. Hasil baru yang
+  terdeteksi melalui sinkronisasi memunculkan pemberitahuan yang bisa diklik.
+- Klik notifikasi membuka **Detail pengambilan** di kanan, langsung ke Kabar ke
+  guru dan hasil yang dituju. Membuka notifikasi/draf tidak menandai sudah dikabari;
+  konfirmasi CLO tetap dicatat per hasil. Kiriman revisi baru menunggu QC ulang,
+  dan hasil QC berikutnya masuk kembali sebagai notifikasi tersendiri.
+- Notifikasi mengikuti sinkronisasi aplikasi (45 detik, saat kembali ke aplikasi,
+  atau Segarkan); tersedia selama aplikasi dibuka. Tidak mengirim pesan WA otomatis.
+- Kartu **Log Pengambilan** mengikuti seluruh filter dan pencarian: fee, jumlah
+  soal, dan guru aktif dihitung dari baris tampil, tanpa Cancel. Target dan sisa
+  kuota memakai katalog proyek terkait (setiap proyek dihitung sekali), sehingga
+  menyaring seorang guru tidak membuat sisa kuota proyek menjadi lebih besar.
+  Label menunjukkan lingkup filter; hasil kosong menampilkan nol dan reset
+  mengembalikan ringkasan seluruh bulan.
+
+## 3.14.1 — Catatan opsional & kabar "telah selesai" untuk CLO (23 Oktober 2026)
+
+- Kabar **pekerjaan selesai** kini berbunyi "pekerjaan … telah selesai. Hasil review
+  akhir: N soal disetujui …" dengan jumlah akhir semua ronde (termasuk soal yang dibayar
+  75% dan yang ditolak), lalu info fee masuk pembayaran bulan ini. Judulnya di antrean CLO
+  menjadi **Pekerjaan selesai** (sebelumnya "QC selesai · hasil diputuskan").
+- Draf kabar lain juga ditulis ulang per jenis hasil: pengajuan disetujui (dengan
+  deadline), ditolak (dengan alasan), laporan progres sudah diperiksa, revisi diminta.
+- Catatan RAD hanya **wajib** ikut di pesan untuk penolakan dan revisi. Untuk hasil yang
+  beres (ACC, laporan diperiksa, pekerjaan selesai) catatan tidak otomatis ikut; CLO bisa
+  mencentang **Sertakan catatan RAD**. Draf pesan sekarang bisa diedit sebelum dikirim.
+- Form review RAD: bila tidak ada soal revisi, kolom catatan disembunyikan di balik
+  **Tambah catatan (opsional)**; bila ada revisi, catatan tetap wajib.
+
 ## 3.14.0 — Pengambilan Guru jadi satu ruang kerja; menu Pantauan diringkas (23 Oktober 2026)
 
 - **Antrean tugas** di atas halaman Pengambilan Guru, urut dari yang paling mendesak.

@@ -25,6 +25,91 @@ const time = (day, hour = 9) => Date.UTC(2026, 9, day, hour - 7);
 const base = { id: "PJ-1", bulan: "Oktober_", idProyek: "PU-01", idGuru: "1", nama: "Ayu", email: "ayu@test.invalid", jumlah: 20, status: "Running", laporan: [], riwayat: [], tAcc: time(18), titik: [{ persen: 30, tanggal: "2026-10-19" }, { persen: 50, tanggal: "2026-10-22" }] };
 const report = (id, day, persen, soal, versi = 1, jenis = "laporan") => ({ id: `${id}-v${versi}`, laporanId: id, noLaporan: persen === 30 ? 1 : 2, versi, jenis, persen, soal, waktu: `${day}/10/2026 09:00`, t: time(day), link: "https://docs.google.com/document/d/test" });
 
+test("CLO notifications separate the inspected revision from the next requested revision", async () => {
+  const m = await load("lib/notifikasiClo.js");
+  const p = { ...base, status: "Revisi", ronde: 1, riwayat: [report("A", 19, 100, 20, 1, "pengumpulan"),
+    { id: "qc1", jenis: "review", persen: 100, versi: 1, t: time(20), oleh: "RAD", meta: { revisi: 20 } }] };
+  let n = m.notifikasiClo([p]);
+  assert.equal(n[0].judul, "QC kiriman awal selesai");
+  assert.equal(n[0].hasil, "Revisi 1 diminta · Hasil akhir");
+  assert.equal(n[0].keputusanId, "qc1");
+  p.riwayat.push({ id: "k1", jenis: "kabar", t: time(20, 12), meta: { keputusanId: "qc1" } });
+  assert.equal(m.notifikasiClo([p]).length, 0);
+  p.riwayat.push(report("A", 21, 100, 20, 2, "revisi_akhir"));
+  p.status = "Ready to review";
+  assert.equal(m.notifikasiClo([p]).length, 0, "new teacher submission is not a finished QC");
+  p.status = "Revisi";
+  p.riwayat.push({ id: "qc2", jenis: "review", persen: 100, versi: 2, t: time(22), meta: { revisi: 10 } });
+  n = m.notifikasiClo([p]);
+  assert.equal(n.length, 1);
+  assert.equal(n[0].judul, "QC revisi 1 selesai");
+  assert.equal(n[0].hasil, "Revisi 2 diminta · Hasil akhir");
+  assert.equal(n[0].keputusanId, "qc2", "contact of qc1 never marks qc2 contacted");
+  p.riwayat.push(report("A", 23, 100, 20, 3, "revisi_akhir"), { id: "qc3", jenis: "review", persen: 100, versi: 3, t: time(24), meta: { setuju: 10, revisi: 0 } });
+  p.status = "Selesai";
+  n = m.notifikasiClo([p]);
+  assert.equal(n.length, 1, "superseded uncontacted qc2 does not remain actionable");
+  assert.equal(n[0].judul, "QC revisi 2 selesai");
+  assert.equal(n[0].hasil, "Pekerjaan selesai");
+});
+
+test("CLO notifications target separate progress reports, exclude ACC, deduplicate and sort newest first", async () => {
+  const m = await load("lib/notifikasiClo.js");
+  const p = { ...base, riwayat: [report("L1", 19, 30, 6), { id: "c1", jenis: "dicek", laporanId: "L1", persen: 30, versi: 1, t: time(20) },
+    report("L2", 21, 50, 10), { id: "c2", jenis: "minta_revisi", laporanId: "L2", noLaporan: 2, persen: 50, versi: 1, t: time(22) }] };
+  const acc = { ...base, id: "ACC", riwayat: [{ id: "a", jenis: "acc", t: time(23) }] };
+  let n = m.notifikasiClo([p, p, acc]);
+  assert.equal(n.length, 2);
+  assert.deepEqual(Array.from(n, (x) => x.keputusanId), ["c2", "c1"]);
+  assert.match(n[0].judul, /laporan 2 · 50%/);
+  p.riwayat.push({ id: "k", jenis: "kabar", t: time(23), meta: { keputusanId: "c2" } });
+  assert.equal(m.notifikasiClo([p])[0].keputusanId, "c1");
+  p.riwayat.push(report("L1", 24, 30, 6, 2, "revisi_laporan"));
+  assert.equal(m.notifikasiClo([p]).length, 0, "new progress version supersedes the old result");
+});
+
+test("legacy final QC uses the recorded round and does not invent results for unknown work", async () => {
+  const m = await load("lib/notifikasiClo.js");
+  const n = m.notifikasiClo([{ ...base, status: "Revisi", ronde: 3, tepat: 10, direview: "23/10/2026 09:00", reviewer: "RAD", catatanRevisi: "Perbaiki", batasRevisi: "26/10/2026 09:00" }]);
+  assert.equal(n.length, 1);
+  assert.equal(n[0].judul, "QC revisi 2 selesai");
+  assert.match(n[0].hasil, /Revisi 3 diminta/);
+  assert.equal(m.notifikasiClo([{ ...base, status: "Selesai" }]).length, 0);
+});
+
+test("log cards follow filtered rows while quota remains the actual capacity of related projects", async () => {
+  const m = await load("lib/ringkasanLog.js");
+  const projects = [{ id: "A", kebutuhan: 100, sisa: 30 }, { id: "B", kebutuhan: 50, sisa: 20 }];
+  const rows = [{ idProject: "A", guru: "Ayu", idGuru: "1", jumlah: 20, fee: 200000, status: "Approved" },
+    { idProject: "A", guru: "Bima", idGuru: "2", jumlah: 50, fee: 500000, status: "QC Soal" },
+    { idProject: "B", guru: "Citra", idGuru: "3", jumlah: 30, fee: 300000, status: "Revisi Soal" }];
+  let s = m.ringkasanLog(rows, projects);
+  assert.deepEqual([s.diambil, s.feeTotal, s.kebutuhan, s.sisa, s.guruAktif], [100, 1000000, 150, 50, 3]);
+  s = m.ringkasanLog(rows.slice(0, 1), projects, true);
+  assert.deepEqual([s.diambil, s.feeTotal, s.kebutuhan, s.sisa, s.guruAktif], [20, 200000, 100, 30, 1], "teacher filtering must not free another teacher's quota");
+  assert.equal(m.ringkasanLog(rows.slice(0, 2), projects, true).kebutuhan, 100, "one project is never counted twice");
+  assert.deepEqual(Object.values(m.ringkasanLog([], projects, true)), [0, 0, 0, 0, 0, 0, 0, 0, 0]);
+  assert.equal(m.ringkasanLog([], projects, false).sisa, 50, "no filter retains the whole catalog, even without logs");
+});
+
+test("log cards exclude cancellation amounts, handle unknown projects and preserve teacher identities", async () => {
+  const m = await load("lib/ringkasanLog.js");
+  const rows = [
+    { idProject: "a", guru: "Ayu", idGuru: "1", jumlah: 10, fee: 100000, status: "Approved" },
+    { idProject: "A", guru: "Ayu", idGuru: "2", jumlah: 5, fee: 50000 },
+    { idProject: "A", guru: "Dina", idGuru: "3", jumlah: 5, fee: 50000 },
+    { idProject: "A", guru: " dina ", jumlah: 5, fee: 50000 },
+    { idProject: "A", guru: "Cancel Guru", jumlah: 100, fee: 9000000, status: " Cancel " },
+    { idProject: "A", guru: "Cadangan", jumlah: 0, fee: 0 },
+  ];
+  const s = m.ringkasanLog(rows, [{ id: "A", kebutuhan: 20, sisa: -5 }], true);
+  assert.deepEqual([s.diambil, s.feeTotal, s.sisa, s.pct, s.guruAktif], [25, 250000, -5, 125, 3]);
+  const orphan = m.ringkasanLog([{ idProject: "UNKNOWN", jumlah: 10, fee: 100000 }], [], true);
+  assert.equal(orphan.diambil, 10);
+  assert.equal(orphan.kebutuhan, 0);
+  assert.equal(orphan.pct, 0);
+});
+
 test("dashboard separates catalog occupancy, final submissions and approved review quantities", async () => {
   const m = await load("lib/pengambilanDashboard.js");
   const projects = [{ id: "PU-01", subtes: "Penalaran Umum", kebutuhan: 100, sisa: 40 }, { id: "PU-02", subtes: " penalaran umum ", kebutuhan: 50, sisa: 30 }];
@@ -573,4 +658,37 @@ test("table status chips split action, waiting, overdue and closed work", async 
   assert.equal(n("selesai"), "done");
   assert.equal(n("tolak"), "no");
   assert.equal(n("tidak-ada"), n("semua"), "unknown key falls back to all");
+});
+
+test("finished-work message says the work is complete, uses final totals and leaves optional RAD notes out", async () => {
+  const m = await load("lib/pantauanOpsi.js");
+  const final = (versi, jenis) => ({ ...report("A", 20 + versi, 100, 20, versi), jenis });
+  const p = { ...base, status: "Selesai", ronde: 2, tepat: 15, telat: 3, tolakBuka: 2, tolakHangus: 0, riwayat: [
+    final(1, "pengumpulan"),
+    { id: "q1", jenis: "review", versi: 1, persen: 100, t: time(21), catatan: "no 3 & 7 perbaiki kunci", meta: { setuju: 15, revisi: 5 } },
+    final(2, "revisi_akhir"),
+    { id: "q2", jenis: "review", versi: 2, persen: 100, t: time(23), catatan: "rapi, terima kasih", meta: { setuju: 3, revisi: 0, tolak: 2 } },
+  ] };
+  const e = m.keputusanPengambilan(p)[0];
+  assert.equal(e.id, "q2");
+  assert.equal(m.judulKeputusan(e), "Pekerjaan selesai");
+  assert.equal(m.catatanWajib(e), false);
+  const pesan = m.pesanKabar(p, e);
+  assert.match(pesan, /telah selesai\. Hasil review akhir: /);
+  assert.match(pesan, /18 soal disetujui \(3 di antaranya dibayar 75%/, "totals cover every round, not only the last one");
+  assert.match(pesan, /2 soal ditolak/);
+  assert.match(pesan, /Fee akan masuk ke pembayaran bulan ini/);
+  assert.doesNotMatch(pesan, /Catatan/, "optional note is left out by default");
+  assert.match(m.pesanKabar(p, e, { sertakanCatatan: true }), /Catatan: rapi, terima kasih/);
+
+  const revisi = { ...p, status: "Revisi", tepat: 15, telat: 0, tolakBuka: 0, riwayat: p.riwayat.slice(0, 2) };
+  const r = m.keputusanPengambilan(revisi)[0];
+  assert.equal(m.catatanWajib(r), true);
+  assert.match(m.pesanKabar(revisi, r, { sertakanCatatan: false }).replace(/\n/g, " "), /Revisi 1 diminta/);
+  assert.match(m.pesanKabar(revisi, r), /Catatan: no 3 & 7 perbaiki kunci/, "revision notes are always sent");
+
+  const ditolak = { ...base, status: "Ditolak", riwayat: [{ id: "t1", jenis: "tolak", t: time(19), catatan: "kuota sudah penuh" }] };
+  assert.match(m.pesanKabar(ditolak, m.keputusanPengambilan(ditolak)[0]), /Alasan: kuota sudah penuh/);
+  const semuaDitolak = { ...base, status: "Selesai", tepat: 0, telat: 0, tolakBuka: 20, riwayat: [final(1, "pengumpulan"), { id: "q", jenis: "review", versi: 1, persen: 100, t: time(22), meta: { setuju: 0, revisi: 0, tolak: 20 } }] };
+  assert.doesNotMatch(m.pesanKabar(semuaDitolak, m.keputusanPengambilan(semuaDitolak)[0]), /Fee akan masuk/);
 });

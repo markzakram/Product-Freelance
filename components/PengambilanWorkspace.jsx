@@ -23,7 +23,7 @@ import SearchableFilter from "./SearchableFilter";
 import RiwayatPengambilan from "./RiwayatPengambilan";
 import KabarPengambilan from "./KabarPengambilan";
 
-export default function PengambilanWorkspace({ data, bulan, namaBulan, projects = [], guruDb = [], muatUlang, setErr, aksiEl, onBerubah, FormReview, pesanWa, tim = "rad", baris = [], tugas = [], kuota = [], tabClo, setTabClo, onCariGuru, sorotan, kini, onSegarkan, antreanRef, targetSubtes }) {
+export default function PengambilanWorkspace({ data, bulan, namaBulan, projects = [], guruDb = [], muatUlang, setErr, aksiEl, onBerubah, FormReview, pesanWa, tim = "rad", baris = [], tugas = [], kuota = [], tabClo, setTabClo, onCariGuru, sorotan, kini, onSegarkan, antreanRef, targetSubtes, fokusNotifikasi, onNotifikasiDibuka }) {
   const [view, setView] = useState("subtes");
   const [saring, setSaring] = useState("semua");
   const [cari, setCari] = useState("");
@@ -79,6 +79,11 @@ export default function PengambilanWorkspace({ data, bulan, namaBulan, projects 
   };
   const tutup = () => { setPilihan(null); setRevisi(null); setTolak(null); setDinilai(""); };
   useEffect(() => { tutup(); setSaringSubtes(""); setSaringGuru(""); }, [bulan]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!fokusNotifikasi || !daftar.some((p) => p.id === fokusNotifikasi.id)) return;
+    pilih(fokusNotifikasi.id, { tab: "kabar", draf: fokusNotifikasi.keputusanId });
+    onNotifikasiDibuka?.();
+  }, [fokusNotifikasi, daftar]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!sorotan) return;
     setCari(""); setSaringGuru("");

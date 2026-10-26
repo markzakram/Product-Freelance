@@ -74,6 +74,9 @@ const pesanWa = (p, jenis) => {
 function FormReview({ p, onKirim, onBatal, sibuk }) {
   const n = belumSelesai(p);
   const [v, setV] = useState({ setuju: n, revisi: 0, tolak: 0, tujuanTolak: "buka", catatan: "" });
+  // Catatan hanya wajib bila ada soal revisi; selain itu disembunyikan sampai diminta.
+  const [tambahCatatan, setTambahCatatan] = useState(false);
+  const perluCatatan = +v.revisi > 0;
   const total = (+v.setuju || 0) + (+v.revisi || 0) + (+v.tolak || 0);
   const pas = total === n;
   const telatKirim = Boolean(p.tBatas && p.tDikumpulkan > p.tBatas);
@@ -113,16 +116,23 @@ function FormReview({ p, onKirim, onBatal, sibuk }) {
           </label>
         </div>
       ) : null}
-      <label className="ffield">
-        <span>Catatan {+v.revisi > 0 ? "revisi (wajib — tampil ke guru)" : "review (opsional)"}</span>
-        <textarea
-          className="input"
-          rows={2}
-          value={v.catatan}
-          onChange={(e) => setV((x) => ({ ...x, catatan: e.target.value }))}
-          placeholder="mis. no 12 & 40: kunci jawaban salah; no 18: pembahasan kurang langkah. Detail di komentar GDoc."
-        />
-      </label>
+      {perluCatatan || tambahCatatan || v.catatan ? (
+        <label className="ffield">
+          <span>{perluCatatan ? "Catatan revisi (wajib — tampil ke guru)" : "Catatan review (opsional — tidak otomatis ikut di kabar ke guru)"}</span>
+          <textarea
+            className="input"
+            rows={2}
+            value={v.catatan}
+            onChange={(e) => setV((x) => ({ ...x, catatan: e.target.value }))}
+            placeholder={perluCatatan ? "mis. no 12 & 40: kunci jawaban salah; no 18: pembahasan kurang langkah. Detail di komentar GDoc." : "Boleh dikosongkan"}
+          />
+        </label>
+      ) : (
+        <button type="button" className="btn-link rv-tambah" onClick={() => setTambahCatatan(true)}>
+          <Icon name="plus" size={14} />
+          Tambah catatan (opsional)
+        </button>
+      )}
       <div className="pj-aksi">
         <button type="button" className="btn btn-ghost sm" onClick={onBatal}>
           Batal
@@ -130,7 +140,7 @@ function FormReview({ p, onKirim, onBatal, sibuk }) {
         <button
           type="button"
           className="btn btn-blue sm"
-          disabled={!pas || sibuk || (+v.revisi > 0 && !v.catatan.trim())}
+          disabled={!pas || sibuk || (perluCatatan && !v.catatan.trim())}
           onClick={() => onKirim({ setuju: +v.setuju || 0, revisi: +v.revisi || 0, tolak: +v.tolak || 0, tujuanTolak: v.tujuanTolak, catatan: v.catatan })}
         >
           Simpan hasil review

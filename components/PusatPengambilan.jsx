@@ -22,7 +22,7 @@ const Meter = ({ n, target, ok }) => (
   </span>
 );
 
-export default function PusatPengambilan({ data, bulan, namaBulan, pengguna, projects = [], guruDb = [], master = [], log = [], riwayat = [], akun = [], kontak = [], penanda = {}, wajibLogin, muatUlang, muatReachout, setErr, aksiEl, onBerubah, pilihTab }) {
+export default function PusatPengambilan({ data, bulan, namaBulan, pengguna, projects = [], guruDb = [], master = [], log = [], riwayat = [], akun = [], kontak = [], penanda = {}, wajibLogin, muatUlang, muatReachout, setErr, aksiEl, onBerubah, pilihTab, fokusNotifikasi, onNotifikasiDibuka }) {
   const peran = timPantauan(pengguna);
   const [tim, setTim] = useState(peran[0] || "clo");
   const [tabClo, setTabClo] = useState("kabar");
@@ -32,6 +32,7 @@ export default function PusatPengambilan({ data, bulan, namaBulan, pengguna, pro
   const [kini, setKini] = useState(Date.now);
   const antreanRef = useRef(null), produksiRef = useRef(null);
   useEffect(() => { setSorotan(null); setCariGuru(null); }, [bulan]);
+  useEffect(() => { if (fokusNotifikasi) { setTim("clo"); setTabClo("kabar"); } }, [fokusNotifikasi]);
   useEffect(() => { const tick = setInterval(() => setKini(Date.now()), 60000); return () => clearInterval(tick); }, []);
   const s = useMemo(() => ringkasanPengambilan(projects, data?.pengerjaan || [], kini), [projects, data, kini]);
   const tugas = useMemo(() => (tim === "rad" ? tugasRad(s.baris) : tugasClo(s.baris)), [tim, s]);
@@ -88,7 +89,7 @@ export default function PusatPengambilan({ data, bulan, namaBulan, pengguna, pro
         )}
       </div>
 
-      <PengerjaanPanel data={data} bulan={bulan} namaBulan={namaBulan} projects={projects} guruDb={guruDb} muatUlang={muatUlang} setErr={setErr} aksiEl={aksiEl} onBerubah={onBerubah} onSegarkan={() => Promise.all([muatUlang(true), onBerubah?.(), muatReachout?.()])} tim={tim} baris={s.baris} tugas={tugas} kuota={kuota} tabClo={tabClo} setTabClo={setTabClo} onCariGuru={(k) => setCariGuru({ ...k, sisa: k.tersedia })} sorotan={sorotan} kini={kini} antreanRef={antreanRef} targetSubtes={targetSubtes} />
+      <PengerjaanPanel data={data} bulan={bulan} namaBulan={namaBulan} projects={projects} guruDb={guruDb} muatUlang={muatUlang} setErr={setErr} aksiEl={aksiEl} onBerubah={onBerubah} onSegarkan={() => Promise.all([muatUlang(true), onBerubah?.(), muatReachout?.()])} tim={tim} baris={s.baris} tugas={tugas} kuota={kuota} tabClo={tabClo} setTabClo={setTabClo} onCariGuru={(k) => setCariGuru({ ...k, sisa: k.tersedia })} sorotan={sorotan} kini={kini} antreanRef={antreanRef} targetSubtes={targetSubtes} fokusNotifikasi={fokusNotifikasi} onNotifikasiDibuka={onNotifikasiDibuka} />
 
       <details ref={produksiRef} className="pk-produksi pk-anchor" open={produksi} onToggle={(e) => setProduksi(e.currentTarget.open)}>
         <summary>

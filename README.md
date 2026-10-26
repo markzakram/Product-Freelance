@@ -11,6 +11,23 @@ Ada dua area:
 
 Halaman depan (`/`) berisi dua pintu masuk tersebut.
 
+### Notifikasi CLO dan ringkasan log (v3.15.0)
+
+- CLO/Seleksi dan Pemilik melihat lonceng **Hasil RAD** di header setiap halaman.
+  Isinya hasil QC dan pemeriksaan progres yang belum dikabari pada bulan aktif.
+  Contoh: **QC revisi 1 selesai → Revisi 2 diminta**. Klik hasil untuk membuka
+  panel kanan pada pengambilan dan hasil pemeriksaan yang sama.
+- Hasil baru menampilkan pemberitahuan saat sinkronisasi berikutnya (aplikasi
+  mengecek tiap 45 detik, saat kembali aktif, atau melalui Segarkan). Daftar
+  tetap tersedia setelah memuat ulang; membuka notifikasi tidak mencatat kabar.
+  Setelah pesan dikirim, CLO memilih **Catat sudah dikabari**. Hasil revisi
+  berikutnya memiliki status kabarnya sendiri. Ini notifikasi dalam aplikasi,
+  tanpa pengiriman WhatsApp atau push di luar aplikasi secara otomatis.
+- Kartu Log Pengambilan mengikuti filter tanggal, platform, guru, PIC, subtes,
+  status, dan pencarian. Fee/soal/guru dihitung dari baris tampil tanpa Cancel;
+  target dan sisa kuota berasal dari katalog proyek yang terkait dengan hasil
+  filter. Sisa kuota tetap memperhitungkan pengambilan guru lain pada proyek itu.
+
 ---
 
 ## Sumber data (3 Google Sheets)

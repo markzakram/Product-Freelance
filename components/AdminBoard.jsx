@@ -38,6 +38,8 @@ import CorongRekrutmen from "./CorongRekrutmen";
 import { EVENT_REACHOUT, aturPelaku } from "@/lib/kontakWa";
 import TimPanel from "./TimPanel";
 import PusatPengambilan from "./PusatPengambilan";
+import NotifikasiClo from "./NotifikasiClo";
+import { ringkasanLog } from "@/lib/ringkasanLog";
 import { bolehTim } from "@/lib/peranTim";
 import DemoPanel from "./DemoPanel";
 import { MODE_DEMO } from "@/lib/demo";
@@ -129,6 +131,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   const akademik = bolehP(pengguna, ["Akademik"]);
   const operasional = bolehP(pengguna, ["Akademik", "Seleksi"]);
   const pemilikP = bolehP(pengguna, ["Pemilik"]);
+  const clo = bolehP(pengguna, ["Seleksi"]);
   const [board, setBoard] = useState(initial);
   // Satu ruang kerja: dashboard dan matriks ada di Pengambilan Guru.
   const [tab, setTab] = useState("ambil");
@@ -152,6 +155,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   const [akses, setAkses] = useState(null); // pendaftar & akun guru
   const [reachout, setReachout] = useState(null); // kontak WA admin -> guru (tab Reachout)
   const [pengerjaan, setPengerjaan] = useState(null); // pengambilan guru bulan aktif + aturan (deadline)
+  const [fokusNotifikasi, setFokusNotifikasi] = useState(null);
   // Lompatan dari halaman lain ke Pendaftaran & akun: { email?, tampil, saringA?, tinjau? }
   const [fokusAkses, setFokusAkses] = useState(null);
   const [extraLoaded, setExtraLoaded] = useState(false);
@@ -220,10 +224,10 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
       if (r.status === 401) return setExpired(true);
       const j = await r.json().catch(() => ({}));
       if (requestId !== permintaanPengerjaan.current) return;
-      setPengerjaan(r.ok ? j : { pengerjaan: [], aturan: {}, error: j.error || "HTTP " + r.status });
+      setPengerjaan(r.ok ? { ...j, bulan: tabBoard } : { bulan: tabBoard, pengerjaan: [], aturan: {}, error: j.error || "HTTP " + r.status });
     } catch (e) {
       if (requestId !== permintaanPengerjaan.current) return;
-      setPengerjaan({ pengerjaan: [], aturan: {}, error: e.message });
+      setPengerjaan({ bulan: tabBoard, pengerjaan: [], aturan: {}, error: e.message });
     }
   }, [tabBoard]);
 
@@ -390,6 +394,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
   }, [assignments, f, platformOf]);
 
   const filterAktif = JSON.stringify(f) !== JSON.stringify(F0);
+  const statLog = useMemo(() => ringkasanLog(rows, projects, filterAktif), [rows, projects, filterAktif]);
 
   const stat = useMemo(() => {
     const kebutuhan = projects.reduce((a, p) => a + p.kebutuhan, 0);
@@ -568,7 +573,10 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
                 </div>
                 <h1 className="page-title">{info.judul}</h1>
               </div>
-              <div className="head-actions" ref={setAksiEl} />
+              <div className="head-actions">
+                {clo ? <NotifikasiClo key={`${pengguna.email}:${board.tab}`} data={pengerjaan?.bulan === board.tab ? pengerjaan : null} bulan={board.tab} namaBulan={namaBulan} onPilih={(n) => { pilihTab("ambil"); setFokusNotifikasi({ ...n, token: {} }); }} /> : null}
+                <div className="head-actions" ref={setAksiEl} />
+              </div>
             </div>
 
             {peringatanPassword ? (
@@ -639,7 +647,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
               </div>
             ) : null}
 
-            {tab === "log" && <StatBulan stat={stat} projects={projects} teachers={teachers} />}
+            {tab === "log" && <StatBulan stat={statLog} teachers={teachers} tersaring={filterAktif} />}
 
             {(tab === "log" || tab === "bayar") && (
               <Filters f={f} set={set} setF={setF} opts={opts} reset={() => setF(F0)} aktif={filterAktif} n={rows.length} stat={stat} total={assignments.length} />
@@ -746,6 +754,8 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
                 wajibLogin={Boolean(akses?.wajibLogin)}
                 muatReachout={muatReachout}
                 pilihTab={pilihTab}
+                fokusNotifikasi={fokusNotifikasi?.bulan === board.tab ? fokusNotifikasi : null}
+                onNotifikasiDibuka={() => setFokusNotifikasi(null)}
               />
             )}
 
@@ -1081,13 +1091,15 @@ function SessionExpired() {
 }
 
 /* ====================== ANGKA BULAN BERJALAN (log) ======================== */
-function StatBulan({ stat, projects, teachers }) {
+function StatBulan({ stat, teachers, tersaring }) {
   return (
+    <section className="log-summary" aria-label="Ringkasan log pengambilan">
+    <p className="log-summary-scope">{tersaring ? `Ringkasan hasil filter · ${numberID(stat.baris)} baris tampil` : "Ringkasan seluruh log bulan ini"}</p>
     <div className="grid stat-grid">
       <div className="card stat">
-        <span className="label">Fee bulan ini</span>
+        <span className="label">{tersaring ? "Fee hasil filter" : "Fee bulan ini"}</span>
         <span className="value">{rupiah(stat.feeTotal)}</span>
-        <span className="sub">status Cancel tidak dihitung</span>
+        <span className="sub">{tersaring ? "Baris tampil" : "Seluruh log"} · Cancel tidak dihitung</span>
       </div>
       <div className="card stat">
         <span className="label">Soal diambil</span>
@@ -1095,22 +1107,24 @@ function StatBulan({ stat, projects, teachers }) {
           {numberID(stat.diambil)} <small>/ {numberID(stat.kebutuhan)}</small>
         </span>
         <div className="meter" aria-label={`${stat.pct}% terserap`}>
-          <i style={{ width: Math.min(100, stat.pct) + "%" }} />
+          <i style={{ width: Math.max(0, Math.min(100, stat.pct)) + "%" }} />
         </div>
+        <span className="sub">{tersaring ? "Soal tampil / target proyek terkait" : "Soal log / target katalog"} · tanpa Cancel</span>
       </div>
       <div className="card stat">
-        <span className="label">Sisa kuota</span>
+        <span className="label">{tersaring ? "Sisa kuota proyek terkait" : "Sisa kuota"}</span>
         <span className="value">{numberID(stat.sisa)} soal</span>
         <span className="sub">
-          {numberID(stat.habis)} dari {numberID(projects.length)} proyek sudah habis
+          {numberID(stat.habis)} dari {numberID(stat.proyek)} proyek sudah habis · kuota aktual katalog
         </span>
       </div>
       <div className="card stat">
         <span className="label">Guru aktif</span>
         <span className="value">{numberID(stat.guruAktif)}</span>
-        <span className="sub">{teachers.length ? `dari ${numberID(teachers.length)} guru terdaftar` : "punya baris di log"}</span>
+        <span className="sub">{tersaring ? "Pada hasil filter · punya soal aktif" : teachers.length ? `dari ${numberID(teachers.length)} guru terdaftar` : "Punya soal aktif di log"}</span>
       </div>
     </div>
+    </section>
   );
 }
 
@@ -1601,7 +1615,7 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, m
     <>
       <PageActions el={aksiEl}>
         <span className="muted">
-          Fee tampil <b>{rupiah(rows.reduce((a, x) => a + x.fee, 0))}</b>
+          Fee tampil <b>{rupiah(rows.filter((x) => !isBatal(x.status)).reduce((a, x) => a + x.fee, 0))}</b>
         </span>
         <button
           type="button"

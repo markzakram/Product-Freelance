@@ -1,6 +1,7 @@
 // Ikon garis satu gaya untuk seluruh aplikasi — pengganti emoji, yang tampil
 // beda-beda di tiap perangkat dan tidak bisa diwarnai mengikuti tema.
 const P = {
+  bell: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></>,
   search: <><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></>,
   plus: <path d="M12 5v14M5 12h14" />,
   minus: <path d="M5 12h14" />,
