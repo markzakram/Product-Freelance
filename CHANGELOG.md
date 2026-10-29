@@ -12,6 +12,18 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.16.2 — Batas revisi tidak melewati deadline proyek (29 Oktober 2026)
+
+- Batas kirim revisi hasil akhir kini **3 hari sejak review atau akhir hari deadline
+  proyek (23.59 WIB), mana yang lebih dulu**. Deadline dibaca dari Aturan proyek terbaru
+  (bila diubah setelah ACC), dengan salinan saat ACC sebagai cadangan.
+- Bila review dilakukan setelah/menjelang deadline sehingga sisa waktunya kurang dari
+  24 jam, guru tetap diberi **minimal 24 jam** (tidak langsung terhitung telat 75%).
+- Form review RAD menampilkan pratinjau **Batas kirim revisi** begitu ada soal revisi,
+  lengkap dengan alasannya (3 hari / mengikuti deadline / minimal 24 jam).
+- Pesan WA revisi tidak lagi menulis "(3 hari)"; panduan alur guru menjelaskan aturan baru.
+- Revisi yang sudah berjalan sebelum versi ini (batas yang sudah dikabarkan) tidak diubah.
+
 ## 3.16.1 — Hemat kuota baca Google Sheets (26 Oktober 2026)
 
 Google membatasi **60 pembacaan per menit** untuk satu service account, dipakai bersama

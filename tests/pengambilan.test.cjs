@@ -694,3 +694,14 @@ test("finished-work message says the work is complete, uses final totals and lea
   const semuaDitolak = { ...base, status: "Selesai", tepat: 0, telat: 0, tolakBuka: 20, riwayat: [final(1, "pengumpulan"), { id: "q", jenis: "review", versi: 1, persen: 100, t: time(22), meta: { setuju: 0, revisi: 0, tolak: 20 } }] };
   assert.doesNotMatch(m.pesanKabar(semuaDitolak, m.keputusanPengambilan(semuaDitolak)[0]), /Fee akan masuk/);
 });
+
+test("revision deadline is three days, capped at the project deadline, but never less than 24 hours", async () => {
+  const m = await load("lib/pengerjaanOpsi.js");
+  const jam = 3600000;
+  const kini = time(20, 10); // 20 Okt 10.00 WIB
+  assert.equal(m.batasRevisiMs("2026-10-31", kini), kini + 72 * jam, "deadline far away: 3 days");
+  assert.equal(m.batasRevisiMs("2026-10-21", kini), Date.UTC(2026, 9, 21, 23 - 7, 59), "deadline sooner: end of the deadline day (23.59 WIB)");
+  assert.equal(m.batasRevisiMs("2026-10-20", kini), kini + 24 * jam, "deadline today: at least 24 hours");
+  assert.equal(m.batasRevisiMs("2026-10-15", kini), kini + 24 * jam, "deadline already passed: 24 hours");
+  assert.equal(m.batasRevisiMs("", kini), kini + 72 * jam, "no deadline: 3 days");
+});

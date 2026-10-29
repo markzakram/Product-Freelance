@@ -4,7 +4,7 @@
 //  PENGAMBILAN GURU (tim akademik) — dari pengajuan sampai selesai:
 //    Menunggu acc -> acc (baris log dibuat, Running) / tolak (kuota kembali open)
 //    Menunggu review -> review per soal: disetujui / revisi / reject
-//    Revisi (batas 3 hari, WA follow-up) -> kirim ulang -> review lagi
+//    Revisi (batas 3 hari, tidak melewati deadline proyek, min. 24 jam; WA follow-up) -> kirim ulang -> review lagi
 //    Selesai (rincian; soal revisi telat dibayar 75%), peringatan & denda.
 //  Data: /api/admin/pengerjaan. Hitungan & status: lib/pengerjaanOpsi.js.
 // ============================================================================
@@ -12,9 +12,13 @@
 import { useState } from "react";
 import { numberID } from "@/lib/format";
 import PengambilanWorkspace from "./PengambilanWorkspace";
+import { msKeWaktu } from "@/lib/reachoutOpsi";
 import {
   ST,
   DENDA_SETELAH,
+  BATAS_REVISI_JAM,
+  batasRevisiMs,
+  akhirHari,
   tanggalPendek,
   belumSelesai,
   titikBerikut,
@@ -39,7 +43,7 @@ const pesanWa = (p, jenis) => {
         `${sapa}hasil review proyek ${proyek}: ${p.tepat + p.telat} soal disetujui, *${belumSelesai(p)} soal perlu revisi*` +
         `${p.tolakBuka + p.tolakHangus ? `, ${p.tolakBuka + p.tolakHangus} soal ditolak` : ""}.\n\n` +
         `${p.catatanRevisi ? `Catatan: ${p.catatanRevisi}\n` : ""}Komentar detail ada di Google Docs-mu${p.link ? ` (${p.link})` : ""}.\n\n` +
-        `Batas kirim revisi: *${p.batasRevisi}* (3 hari). Revisi yang dikirim lewat batas dibayar 75% untuk soal itu. Kirim lewat menu Proyek saya ya. Terima kasih!`
+        `Batas kirim revisi: *${p.batasRevisi}*. Revisi yang dikirim lewat batas dibayar 75% untuk soal itu. Kirim lewat menu Proyek saya ya. Terima kasih!`
       );
     case "progres": {
       const t = titikBerikut(p);
@@ -77,6 +81,12 @@ function FormReview({ p, onKirim, onBatal, sibuk }) {
   // Catatan hanya wajib bila ada soal revisi; selain itu disembunyikan sampai diminta.
   const [tambahCatatan, setTambahCatatan] = useState(false);
   const perluCatatan = +v.revisi > 0;
+  // Pratinjau batas revisi yang akan dicatat server bila ada soal revisi.
+  const deadline = p.deadlineProyek || p.deadline;
+  const kini = Date.now();
+  const batas = batasRevisiMs(deadline, kini);
+  const batasTeks = msKeWaktu(batas);
+  const dipotong = akhirHari(deadline) && batas < kini + BATAS_REVISI_JAM * 3600000;
   const total = (+v.setuju || 0) + (+v.revisi || 0) + (+v.tolak || 0);
   const pas = total === n;
   const telatKirim = Boolean(p.tBatas && p.tDikumpulkan > p.tBatas);
@@ -115,6 +125,13 @@ function FormReview({ p, onKirim, onBatal, sibuk }) {
             <input type="radio" checked={v.tujuanTolak === "hangus"} onChange={() => setV((x) => ({ ...x, tujuanTolak: "hangus" }))} /> Tidak dibuka (kebutuhan dikurangi)
           </label>
         </div>
+      ) : null}
+      {perluCatatan ? (
+        <p className="rv-batas">
+          <Icon name="calendar" size={14} />
+          Batas kirim revisi: <b>{batasTeks} WIB</b>
+          <small className="muted">{dipotong ? (akhirHari(deadline) < batas ? `deadline ${tanggalPendek(deadline)} sudah lewat/terlalu dekat · minimal 24 jam` : `mengikuti deadline ${tanggalPendek(deadline)}`) : "3 hari sejak review"}</small>
+        </p>
       ) : null}
       {perluCatatan || tambahCatatan || v.catatan ? (
         <label className="ffield">
