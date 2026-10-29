@@ -1709,3 +1709,20 @@ small.pk-kabar{font-size:11px;margin-top:2px}
 .pk-henti-ajak small{font-size:12px;color:var(--text-muted)}
 .pk-henti-btn{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,var(--border))}
 .pj-henti p.muted{margin:0;font-size:12.5px;line-height:1.5}
+
+/* ---- v3.18.0: arsip kuota (soal ditolak yang belum dibuka lagi) --------------- */
+.ak{display:flex;flex-direction:column;gap:10px;padding:16px 18px;margin-bottom:16px;border-color:color-mix(in srgb,var(--warn) 40%,var(--border))}
+.ak h2{margin:0;font-size:15px;font-weight:800}
+.ak p.muted{margin:4px 0 0;font-size:12.5px;line-height:1.5}
+.ak-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.ak-item{display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--border-soft)}
+.ak-info{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1 1 260px}
+.ak-info b{font-size:13.5px}
+.ak-info b small{margin-left:6px;font-weight:600;color:var(--text-muted)}
+.ak-info span{font-size:12.5px;color:var(--text-2)}
+.ak-info>small{font-size:12px;color:var(--text-muted);overflow-wrap:anywhere}
+.ak-aksi{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ak-jumlah{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted)}
+.ak-jumlah input{width:76px}
+.ak-hangus{color:var(--bad)}
+.ak-ok{display:flex;align-items:center;gap:6px;margin:0;font-size:13px;color:var(--good)}

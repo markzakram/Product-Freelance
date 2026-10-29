@@ -326,13 +326,13 @@ test("revision summaries distinguish the last delivered fix from the next reques
 });
 
 async function system(legacy = {}) {
-  const store = { at: time(19), history: [], row: Array(44).fill(""), transactions: [], fail: false, log: [] };
+  const store = { at: time(19), history: [], row: Array(44).fill(""), transactions: [], fail: false, log: [], tambah: [] };
   const full = (name) => path.join(root, "lib", name + ".js");
   const value = (v) => v?.userEnteredValue?.stringValue || "";
   class Clock extends Date { static now() { return store.at; } }
   const waktu = () => { const d = new Date(store.at + 7 * 3600000).toISOString(); return `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)} ${d.slice(11, 16)}`; };
   const m = await load("lib/pengerjaan.js", {
-    [full("tabSheet")]: { namaTab: (name) => name, bacaBaris: async () => [{ row: 2, v: [...store.row] }], tambahBaris: async () => {}, ubahBaris: async () => { throw Error("Unexpected non-atomic write"); }, pastikanTab: async () => {}, kolomAkhir: () => "AR" },
+    [full("tabSheet")]: { namaTab: (name) => name, bacaBaris: async () => [{ row: 2, v: [...store.row] }], tambahBaris: async (tab, header, rows) => { store.tambah.push([tab, rows]); }, ubahBaris: async () => { throw Error("Unexpected non-atomic write"); }, pastikanTab: async () => {}, kolomAkhir: () => "AR" },
     [full("gauth")]: {
       SHEET_IDS: { master: "isolated-test" }, authParams: async () => ({ write: true }), batchRead: async () => [store.history], batchClear: async () => {},
       sheetMeta: async () => [{ title: "Pengerjaan", sheetId: 1 }, { title: "Riwayat pengerjaan", sheetId: 2 }],
@@ -347,7 +347,7 @@ async function system(legacy = {}) {
       },
     },
     [full("akun")]: { waktuWib: waktu, bacaPengaturan: async () => ({}), simpanPengaturan: async () => {} },
-    [full("juli")]: { getBoard: async () => ({ projects: [{ id: "PU-01", harga: 1000 }], assignments: [{ row: 10, idProject: "PU-01", idGuru: "1", guru: "Ayu" }] }), updateAssignment: async (row, data) => { store.log.push(["ubah", row, data]); }, updateProject: async (row, data) => { store.log.push(["proyek", row, data]); }, createAssignment: async (data) => { store.log.push(["baru", data]); return { row: 11 }; }, deleteAssignment: async () => {} },
+    [full("juli")]: { getBoard: async () => ({ projects: [{ id: "PU-01", harga: 1000, row: 5, kebutuhan: 100 }], assignments: [{ row: 10, idProject: "PU-01", idGuru: "1", guru: "Ayu" }] }), updateAssignment: async (row, data) => { store.log.push(["ubah", row, data]); }, updateProject: async (row, data) => { store.log.push(["proyek", row, data]); }, createAssignment: async (data) => { store.log.push(["baru", data]); return { row: 11 }; }, deleteAssignment: async () => {} },
     [full("months")]: { getAllMonths: async () => ({ log: [] }) },
     [full("aturanProyek")]: { deadlineProyek: async () => "2026-10-25", bacaAturan: async () => new Map([["Oktober_:PU-01", {}]]), kunciAturan: (b, id) => `${b}:${id}`, titikDari: () => base.titik },
   }, { Date: Clock });
@@ -561,6 +561,7 @@ test("admin API enforces RAD and CLO actions and takes the contact author from t
     [full("juli")]: { getBoard: async () => ({}) },
     [full("aturanProyek")]: Object.fromEntries(["aturanBulan", "aturDeadline", "aturLapor", "aturPaket", "aturTipe", "aturSemua"].map((k) => [k, async () => ({})])),
     [full("akun")]: { bacaAkun: async () => [] },
+    [full("arsipKuota")]: { bacaArsip: async () => [], aturArsip: async () => ({}) },
   });
   const post = (payload) => route.POST({ json: async () => payload });
   assert.equal((await post({ action: "review", id: "PJ-1" })).status, 403);
@@ -731,4 +732,36 @@ test("stopping a running assignment accepts and rejects the undecided questions 
   assert.equal(opsi.dihentikan(p), true);
   assert.equal(antre.statusRingkas(p, store.at).label, "Dihentikan · 5/20 diterima");
   assert.deepEqual(JSON.parse(JSON.stringify(antre.alurPengambilan(p, store.at).slice(3).map((x) => x.s))), ["x", "x"], "never submitted: 100% and QC are closed, not ticked");
+});
+
+test("archived rejections leave the catalogue now and are recorded for the academic team to reopen or discard", async () => {
+  const { m, store, read } = await system();
+  await m.hentikan("PJ-1", { setuju: 0, tolak: 20, tujuanTolak: "arsip", alasan: "Guru mengundurkan diri" }, "Nadia");
+  const p = await read();
+  assert.equal(p.status, "Selesai"); assert.equal(p.tolakHangus, 20); assert.equal(p.tolakBuka, 0);
+  assert.ok(store.log.some(([jenis, row, data]) => jenis === "proyek" && row === 5 && data.kebutuhan === 80), "catalogue need drops while archived");
+  const [tab, rows] = store.tambah.find(([t]) => t === "Arsip kuota");
+  assert.equal(tab, "Arsip kuota");
+  assert.deepEqual(JSON.parse(JSON.stringify(rows[0].slice(1, 10))), ["Oktober_", "PU-01", "Penalaran Umum", 20, 0, 0, "PJ-1", "Ayu", "Guru mengundurkan diri"]);
+  assert.equal(p.riwayat.find((e) => e.jenis === "review").meta.tujuanTolak, "arsip");
+});
+
+test("archive entries can be partly reopened to the catalogue or discarded, never beyond what remains", async () => {
+  const full = (name) => path.join(root, "lib", name + ".js");
+  const tulis = [], proyek = [];
+  const baris = ["AK-1", "Oktober_", "PU-01", "Penalaran Umum", "20", "5", "0", "PJ-1", "Ayu", "Mundur", "29/10/2026 10:00", "Nadia", "", ""];
+  const m = await load("lib/arsipKuota.js", {
+    [full("tabSheet")]: { namaTab: (n) => n, bacaBaris: async () => [{ row: 2, v: baris }], tambahBaris: async () => {}, ubahBaris: async (tab, row, isi) => tulis.push([tab, row, isi]) },
+    [full("juli")]: { getBoard: async () => ({ projects: [{ id: "PU-01", row: 5, kebutuhan: 80 }] }), updateProject: async (row, data, bulan) => proyek.push([row, data, bulan]) },
+    [full("akun")]: { waktuWib: () => "29/10/2026 11:00" },
+  });
+  const [a] = await m.bacaArsip({ bulan: "Oktober_" });
+  assert.equal(a.sisa, 15);
+  await assert.rejects(m.aturArsip("AK-1", { aksi: "buka", jumlah: 16 }, "Nadia"), /1–15/);
+  await m.aturArsip("AK-1", { aksi: "buka", jumlah: 10 }, "Nadia");
+  assert.deepEqual(JSON.parse(JSON.stringify(proyek[0])), [5, { kebutuhan: 90 }, "Oktober_"]);
+  assert.equal(tulis[0][2][5], 15, "reopened count accumulates");
+  await m.aturArsip("AK-1", { aksi: "hangus", jumlah: 5 }, "Nadia");
+  assert.equal(proyek.length, 1, "discarding does not touch the catalogue");
+  assert.equal(tulis[1][2][6], 5);
 });

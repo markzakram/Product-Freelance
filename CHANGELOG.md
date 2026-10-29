@@ -12,6 +12,19 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.18.0 — Arsip kuota untuk soal yang ditolak (29 Oktober 2026)
+
+- Pilihan ketiga untuk kuota soal yang ditolak (di form review dan Hentikan pengambilan):
+  **Arsipkan dulu**. Soal tidak langsung tampil di katalog (kebutuhan proyek dikurangi
+  sementara), tetapi dicatat di tab baru **Arsip kuota** (proyek, jumlah, guru asal,
+  alasan, waktu, pelaku). Pilihan lama tetap: *Buka lagi ke katalog* dan *Tidak dibuka
+  (kebutuhan dikurangi permanen)*.
+- Halaman **Katalog** (tim akademik) menampilkan kartu **Kuota diarsipkan** per bulan:
+  **Buka ke katalog** sebagian atau semua soal (kebutuhan proyek ditambah lagi, bisa
+  diambil guru lain) atau **Hanguskan**. Sisa yang belum diputuskan tetap di arsip;
+  jumlah tidak bisa melebihi sisa arsip.
+- Keterangan baris Cancel di Log kini "dibuka lagi X, tidak dibuka/arsip Y".
+
 ## 3.17.0 — Hentikan pengambilan yang masih berjalan (29 Oktober 2026)
 
 - Tim RAD bisa **menghentikan pengambilan** di tahap mana pun sebelum selesai (dikerjakan,

@@ -8,6 +8,7 @@ import { aturanBulan, aturDeadline, aturLapor, aturPaket, aturTipe, aturSemua } 
 import { AKTIF } from "@/lib/pengerjaanOpsi";
 import { bacaAkun } from "@/lib/akun";
 import { bacaTampilan } from "@/lib/cacheTampilan";
+import { bacaArsip, aturArsip } from "@/lib/arsipKuota";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ export async function GET(req) {
   const bulan = req.nextUrl.searchParams.get("bulan") || "";
   try {
     const data = await bacaTampilan(`pengerjaan:${bulan}`, async () => {
-    const [semua, aturan, maks, akun] = await Promise.all([bacaPengerjaan({ segar: true }), bulan ? aturanBulan(bulan) : {}, maksAktif(), bacaAkun()]);
+    const [semua, aturan, maks, akun, arsip] = await Promise.all([bacaPengerjaan({ segar: true }), bulan ? aturanBulan(bulan) : {}, maksAktif(), bacaAkun(), bulan ? bacaArsip({ bulan }).catch(() => []) : []]);
     const uji = akun.filter((a) => a.uji);
     const akunUji = (p) => uji.some((a) => (a.idGuru && p.idGuru === a.idGuru) || p.email === a.email);
     // beban tiap guru dihitung lintas bulan — batasnya berlaku untuk semua proyek aktif
@@ -28,6 +29,7 @@ export async function GET(req) {
       aturan,
       maksAktif: maks,
       aktifPerGuru,
+      arsip, // Arsip kuota bulan ini (soal ditolak yang belum dibuka lagi ke katalog)
     };
     }, { grup: ["pengerjaan", "akun"], segar: req.nextUrl.searchParams.get("segar") === "1" });
     return NextResponse.json({
@@ -67,6 +69,8 @@ export async function POST(req) {
           ok: true,
           hasil: await hentikan(body.id, { setuju: body.setuju, tolak: body.tolak, tujuanTolak: body.tujuanTolak, alasan: body.alasan }, sesi.nama),
         });
+      case "arsip": // Katalog → Kuota diarsipkan: buka ke katalog / hanguskan
+        return NextResponse.json({ ok: true, hasil: await aturArsip(body.id, { aksi: body.aksi, jumlah: body.jumlah }, sesi.nama) });
       case "denda":
         return NextResponse.json({ ok: true, hasil: await terapkanDenda(body.id, sesi.nama) });
       case "deadline":

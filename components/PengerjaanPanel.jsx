@@ -74,6 +74,26 @@ const pesanWa = (p, jenis) => {
   }
 };
 
+// Ke mana kuota soal yang ditolak: [nilai, label, ringkasan untuk konfirmasi]
+const TUJUAN_TOLAK = [
+  ["buka", "Buka lagi ke katalog (bisa diambil guru lain)", "kuota dibuka lagi"],
+  ["arsip", "Arsipkan dulu — tidak tampil di katalog; tim akademik memutuskan nanti di Katalog → Kuota diarsipkan", "diarsipkan"],
+  ["hangus", "Tidak dibuka (kebutuhan dikurangi permanen)", "kebutuhan dikurangi"],
+];
+
+function PilihTujuanTolak({ n, label, nilai, onPilih }) {
+  return (
+    <div className="rv-tujuan" role="radiogroup" aria-label={`Kuota soal ${label}`}>
+      <span>Kuota {numberID(n)} soal {label}:</span>
+      {TUJUAN_TOLAK.map(([k, teks]) => (
+        <label key={k}>
+          <input type="radio" checked={nilai === k} onChange={() => onPilih(k)} /> {teks}
+        </label>
+      ))}
+    </div>
+  );
+}
+
 /** Form review satu pengumpulan: jumlah disetujui + revisi + reject harus pas. */
 function FormReview({ p, onKirim, onBatal, sibuk }) {
   const n = belumSelesai(p);
@@ -115,17 +135,7 @@ function FormReview({ p, onKirim, onBatal, sibuk }) {
         </button>
       </div>
       {!pas ? <small className="neg">Jumlahnya {numberID(total)} — harus pas {numberID(n)} soal.</small> : null}
-      {+v.tolak > 0 ? (
-        <div className="rv-tujuan" role="radiogroup" aria-label="Kuota soal reject">
-          <span>Kuota {numberID(+v.tolak)} soal reject:</span>
-          <label>
-            <input type="radio" checked={v.tujuanTolak === "buka"} onChange={() => setV((x) => ({ ...x, tujuanTolak: "buka" }))} /> Buka lagi ke katalog
-          </label>
-          <label>
-            <input type="radio" checked={v.tujuanTolak === "hangus"} onChange={() => setV((x) => ({ ...x, tujuanTolak: "hangus" }))} /> Tidak dibuka (kebutuhan dikurangi)
-          </label>
-        </div>
-      ) : null}
+      {+v.tolak > 0 ? <PilihTujuanTolak n={+v.tolak} label="reject" nilai={v.tujuanTolak} onPilih={(t) => setV((x) => ({ ...x, tujuanTolak: t }))} /> : null}
       {perluCatatan ? (
         <p className="rv-batas">
           <Icon name="calendar" size={14} />
@@ -182,7 +192,7 @@ function FormHentikan({ p, onKirim, onBatal, sibuk }) {
     </label>
   );
   const kirim = () => {
-    const ringkas = `Hentikan ${p.subtes} (${p.idProyek}) — ${p.nama || p.email}?\n\nDiterima & dibayar: ${+v.setuju || 0} soal\nDitolak: ${+v.tolak || 0} soal (${v.tujuanTolak === "buka" ? "kuota dibuka lagi" : "kebutuhan dikurangi"})\n\nPengambilan langsung selesai dan tidak bisa dibuka lagi dari dashboard.`;
+    const ringkas = `Hentikan ${p.subtes} (${p.idProyek}) — ${p.nama || p.email}?\n\nDiterima & dibayar: ${+v.setuju || 0} soal\nDitolak: ${+v.tolak || 0} soal (${TUJUAN_TOLAK.find(([k]) => k === v.tujuanTolak)?.[2] || ""})\n\nPengambilan langsung selesai dan tidak bisa dibuka lagi dari dashboard.`;
     if (window.confirm(ringkas)) onKirim({ setuju: +v.setuju || 0, tolak: +v.tolak || 0, tujuanTolak: v.tujuanTolak, alasan: v.alasan.trim() });
   };
   return (
@@ -201,17 +211,7 @@ function FormHentikan({ p, onKirim, onBatal, sibuk }) {
         </button>
       </div>
       {!pas ? <small className="neg">Jumlahnya {numberID((+v.setuju || 0) + (+v.tolak || 0))} — harus pas {numberID(n)} soal.</small> : null}
-      {+v.tolak > 0 ? (
-        <div className="rv-tujuan" role="radiogroup" aria-label="Kuota soal yang ditolak">
-          <span>Kuota {numberID(+v.tolak)} soal ditolak:</span>
-          <label>
-            <input type="radio" checked={v.tujuanTolak === "buka"} onChange={() => setV((x) => ({ ...x, tujuanTolak: "buka" }))} /> Buka lagi ke katalog (bisa diambil guru lain)
-          </label>
-          <label>
-            <input type="radio" checked={v.tujuanTolak === "hangus"} onChange={() => setV((x) => ({ ...x, tujuanTolak: "hangus" }))} /> Tidak dibuka (kebutuhan dikurangi)
-          </label>
-        </div>
-      ) : null}
+      {+v.tolak > 0 ? <PilihTujuanTolak n={+v.tolak} label="ditolak" nilai={v.tujuanTolak} onPilih={(t) => setV((x) => ({ ...x, tujuanTolak: t }))} /> : null}
       <label className="ffield">
         <span>Alasan (wajib — tampil ke guru)</span>
         <textarea className="input" rows={2} value={v.alasan} maxLength={300} onChange={(e) => setV((x) => ({ ...x, alasan: e.target.value }))} placeholder="mis. guru mengundurkan diri" />

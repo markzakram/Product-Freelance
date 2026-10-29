@@ -38,6 +38,7 @@ import CorongRekrutmen from "./CorongRekrutmen";
 import { EVENT_REACHOUT, aturPelaku } from "@/lib/kontakWa";
 import TimPanel from "./TimPanel";
 import PusatPengambilan from "./PusatPengambilan";
+import ArsipKuota from "./ArsipKuota";
 import NotifikasiClo from "./NotifikasiClo";
 import { ringkasanLog } from "@/lib/ringkasanLog";
 import { bacaApi, buatAntrianSinkron, jadwalkanSinkron } from "@/lib/sinkronisasi";
@@ -680,6 +681,9 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
                 filterAktif={filterAktif}
               />
             )}
+            {tab === "katalog" && akademik ? (
+              <ArsipKuota arsip={pengerjaan?.arsip || []} bisa={Boolean(pengerjaan?.canWrite)} namaBulan={namaBulan} setErr={setErr} onBerubah={() => Promise.all([muatPengerjaan(true), refresh(true)])} />
+            ) : null}
             {tab === "katalog" && (
               <KatalogTable
                 projects={projects}
