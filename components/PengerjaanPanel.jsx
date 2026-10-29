@@ -167,6 +167,67 @@ function FormReview({ p, onKirim, onBatal, sibuk }) {
   );
 }
 
+/**
+ * Hentikan pengambilan yang masih berjalan (guru mundur, dll.): semua soal yang
+ * belum diputuskan dibagi jadi diterima (dibayar) dan ditolak, lalu ditutup.
+ */
+function FormHentikan({ p, onKirim, onBatal, sibuk }) {
+  const n = belumSelesai(p);
+  const [v, setV] = useState({ setuju: 0, tolak: n, tujuanTolak: "buka", alasan: "" });
+  const pas = (+v.setuju || 0) + (+v.tolak || 0) === n;
+  const angka = (k, label, kelas) => (
+    <label className={"rv-angka " + kelas}>
+      <span>{label}</span>
+      <input className="input sm" type="number" min={0} max={n} value={v[k]} onChange={(e) => setV((x) => ({ ...x, [k]: e.target.value === "" ? "" : Math.max(0, parseInt(e.target.value, 10) || 0) }))} />
+    </label>
+  );
+  const kirim = () => {
+    const ringkas = `Hentikan ${p.subtes} (${p.idProyek}) — ${p.nama || p.email}?\n\nDiterima & dibayar: ${+v.setuju || 0} soal\nDitolak: ${+v.tolak || 0} soal (${v.tujuanTolak === "buka" ? "kuota dibuka lagi" : "kebutuhan dikurangi"})\n\nPengambilan langsung selesai dan tidak bisa dibuka lagi dari dashboard.`;
+    if (window.confirm(ringkas)) onKirim({ setuju: +v.setuju || 0, tolak: +v.tolak || 0, tujuanTolak: v.tujuanTolak, alasan: v.alasan.trim() });
+  };
+  return (
+    <div className="pj-tolak pj-henti">
+      <b className="rv-judul">Hentikan pengambilan · {numberID(n)} soal belum diputuskan</b>
+      <p className="muted">
+        Untuk guru yang mengundurkan diri atau pengambilan yang tidak dilanjutkan, di tahap mana pun (dikerjakan, menunggu QC, atau revisi).
+        Soal yang diterima dibayar penuh; sisanya ditolak.
+        {p.tepat + p.telat ? ` ${numberID(p.tepat + p.telat)} soal yang sudah disetujui sebelumnya tetap dibayar.` : ""}
+      </p>
+      <div className="rv-baris">
+        {angka("setuju", "Diterima", "appr")}
+        {angka("tolak", "Ditolak", "rev")}
+        <button type="button" className="btn btn-ghost sm" onClick={() => setV((x) => ({ ...x, setuju: 0, tolak: n }))}>
+          Tolak semua
+        </button>
+      </div>
+      {!pas ? <small className="neg">Jumlahnya {numberID((+v.setuju || 0) + (+v.tolak || 0))} — harus pas {numberID(n)} soal.</small> : null}
+      {+v.tolak > 0 ? (
+        <div className="rv-tujuan" role="radiogroup" aria-label="Kuota soal yang ditolak">
+          <span>Kuota {numberID(+v.tolak)} soal ditolak:</span>
+          <label>
+            <input type="radio" checked={v.tujuanTolak === "buka"} onChange={() => setV((x) => ({ ...x, tujuanTolak: "buka" }))} /> Buka lagi ke katalog (bisa diambil guru lain)
+          </label>
+          <label>
+            <input type="radio" checked={v.tujuanTolak === "hangus"} onChange={() => setV((x) => ({ ...x, tujuanTolak: "hangus" }))} /> Tidak dibuka (kebutuhan dikurangi)
+          </label>
+        </div>
+      ) : null}
+      <label className="ffield">
+        <span>Alasan (wajib — tampil ke guru)</span>
+        <textarea className="input" rows={2} value={v.alasan} maxLength={300} onChange={(e) => setV((x) => ({ ...x, alasan: e.target.value }))} placeholder="mis. guru mengundurkan diri" />
+      </label>
+      <div className="pj-aksi">
+        <button type="button" className="btn btn-ghost sm" onClick={onBatal}>
+          Batal
+        </button>
+        <button type="button" className="btn btn-red sm" disabled={!pas || sibuk || !v.alasan.trim()} onClick={kirim}>
+          Hentikan pengambilan
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function PengerjaanPanel(props) {
-  return <PengambilanWorkspace {...props} FormReview={FormReview} pesanWa={pesanWa} />;
+  return <PengambilanWorkspace {...props} FormReview={FormReview} FormHentikan={FormHentikan} pesanWa={pesanWa} />;
 }

@@ -27,6 +27,7 @@ import {
   tanggalHari,
   revisiProgres,
   siklusRevisi,
+  dihentikan,
 } from "@/lib/pengerjaanOpsi";
 import RiwayatPengambilan from "./RiwayatPengambilan";
 import Brand from "./Brand";
@@ -158,7 +159,7 @@ function Kartu({ p, onBatal, onKumpul, onLapor, sibuk }) {
             {p.idProyek} · {p.output || "—"} · {namaBulan(p.bulan)}
           </span>
         </div>
-        <span className={"pill " + kelasStatus(p.status)}>{labelStatus(p.status)}</span>
+        {dihentikan(p) ? <span className="pill batal plain">Dihentikan</span> : <span className={"pill " + kelasStatus(p.status)}>{labelStatus(p.status)}</span>}
       </div>
       <div className="ps-info">
         <span>

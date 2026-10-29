@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { izinAdmin, bolehPeran } from "@/lib/authServer";
 import { canWrite } from "@/lib/gauth";
 import { getBoard } from "@/lib/juli";
-import { bacaPengerjaan, putuskan, maksAktif, aturMaksAktif, review, terapkanDenda, lengkapiTitik, tandaiProgresDicek, periksaProgres, catatKabarPengambilan } from "@/lib/pengerjaan";
+import { bacaPengerjaan, putuskan, maksAktif, aturMaksAktif, review, hentikan, terapkanDenda, lengkapiTitik, tandaiProgresDicek, periksaProgres, catatKabarPengambilan } from "@/lib/pengerjaan";
 import { aturanBulan, aturDeadline, aturLapor, aturPaket, aturTipe, aturSemua } from "@/lib/aturanProyek";
 import { AKTIF } from "@/lib/pengerjaanOpsi";
 import { bacaAkun } from "@/lib/akun";
@@ -61,6 +61,11 @@ export async function POST(req) {
         return NextResponse.json({
           ok: true,
           hasil: await review(body.id, { setuju: body.setuju, revisi: body.revisi, tolak: body.tolak, tujuanTolak: body.tujuanTolak, catatan: body.catatan }, sesi.nama),
+        });
+      case "hentikan": // guru mundur / pengambilan tidak dilanjutkan: tutup dengan jumlah diterima & ditolak
+        return NextResponse.json({
+          ok: true,
+          hasil: await hentikan(body.id, { setuju: body.setuju, tolak: body.tolak, tujuanTolak: body.tujuanTolak, alasan: body.alasan }, sesi.nama),
         });
       case "denda":
         return NextResponse.json({ ok: true, hasil: await terapkanDenda(body.id, sesi.nama) });

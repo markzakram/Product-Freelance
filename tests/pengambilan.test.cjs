@@ -326,7 +326,7 @@ test("revision summaries distinguish the last delivered fix from the next reques
 });
 
 async function system(legacy = {}) {
-  const store = { at: time(19), history: [], row: Array(44).fill(""), transactions: [], fail: false };
+  const store = { at: time(19), history: [], row: Array(44).fill(""), transactions: [], fail: false, log: [] };
   const full = (name) => path.join(root, "lib", name + ".js");
   const value = (v) => v?.userEnteredValue?.stringValue || "";
   class Clock extends Date { static now() { return store.at; } }
@@ -347,7 +347,7 @@ async function system(legacy = {}) {
       },
     },
     [full("akun")]: { waktuWib: waktu, bacaPengaturan: async () => ({}), simpanPengaturan: async () => {} },
-    [full("juli")]: { getBoard: async () => ({ projects: [{ id: "PU-01", harga: 1000 }], assignments: [{ row: 10, idProject: "PU-01", idGuru: "1", guru: "Ayu" }] }), updateAssignment: async () => {}, updateProject: async () => {}, createAssignment: async () => ({ row: 11 }), deleteAssignment: async () => {} },
+    [full("juli")]: { getBoard: async () => ({ projects: [{ id: "PU-01", harga: 1000 }], assignments: [{ row: 10, idProject: "PU-01", idGuru: "1", guru: "Ayu" }] }), updateAssignment: async (row, data) => { store.log.push(["ubah", row, data]); }, updateProject: async (row, data) => { store.log.push(["proyek", row, data]); }, createAssignment: async (data) => { store.log.push(["baru", data]); return { row: 11 }; }, deleteAssignment: async () => {} },
     [full("months")]: { getAllMonths: async () => ({ log: [] }) },
     [full("aturanProyek")]: { deadlineProyek: async () => "2026-10-25", bacaAturan: async () => new Map([["Oktober_:PU-01", {}]]), kunciAturan: (b, id) => `${b}:${id}`, titikDari: () => base.titik },
   }, { Date: Clock });
@@ -704,4 +704,31 @@ test("revision deadline is three days, capped at the project deadline, but never
   assert.equal(m.batasRevisiMs("2026-10-20", kini), kini + 24 * jam, "deadline today: at least 24 hours");
   assert.equal(m.batasRevisiMs("2026-10-15", kini), kini + 24 * jam, "deadline already passed: 24 hours");
   assert.equal(m.batasRevisiMs("", kini), kini + 72 * jam, "no deadline: 3 days");
+});
+
+test("stopping a running assignment accepts and rejects the undecided questions at once, like a final review", async () => {
+  const { m, store, read } = await system();
+  await assert.rejects(m.hentikan("PJ-1", { setuju: 5, tolak: 15 }, "Nadia"), /alasan/i);
+  await assert.rejects(m.hentikan("PJ-1", { setuju: 5, tolak: 10, alasan: "Mundur" }, "Nadia"), /harus 20 soal/);
+  await m.hentikan("PJ-1", { setuju: 5, tolak: 15, tujuanTolak: "buka", alasan: "Guru mengundurkan diri" }, "Nadia");
+  const p = await read();
+  assert.equal(p.status, "Selesai");
+  assert.equal(p.tepat, 5); assert.equal(p.telat, 0); assert.equal(p.tolakBuka, 15);
+  assert.match(p.catatan, /Dihentikan .* oleh Nadia: Guru mengundurkan diri/);
+  const e = p.riwayat.find((x) => x.jenis === "review");
+  assert.equal(e.meta.dihentikan, true); assert.equal(e.meta.statusSebelum, "Running"); assert.equal(e.catatan, "Guru mengundurkan diri");
+  assert.ok(store.log.some(([jenis, data]) => jenis === "baru" && data.status === "Cancel" && data.jumlah === 15), "rejected questions get a Cancel log row");
+  assert.ok(store.log.some(([jenis, row, data]) => jenis === "ubah" && row === 10 && data.status === "Approved" && data.jumlah === 5), "accepted questions stay Approved on the main row");
+  await assert.rejects(m.hentikan("PJ-1", { setuju: 0, tolak: 0, alasan: "lagi" }, "Nadia"), /tidak sedang berjalan/);
+
+  const pantau = await load("lib/pantauanOpsi.js");
+  const antre = await load("lib/antreanPengambilan.js");
+  const opsi = await load("lib/pengerjaanOpsi.js");
+  const k = pantau.keputusanPengambilan(p)[0];
+  assert.equal(pantau.judulKeputusan(k), "Pengambilan dihentikan");
+  const pesan = pantau.pesanKabar(p, k);
+  assert.match(pesan, /kami hentikan/); assert.match(pesan, /Alasan: Guru mengundurkan diri/); assert.match(pesan, /5 soal diterima, 15 soal tidak dilanjutkan/);
+  assert.equal(opsi.dihentikan(p), true);
+  assert.equal(antre.statusRingkas(p, store.at).label, "Dihentikan · 5/20 diterima");
+  assert.deepEqual(JSON.parse(JSON.stringify(antre.alurPengambilan(p, store.at).slice(3).map((x) => x.s))), ["x", "x"], "never submitted: 100% and QC are closed, not ticked");
 });

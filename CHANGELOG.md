@@ -12,6 +12,23 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.17.0 — Hentikan pengambilan yang masih berjalan (29 Oktober 2026)
+
+- Tim RAD bisa **menghentikan pengambilan** di tahap mana pun sebelum selesai (dikerjakan,
+  menunggu QC, atau revisi) — mis. guru mengundurkan diri. Panel **Detail pengambilan →
+  Tindakan lain → Hentikan pengambilan**: isi berapa soal **diterima** (dibayar penuh) dan
+  berapa **ditolak** (tombol Tolak semua), pilih kuota soal ditolak dibuka lagi ke katalog
+  atau kebutuhan dikurangi, dan alasan (wajib, tampil ke guru). Ada konfirmasi sebelum
+  disimpan.
+- Hasilnya sama dengan review akhir: status **Selesai**, baris log dipecah **Approved**
+  (soal diterima + yang sudah disetujui sebelumnya) dan **Cancel** (soal ditolak), kuota
+  dibuka lagi atau hangus. Riwayat mencatat "Pengambilan dihentikan" beserta pelaku & alasan.
+- Tabel menampilkan **Dihentikan · N/M diterima** dengan titik 100%/QC ditutup bila hasil
+  akhir belum pernah dikumpulkan. Guru melihat label **Dihentikan** dan alasannya di
+  Proyek saya.
+- CLO mendapat tugas kabar **Pengambilan dihentikan** dengan draf pesan berisi alasan dan
+  hasil akhir (soal diterima / tidak dilanjutkan).
+
 ## 3.16.2 — Batas revisi tidak melewati deadline proyek (29 Oktober 2026)
 
 - Batas kirim revisi hasil akhir kini **3 hari sejak review atau akhir hari deadline
