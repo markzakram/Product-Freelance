@@ -18,6 +18,7 @@ export function judulAktivitas(e) {
     case "acc": return "Pengajuan disetujui";
     case "tolak": return "Pengajuan ditolak";
     case "batal": return "Pengajuan dibatalkan";
+    case "ubah_tolak": return `Tujuan kuota ditolak diubah · ${e.meta?.jumlah || e.soal || ""} soal ${{ buka: "dibuka lagi", hangus: "hangus", arsip: "diarsipkan" }[e.meta?.dari] || ""} → ${{ buka: "dibuka lagi", hangus: "hangus", arsip: "diarsipkan" }[e.meta?.ke] || ""}`;
     case "kabar": return `Kabar dikirim · ${e.meta?.judul || "Hasil pemeriksaan"}`;
     case "reminder": return `Reminder dikirim · ${e.meta?.judul || "Pengambilan"}`;
     default: return "Aktivitas pengerjaan";

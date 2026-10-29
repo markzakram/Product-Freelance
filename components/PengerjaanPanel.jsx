@@ -228,6 +228,67 @@ function FormHentikan({ p, onKirim, onBatal, sibuk }) {
   );
 }
 
+/**
+ * Ubah tujuan kuota soal yang sudah ditolak (mis. terlanjur dibuka lagi / hangus
+ * padahal seharusnya diarsipkan). `diarsipkan` = soal pengambilan ini di Arsip kuota.
+ */
+function FormUbahTolak({ p, diarsipkan = 0, onKirim, onBatal, sibuk }) {
+  const hangus = Math.max(0, (p.tolakHangus || 0) - diarsipkan);
+  const asal = [["buka", "Dibuka lagi ke katalog", p.tolakBuka || 0], ["hangus", "Hangus (kebutuhan dikurangi)", hangus]].filter(([, , n]) => n > 0);
+  const [v, setV] = useState({ dari: asal[0]?.[0] || "buka", ke: "arsip", jumlah: asal[0]?.[2] || 0, alasan: "" });
+  const maks = asal.find(([k]) => k === v.dari)?.[2] || 0;
+  const tujuan = TUJUAN_TOLAK.filter(([k]) => k !== v.dari);
+  const sah = +v.jumlah >= 1 && +v.jumlah <= maks && v.ke !== v.dari;
+  const label = (k) => ({ buka: "dibuka lagi", hangus: "hangus", arsip: "diarsipkan" })[k];
+  if (!asal.length) return <p className="muted">Semua soal yang ditolak pengambilan ini sudah diarsipkan — kelola dari Katalog → Kuota diarsipkan.</p>;
+  return (
+    <div className="pj-tolak pj-ubah-tolak">
+      <b className="rv-judul">Ubah tujuan kuota soal ditolak</b>
+      <div className="rv-tujuan" role="radiogroup" aria-label="Asal kuota">
+        <span>Dari:</span>
+        {asal.map(([k, teks, n]) => (
+          <label key={k}>
+            <input type="radio" checked={v.dari === k} onChange={() => setV((x) => ({ ...x, dari: k, jumlah: n, ke: x.ke === k ? "arsip" : x.ke }))} /> {teks} · {numberID(n)} soal
+          </label>
+        ))}
+      </div>
+      <div className="rv-tujuan" role="radiogroup" aria-label="Tujuan baru">
+        <span>Menjadi:</span>
+        {tujuan.map(([k, teks]) => (
+          <label key={k}>
+            <input type="radio" checked={v.ke === k} onChange={() => setV((x) => ({ ...x, ke: k }))} /> {teks}
+          </label>
+        ))}
+      </div>
+      <div className="rv-baris">
+        <label className="rv-angka">
+          <span>Jumlah soal</span>
+          <input className="input sm" type="number" min={1} max={maks} value={v.jumlah} onChange={(e) => setV((x) => ({ ...x, jumlah: e.target.value === "" ? "" : Math.max(0, parseInt(e.target.value, 10) || 0) }))} />
+        </label>
+        <small className="muted">dari {numberID(maks)} soal</small>
+      </div>
+      {v.dari === "buka" ? <small className="muted">Soal yang sudah terlanjur diambil guru lain tidak bisa ditarik lagi; server menolak bila sisa katalog proyek ini kurang.</small> : null}
+      <label className="ffield">
+        <span>Alasan (opsional)</span>
+        <input className="input" value={v.alasan} maxLength={300} onChange={(e) => setV((x) => ({ ...x, alasan: e.target.value }))} placeholder="mis. seharusnya diarsipkan" />
+      </label>
+      <div className="pj-aksi">
+        <button type="button" className="btn btn-ghost sm" onClick={onBatal}>
+          Batal
+        </button>
+        <button
+          type="button"
+          className="btn btn-blue sm"
+          disabled={!sah || sibuk}
+          onClick={() => window.confirm(`Ubah ${+v.jumlah} soal ditolak ${p.subtes} (${p.idProyek}) dari "${label(v.dari)}" menjadi "${label(v.ke)}"?`) && onKirim({ dari: v.dari, ke: v.ke, jumlah: +v.jumlah, alasan: v.alasan.trim() })}
+        >
+          Simpan perubahan
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function PengerjaanPanel(props) {
-  return <PengambilanWorkspace {...props} FormReview={FormReview} FormHentikan={FormHentikan} pesanWa={pesanWa} />;
+  return <PengambilanWorkspace {...props} FormReview={FormReview} FormHentikan={FormHentikan} FormUbahTolak={FormUbahTolak} pesanWa={pesanWa} />;
 }

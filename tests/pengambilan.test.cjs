@@ -326,13 +326,13 @@ test("revision summaries distinguish the last delivered fix from the next reques
 });
 
 async function system(legacy = {}) {
-  const store = { at: time(19), history: [], row: Array(44).fill(""), transactions: [], fail: false, log: [], tambah: [] };
+  const store = { at: time(19), history: [], row: Array(44).fill(""), transactions: [], fail: false, log: [], tambah: [], arsip: [] };
   const full = (name) => path.join(root, "lib", name + ".js");
   const value = (v) => v?.userEnteredValue?.stringValue || "";
   class Clock extends Date { static now() { return store.at; } }
   const waktu = () => { const d = new Date(store.at + 7 * 3600000).toISOString(); return `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)} ${d.slice(11, 16)}`; };
   const m = await load("lib/pengerjaan.js", {
-    [full("tabSheet")]: { namaTab: (name) => name, bacaBaris: async () => [{ row: 2, v: [...store.row] }], tambahBaris: async (tab, header, rows) => { store.tambah.push([tab, rows]); }, ubahBaris: async () => { throw Error("Unexpected non-atomic write"); }, pastikanTab: async () => {}, kolomAkhir: () => "AR" },
+    [full("tabSheet")]: { namaTab: (name) => name, bacaBaris: async (tab) => (tab === "Arsip kuota" ? store.arsip.map((v, i) => ({ row: i + 2, v: v.map(String) })) : [{ row: 2, v: [...store.row] }]), tambahBaris: async (tab, header, rows) => { store.tambah.push([tab, rows]); if (tab === "Arsip kuota") store.arsip.push(...rows); }, ubahBaris: async () => { throw Error("Unexpected non-atomic write"); }, pastikanTab: async () => {}, kolomAkhir: () => "AR" },
     [full("gauth")]: {
       SHEET_IDS: { master: "isolated-test" }, authParams: async () => ({ write: true }), batchRead: async () => [store.history], batchClear: async () => {},
       sheetMeta: async () => [{ title: "Pengerjaan", sheetId: 1 }, { title: "Riwayat pengerjaan", sheetId: 2 }],
@@ -347,7 +347,7 @@ async function system(legacy = {}) {
       },
     },
     [full("akun")]: { waktuWib: waktu, bacaPengaturan: async () => ({}), simpanPengaturan: async () => {} },
-    [full("juli")]: { getBoard: async () => ({ projects: [{ id: "PU-01", harga: 1000, row: 5, kebutuhan: 100 }], assignments: [{ row: 10, idProject: "PU-01", idGuru: "1", guru: "Ayu" }] }), updateAssignment: async (row, data) => { store.log.push(["ubah", row, data]); }, updateProject: async (row, data) => { store.log.push(["proyek", row, data]); }, createAssignment: async (data) => { store.log.push(["baru", data]); return { row: 11 }; }, deleteAssignment: async () => {} },
+    [full("juli")]: { getBoard: async () => ({ projects: [{ id: "PU-01", harga: 1000, row: 5, kebutuhan: 100, sisa: store.sisa ?? 50 }], assignments: [{ row: 10, idProject: "PU-01", idGuru: "1", guru: "Ayu" }, ...(store.barisTolak ? [{ row: 11, idProject: "PU-01", status: "Cancel", ketTarif: "Ditolak 15 soal (dibuka lagi 15, tidak dibuka/arsip 0) · PJ-1" }] : [])] }), updateAssignment: async (row, data) => { store.log.push(["ubah", row, data]); }, updateProject: async (row, data) => { store.log.push(["proyek", row, data]); }, createAssignment: async (data) => { store.log.push(["baru", data]); return { row: 11 }; }, deleteAssignment: async () => {} },
     [full("months")]: { getAllMonths: async () => ({ log: [] }) },
     [full("aturanProyek")]: { deadlineProyek: async () => "2026-10-25", bacaAturan: async () => new Map([["Oktober_:PU-01", {}]]), kunciAturan: (b, id) => `${b}:${id}`, titikDari: () => base.titik },
   }, { Date: Clock });
@@ -803,4 +803,35 @@ test("a dashboard tab created with fewer columns is widened before its new heade
   await m.pastikanTab("Arsip kuota", [...lama, "Dipindah", "Tujuan pindah"], { cekJudul: true });
   assert.deepEqual(JSON.parse(JSON.stringify(struktur)), [[{ appendDimension: { sheetId: 7, dimension: "COLUMNS", length: 2 } }]]);
   assert.equal(tulis[0][0].values[0].length, 5, "full header written after widening");
+});
+
+test("an already-decided rejection can be redirected, e.g. reopened questions moved into the archive", async () => {
+  const { m, store, read } = await system();
+  await m.hentikan("PJ-1", { setuju: 5, tolak: 15, tujuanTolak: "buka", alasan: "Mundur" }, "Nadia");
+  store.log = []; store.tambah = []; store.barisTolak = true;
+  await assert.rejects(m.ubahTujuanTolak("PJ-1", { dari: "buka", ke: "buka", jumlah: 5 }, "Nadia"), /berbeda/);
+  await assert.rejects(m.ubahTujuanTolak("PJ-1", { dari: "buka", ke: "arsip", jumlah: 16 }, "Nadia"), /1–15/);
+  store.sisa = 4;
+  await assert.rejects(m.ubahTujuanTolak("PJ-1", { dari: "buka", ke: "arsip", jumlah: 10 }, "Nadia"), /sudah diambil guru lain/);
+  assert.equal(store.log.length, 0, "nothing written when the reopened quota was already taken");
+  store.sisa = 50;
+  await m.ubahTujuanTolak("PJ-1", { dari: "buka", ke: "arsip", jumlah: 10, alasan: "Seharusnya diarsipkan" }, "Nadia");
+  let p = await read();
+  assert.equal(p.tolakBuka, 5); assert.equal(p.tolakHangus, 10);
+  assert.ok(store.log.some(([jenis, row, data]) => jenis === "proyek" && row === 5 && data.kebutuhan === 90), "catalogue need drops by the archived amount");
+  assert.ok(store.log.some(([jenis, row, data]) => jenis === "ubah" && row === 11 && /dibuka lagi 5, tidak dibuka\/arsip 10/.test(data.ketTarif)));
+  const arsip = store.tambah.find(([t]) => t === "Arsip kuota")[1][0];
+  assert.equal(arsip[4], 10); assert.equal(arsip[7], "PJ-1"); assert.equal(arsip[9], "Seharusnya diarsipkan");
+  const e = p.riwayat.filter((x) => x.jenis === "ubah_tolak").at(-1);
+  assert.equal(JSON.stringify(e.meta), JSON.stringify({ dari: "buka", ke: "arsip", jumlah: 10 }));
+  // semua "tidak dibuka" pengambilan ini sudah ada di arsip: tidak ada hangus murni untuk diarsipkan lagi
+  await assert.rejects(m.ubahTujuanTolak("PJ-1", { dari: "hangus", ke: "arsip", jumlah: 1 }, "Nadia"), /Tidak ada soal ditolak yang hangus/);
+  await m.ubahTujuanTolak("PJ-1", { dari: "buka", ke: "hangus", jumlah: 2 }, "Nadia");
+  // hangus murni → arsip: kebutuhan tidak berubah lagi, hanya dicatat di arsip
+  store.log = [];
+  await m.ubahTujuanTolak("PJ-1", { dari: "hangus", ke: "arsip", jumlah: 2 }, "Nadia");
+  p = await read();
+  assert.equal(p.tolakBuka, 3); assert.equal(p.tolakHangus, 12, "hangus and archived both stay outside the catalogue");
+  assert.ok(!store.log.some(([jenis]) => jenis === "proyek"));
+  assert.equal(store.arsip.length, 2);
 });

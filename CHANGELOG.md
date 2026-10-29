@@ -12,6 +12,19 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.18.2 — Ubah tujuan kuota soal yang sudah ditolak (30 Oktober 2026)
+
+- Panel **Detail pengambilan → Tindakan lain** menampilkan ringkasan kuota soal ditolak
+  (dibuka lagi · hangus · diarsipkan) dan tombol **Ubah tujuan kuota**, untuk keputusan
+  yang terlanjur salah — mis. sudah dibuka lagi / hangus padahal seharusnya diarsipkan.
+  Pilih asal (dibuka lagi atau hangus), tujuan baru (arsip, hangus, atau dibuka lagi),
+  jumlah (boleh sebagian), dan alasan opsional; ada konfirmasi sebelum disimpan.
+- Server menyesuaikan semuanya: kebutuhan katalog (ditarik bila dari "dibuka lagi",
+  ditambah bila ke "dibuka lagi"), catatan **Arsip kuota** bila ke arsip, keterangan baris
+  Cancel di Log, dan riwayat "Tujuan kuota ditolak diubah". Soal yang terlanjur dibuka
+  lalu sudah diambil guru lain tidak bisa ditarik (ditolak bila sisa katalog kurang).
+  Soal yang sudah di arsip tetap dikelola dari Katalog → Kuota diarsipkan.
+
 ## 3.18.1 — Pindahkan arsip kuota ke katalog bulan lain (30 Oktober 2026)
 
 - Kartu **Kuota diarsipkan** di Katalog kini punya tombol **Pindah ke bulan lain**:

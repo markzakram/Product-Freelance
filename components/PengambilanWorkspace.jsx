@@ -23,7 +23,7 @@ import SearchableFilter from "./SearchableFilter";
 import RiwayatPengambilan from "./RiwayatPengambilan";
 import KabarPengambilan from "./KabarPengambilan";
 
-export default function PengambilanWorkspace({ data, bulan, namaBulan, projects = [], guruDb = [], muatUlang, setErr, aksiEl, onBerubah, FormReview, FormHentikan, pesanWa, tim = "rad", baris = [], tugas = [], kuota = [], tabClo, setTabClo, onCariGuru, sorotan, kini, onSegarkan, antreanRef, targetSubtes, fokusNotifikasi, onNotifikasiDibuka }) {
+export default function PengambilanWorkspace({ data, bulan, namaBulan, projects = [], guruDb = [], muatUlang, setErr, aksiEl, onBerubah, FormReview, FormHentikan, FormUbahTolak, pesanWa, tim = "rad", baris = [], tugas = [], kuota = [], tabClo, setTabClo, onCariGuru, sorotan, kini, onSegarkan, antreanRef, targetSubtes, fokusNotifikasi, onNotifikasiDibuka }) {
   const [view, setView] = useState("subtes");
   const [saring, setSaring] = useState("semua");
   const [cari, setCari] = useState("");
@@ -39,6 +39,7 @@ export default function PengambilanWorkspace({ data, bulan, namaBulan, projects 
   const [dinilai, setDinilai] = useState("");
   const [revisi, setRevisi] = useState(null);
   const [henti, setHenti] = useState(""); // id pengambilan yang form "Hentikan pengambilan"-nya terbuka
+  const [ubahTolak, setUbahTolak] = useState(""); // id pengambilan yang form "Ubah tujuan kuota"-nya terbuka
   const [info, setInfo] = useState("");
   const [galatDetail, setGalatDetail] = useState("");
   const tabelRef = useRef(null);
@@ -77,9 +78,10 @@ export default function PengambilanWorkspace({ data, bulan, namaBulan, projects 
     setDinilai(aksi === "review" ? id : "");
     setRevisi(aksi?.revisi ? { id, laporanId: aksi.revisi.laporanId, versi: aksi.revisi.versi, catatan: "" } : null);
     setHenti("");
+    setUbahTolak("");
     setGalatDetail("");
   };
-  const tutup = () => { setPilihan(null); setRevisi(null); setTolak(null); setDinilai(""); setHenti(""); };
+  const tutup = () => { setPilihan(null); setRevisi(null); setTolak(null); setDinilai(""); setHenti(""); setUbahTolak(""); };
   useEffect(() => { tutup(); setSaringSubtes(""); setSaringGuru(""); }, [bulan]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!fokusNotifikasi || !daftar.some((p) => p.id === fokusNotifikasi.id)) return;
@@ -241,6 +243,10 @@ export default function PengambilanWorkspace({ data, bulan, namaBulan, projects 
 
           {tabDetail === "lain" ? <div className="pk-dpanel" role="tabpanel">
             {[ST.running, ST.review, ST.revisi].includes(p.status) && FormHentikan ? (henti === p.id ? <FormHentikan key={p.id} p={p} sibuk={Boolean(sibuk)} onBatal={() => setHenti("")} onKirim={(hasil) => jalankan(p.id, { action: "hentikan", id: p.id, ...hasil }, () => { setHenti(""); onBerubah?.(); })} /> : <div className="pk-henti-ajak"><div><b>Guru mundur / pengambilan tidak dilanjutkan?</b><small>Tutup sekarang dengan menentukan berapa soal diterima dan berapa ditolak, tanpa menunggu QC selesai.</small></div><button type="button" className="btn btn-ghost sm pk-henti-btn" disabled={!bisa || Boolean(sibuk)} onClick={() => setHenti(p.id)}><Icon name="x" />Hentikan pengambilan</button></div>) : null}
+            {(p.tolakBuka || 0) + (p.tolakHangus || 0) > 0 && FormUbahTolak ? (() => {
+              const diarsipkan = (data.arsip || []).filter((a) => a.asal === p.id).reduce((n, a) => n + (a.jumlah || 0), 0);
+              return ubahTolak === p.id ? <FormUbahTolak key={p.id} p={p} diarsipkan={diarsipkan} sibuk={Boolean(sibuk)} onBatal={() => setUbahTolak("")} onKirim={(hasil) => jalankan(p.id, { action: "ubahTolak", id: p.id, ...hasil }, () => { setUbahTolak(""); onBerubah?.(); })} /> : <div className="pk-henti-ajak pk-ubah-ajak"><div><b>Kuota {numberID(p.tolakBuka + p.tolakHangus)} soal ditolak</b><small>Dibuka lagi {numberID(p.tolakBuka)} · hangus {numberID(Math.max(0, p.tolakHangus - diarsipkan))} · diarsipkan {numberID(diarsipkan)}. Salah pilih? Ubah tujuannya, mis. ke arsip.</small></div><button type="button" className="btn btn-ghost sm" disabled={!bisa || Boolean(sibuk)} onClick={() => setUbahTolak(p.id)}><Icon name="edit" />Ubah tujuan kuota</button></div>;
+            })() : null}
             <p className="muted">Pesan WhatsApp di bawah ikut tercatat sebagai kontak ke guru. Untuk kabar hasil pemeriksaan, pakai tab Kabar ke guru supaya tercatat per hasil.</p>
             <div className="pg-actions">{tombolWa(p, "chat", "Chat guru")}{p.status === ST.running ? tombolWa(p, "acc", "Kabari di-ACC") : null}{p.status === ST.revisi ? tombolWa(p, "revisi", "Kabari revisi") : null}{berikut ? tombolWa(p, "progres", `Ingatkan lapor ${berikut.persen}%`) : null}{laporanBaru(p).length ? tombolWa(p, "progres-terima", "Kabari progres diterima") : null}{ingat.some((i) => i.jenis === "deadline") ? tombolWa(p, "lewat", "Ingatkan deadline") : null}{ingat.some((i) => i.jenis === "revisi") ? tombolWa(p, "ingat-revisi", "Ingatkan revisi") : null}{p.status === ST.selesai ? tombolWa(p, "selesai", "Kabari hasil akhir") : null}{p.status === ST.ditolak ? tombolWa(p, "tolak", "Kabari ditolak") : null}{p.gagal >= PERINGATAN_MULAI && p.status !== ST.selesai ? tombolWa(p, "peringatan", "Kirim peringatan") : null}{!kontakGuru(p)?.wa ? <small className="muted">Nomor WhatsApp guru belum ada di Database guru.</small> : null}</div>
             <div className="pg-actions">{linkSah(p.link) ? <a className="btn btn-ghost sm" href={p.link} target="_blank" rel="noopener noreferrer"><Icon name="external" />Buka hasil akhir</a> : null}{p.gagal >= DENDA_SETELAH && !p.denda ? <button type="button" className="btn btn-red sm" disabled={!bisa || Boolean(sibuk)} onClick={() => window.confirm(`Terapkan potongan 25% untuk ${p.subtes} (${p.nama})?`) && jalankan(p.id, { action: "denda", id: p.id }, () => onBerubah?.())}>Terapkan denda 25%</button> : null}{p.denda ? <span className="pill rev">Denda 25%</span> : null}{p.gagal ? <small className="muted">Review gagal {p.gagal}×</small> : null}<span className={"pill " + kelasStatus(p.status)}>Status sheet: {labelStatus(p.status)}</span></div>
