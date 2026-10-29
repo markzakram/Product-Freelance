@@ -12,6 +12,18 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.18.1 — Pindahkan arsip kuota ke katalog bulan lain (30 Oktober 2026)
+
+- Kartu **Kuota diarsipkan** di Katalog kini punya tombol **Pindah ke bulan lain**:
+  pilih bulan tujuan, lalu proyek di katalog bulan itu (proyek dengan subtes yang sama
+  diletakkan paling atas dan terpilih otomatis), dan jumlah soal (boleh sebagian).
+  Kebutuhan proyek tujuan bertambah sebanyak itu; sisa arsip berkurang.
+- Tab **Arsip kuota** mendapat kolom **Dipindah** dan **Tujuan pindah** (mis.
+  "12 soal → November_Freelance P11-03 (30/10/2026 08:00)"). Tab lama dilebarkan
+  otomatis sebelum ditulis. Proyek tujuan harus sudah ada di katalog bulan itu.
+- Tab kecil milik dashboard yang mendapat kolom baru kini dilebarkan dulu sebelum
+  judulnya ditulis, supaya Google tidak menolak penulisan di luar batas kolom.
+
 ## 3.18.0 — Arsip kuota untuk soal yang ditolak (29 Oktober 2026)
 
 - Pilihan ketiga untuk kuota soal yang ditolak (di form review dan Hentikan pengambilan):

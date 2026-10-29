@@ -1726,3 +1726,7 @@ small.pk-kabar{font-size:11px;margin-top:2px}
 .ak-jumlah input{width:76px}
 .ak-hangus{color:var(--bad)}
 .ak-ok{display:flex;align-items:center;gap:6px;margin:0;font-size:13px;color:var(--good)}
+.ak-pindah{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 12px;padding:12px;border-radius:var(--r);background:var(--surface-2);border:1px solid var(--border)}
+.ak-pindah .ffield{flex:1 1 220px;min-width:0}
+.ak-pindah>small{flex-basis:100%}
+.ak-pindah>.ak-aksi{flex-basis:100%}

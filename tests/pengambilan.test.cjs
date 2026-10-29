@@ -751,7 +751,7 @@ test("archive entries can be partly reopened to the catalogue or discarded, neve
   const tulis = [], proyek = [];
   const baris = ["AK-1", "Oktober_", "PU-01", "Penalaran Umum", "20", "5", "0", "PJ-1", "Ayu", "Mundur", "29/10/2026 10:00", "Nadia", "", ""];
   const m = await load("lib/arsipKuota.js", {
-    [full("tabSheet")]: { namaTab: (n) => n, bacaBaris: async () => [{ row: 2, v: baris }], tambahBaris: async () => {}, ubahBaris: async (tab, row, isi) => tulis.push([tab, row, isi]) },
+    [full("tabSheet")]: { namaTab: (n) => n, bacaBaris: async () => [{ row: 2, v: baris }], tambahBaris: async () => {}, ubahBaris: async (tab, row, isi) => tulis.push([tab, row, isi]), pastikanTab: async () => {} },
     [full("juli")]: { getBoard: async () => ({ projects: [{ id: "PU-01", row: 5, kebutuhan: 80 }] }), updateProject: async (row, data, bulan) => proyek.push([row, data, bulan]) },
     [full("akun")]: { waktuWib: () => "29/10/2026 11:00" },
   });
@@ -764,4 +764,43 @@ test("archive entries can be partly reopened to the catalogue or discarded, neve
   await m.aturArsip("AK-1", { aksi: "hangus", jumlah: 5 }, "Nadia");
   assert.equal(proyek.length, 1, "discarding does not touch the catalogue");
   assert.equal(tulis[1][2][6], 5);
+});
+
+test("archived questions can move to a project in another month's catalogue, with the destination recorded", async () => {
+  const full = (name) => path.join(root, "lib", name + ".js");
+  const tulis = [], proyek = [], lebar = [];
+  const baris = ["AK-1", "Oktober_", "PU-01", "Penalaran Umum", "20", "0", "0", "PJ-1", "Ayu", "Mundur", "29/10/2026 10:00", "Nadia", "", ""];
+  const m = await load("lib/arsipKuota.js", {
+    [full("tabSheet")]: { namaTab: (n) => n, bacaBaris: async () => [{ row: 2, v: baris }], tambahBaris: async () => {}, ubahBaris: async (tab, row, isi) => tulis.push([tab, row, isi]), pastikanTab: async (tab, h, o) => lebar.push([tab, h.length, o]) },
+    [full("juli")]: { getBoard: async (bulan) => ({ tab: bulan, projects: bulan === "November_" ? [{ id: "P11-03", row: 9, kebutuhan: 30 }] : [{ id: "PU-01", row: 5, kebutuhan: 80 }] }), updateProject: async (row, data, bulan) => proyek.push([row, data, bulan]) },
+    [full("akun")]: { waktuWib: () => "30/10/2026 08:00" },
+  });
+  await assert.rejects(m.aturArsip("AK-1", { aksi: "pindah", jumlah: 5, bulanTujuan: "November_", idProyekTujuan: "P11-99" }, "Nadia"), /tidak ditemukan di katalog November_/);
+  await assert.rejects(m.aturArsip("AK-1", { aksi: "pindah", jumlah: 5, bulanTujuan: "Oktober_", idProyekTujuan: "PU-01" }, "Nadia"), /Buka ke katalog/);
+  assert.equal(proyek.length, 0, "nothing written when the destination is invalid");
+  await m.aturArsip("AK-1", { aksi: "pindah", jumlah: 12, bulanTujuan: "November_", idProyekTujuan: "p11-03" }, "Nadia");
+  assert.deepEqual(JSON.parse(JSON.stringify(proyek[0])), [9, { kebutuhan: 42 }, "November_"]);
+  assert.equal(lebar[0][1], 16); assert.equal(lebar[0][2].cekJudul, true, "older 14-column tabs are widened before writing");
+  assert.equal(tulis[0][2][14], 12);
+  assert.equal(tulis[0][2][15], "12 soal → November_ P11-03 (30/10/2026 08:00)");
+  baris[14] = "12";
+  const [a] = await m.bacaArsip();
+  assert.equal(a.sisa, 8, "moved questions leave the archive");
+});
+
+test("a dashboard tab created with fewer columns is widened before its new headers are written", async () => {
+  const full = (name) => path.join(root, "lib", name + ".js");
+  const struktur = [], tulis = [];
+  const lama = ["ID", "Bulan", "ID proyek"];
+  const m = await load("lib/tabSheet.js", {
+    [full("gauth")]: {
+      SHEET_IDS: { master: "isolated-test" }, authParams: async () => ({ write: true }),
+      sheetMeta: async () => [{ title: "Arsip kuota", sheetId: 7, kolom: 3 }],
+      batchRead: async () => [[lama]], batchWrite: async (id, data) => tulis.push(data), appendRows: async () => {},
+      structuralUpdate: async (id, req) => struktur.push(req),
+    },
+  });
+  await m.pastikanTab("Arsip kuota", [...lama, "Dipindah", "Tujuan pindah"], { cekJudul: true });
+  assert.deepEqual(JSON.parse(JSON.stringify(struktur)), [[{ appendDimension: { sheetId: 7, dimension: "COLUMNS", length: 2 } }]]);
+  assert.equal(tulis[0][0].values[0].length, 5, "full header written after widening");
 });

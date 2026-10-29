@@ -682,7 +682,7 @@ export default function AdminBoard({ initial, brand = "Cerebrum", peringatanPass
               />
             )}
             {tab === "katalog" && akademik ? (
-              <ArsipKuota arsip={pengerjaan?.arsip || []} bisa={Boolean(pengerjaan?.canWrite)} namaBulan={namaBulan} setErr={setErr} onBerubah={() => Promise.all([muatPengerjaan(true), refresh(true)])} />
+              <ArsipKuota arsip={pengerjaan?.arsip || []} bisa={Boolean(pengerjaan?.canWrite)} namaBulan={namaBulan} months={months} setErr={setErr} onBerubah={() => Promise.all([muatPengerjaan(true), refresh(true)])} />
             ) : null}
             {tab === "katalog" && (
               <KatalogTable

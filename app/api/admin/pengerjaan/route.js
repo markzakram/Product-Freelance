@@ -69,8 +69,8 @@ export async function POST(req) {
           ok: true,
           hasil: await hentikan(body.id, { setuju: body.setuju, tolak: body.tolak, tujuanTolak: body.tujuanTolak, alasan: body.alasan }, sesi.nama),
         });
-      case "arsip": // Katalog → Kuota diarsipkan: buka ke katalog / hanguskan
-        return NextResponse.json({ ok: true, hasil: await aturArsip(body.id, { aksi: body.aksi, jumlah: body.jumlah }, sesi.nama) });
+      case "arsip": // Katalog → Kuota diarsipkan: buka ke katalog / pindah ke bulan lain / hanguskan
+        return NextResponse.json({ ok: true, hasil: await aturArsip(body.id, { aksi: body.aksi, jumlah: body.jumlah, bulanTujuan: body.bulanTujuan, idProyekTujuan: body.idProyekTujuan }, sesi.nama) });
       case "denda":
         return NextResponse.json({ ok: true, hasil: await terapkanDenda(body.id, sesi.nama) });
       case "deadline":
