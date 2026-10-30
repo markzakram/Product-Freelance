@@ -12,6 +12,17 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.20.0 — Mode gelap "Grafit" untuk dashboard admin (30 Oktober 2026)
+
+- Palet gelap admin diganti dari nuansa ungu menjadi **Grafit**: latar hitam netral
+  (#0D0F13), permukaan #15181E, garis abu, teks putih keabuan. Indigo merek tetap jadi
+  satu-satunya aksen kuat (tombol, tab aktif, langkah berikutnya).
+- Warna status (hijau/kuning/merah) dibuat lebih kalem supaya tidak menyala di latar gelap.
+- Kartu peringatan (Perlu tindakan, Lewat tenggat, Butuh guru) di mode gelap kini berlatar
+  netral dengan garis tepi dan strip kiri berwarna, bukan latar kuning/merah yang keruh.
+- Warna bilah status HP/PWA untuk tema gelap mengikuti palet baru. Mode terang dan
+  halaman guru (/open) tidak berubah.
+
 ## 3.19.1 — Rekap fee: masih dikerjakan & rincian tarif (30 Oktober 2026)
 
 - Sheet **Rekap fee** mendapat kolom **MASIH DIKERJAKAN** (soal di baris Running/QC/Revisi,

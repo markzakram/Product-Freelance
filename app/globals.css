@@ -27,22 +27,24 @@
   --font:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
   --mono:'JetBrains Mono',ui-monospace,'SFMono-Regular',Consolas,monospace;
 }
+/* Gelap "Grafit" (v3.20.0): hitam netral, garis abu, status kalem; indigo tetap
+   satu-satunya aksen kuat (sebelumnya seluruh permukaan bernuansa ungu). */
 [data-theme="dark"]{
   color-scheme:dark;
-  --bg:#0E0B1A;
-  --surface:#16122B; --surface-2:#1B1633; --surface-inset:#211B3D;
-  --border:#2A2447; --border-soft:#241E40; --line:#211B3B; --border-strong:#3A3360;
-  --text:#EEEBFA; --text-2:#D3CDEA; --text-muted:#AAA3C6; --text-faint:#958EB4;
-  --accent:#6B47FF; --accent-hover:#7B5BFF; --accent-strong:#B9A6FF; --on-accent:#FFFFFF;
-  --accent-weak:rgba(139,107,255,.14); --accent-weak-2:rgba(139,107,255,.2); --accent-weak-bd:rgba(139,107,255,.38);
-  --violet:#B77BFF; --violet-text:#C9A2FF;
-  --ink:#EEEBFA; --on-ink:#16122B;
-  --good:#4ADE9B; --good-weak:rgba(74,222,155,.13);
-  --warn:#F5B94A; --warn-weak:rgba(245,185,74,.13);
-  --bad:#FF8AA0; --bad-weak:rgba(255,122,147,.13); --bad-solid:#FF6B87;
-  --mark:rgba(255,214,102,.35);
-  --scrim:rgba(4,3,10,.6);
-  --ring:0 0 0 4px rgba(139,107,255,.28);
+  --bg:#0D0F13;
+  --surface:#15181E; --surface-2:#1A1D24; --surface-inset:#1F232B;
+  --border:#272C35; --border-soft:#21252D; --line:#1D2128; --border-strong:#363C47;
+  --text:#E7E9EE; --text-2:#C7CBD4; --text-muted:#9AA1AE; --text-faint:#878E9C;
+  --accent:#6E5CFF; --accent-hover:#8071FF; --accent-strong:#B0A7FF; --on-accent:#FFFFFF;
+  --accent-weak:rgba(122,108,255,.12); --accent-weak-2:rgba(122,108,255,.18); --accent-weak-bd:rgba(122,108,255,.34);
+  --violet:#B18CFF; --violet-text:#C4A8FF;
+  --ink:#E7E9EE; --on-ink:#15181E;
+  --good:#5CC99A; --good-weak:rgba(92,201,154,.12);
+  --warn:#E6B45E; --warn-weak:rgba(230,180,94,.12);
+  --bad:#F08A9B; --bad-weak:rgba(240,138,155,.12); --bad-solid:#E3687E;
+  --mark:rgba(230,180,94,.28);
+  --scrim:rgba(0,0,0,.6);
+  --ring:0 0 0 4px rgba(122,108,255,.25);
   --shadow-sm:0 1px 2px rgba(0,0,0,.4);
   --shadow:0 16px 32px -14px rgba(0,0,0,.6);
   --shadow-lg:0 30px 60px -18px rgba(0,0,0,.7);
@@ -1730,3 +1732,7 @@ small.pk-kabar{font-size:11px;margin-top:2px}
 .ak-pindah .ffield{flex:1 1 220px;min-width:0}
 .ak-pindah>small{flex-basis:100%}
 .ak-pindah>.ak-aksi{flex-basis:100%}
+
+/* ---- v3.20.0: mode gelap Grafit — kartu peringatan tanpa latar keruh ------------ */
+[data-theme="dark"] .pk-k.alert{background:var(--surface);border-color:color-mix(in srgb,var(--warn) 55%,var(--border));box-shadow:inset 3px 0 0 var(--warn)}
+[data-theme="dark"] .pk-k.bad{background:var(--surface);border-color:color-mix(in srgb,var(--bad) 55%,var(--border));box-shadow:inset 3px 0 0 var(--bad)}
