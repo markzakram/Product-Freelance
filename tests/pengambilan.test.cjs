@@ -835,3 +835,32 @@ test("an already-decided rejection can be redirected, e.g. reopened questions mo
   assert.ok(!store.log.some(([jenis]) => jenis === "proyek"));
   assert.equal(store.arsip.length, 2);
 });
+
+test("fee recap for CLO counts taken packages, accepted and rejected questions and payable fee per teacher", async () => {
+  const m = await load("lib/laporanPengambilan.js");
+  const rows = [
+    { guru: "Adinda", idGuru: "7", idProject: "P10-14", subtes: "PBM", jumlah: 15, status: "Approved", fee: 150000 },
+    { guru: "Adinda", idGuru: "7", idProject: "P10-14", subtes: "PBM", jumlah: 5, status: "Cancel", fee: 0 },
+    { guru: "Adinda", idGuru: "7", idProject: "P10-15", subtes: "PPU", jumlah: 40, status: "Paid", fee: 400000 },
+    { guru: "Adinda", idGuru: "7", idProject: "P10-16", subtes: "TIU", jumlah: 5, status: "Running Soal", fee: 50000 },
+    { guru: "Bima", idGuru: "8", idProject: "P10-14", subtes: "PBM", jumlah: 0, status: "Cancel", fee: 0 },
+    { guru: "Bima", idGuru: "8", idProject: "P10-14", subtes: "PBM", jumlah: 20, status: "Cancel", fee: 0 },
+  ];
+  const r = JSON.parse(JSON.stringify(m.susunRekapFee(rows, { aturan: { "P10-14": { isiPaket: 20 }, "P10-15": { isiPaket: 20 } } })));
+  assert.deepEqual(r.map((g) => g.nama), ["Adinda", "Bima"]);
+  assert.equal(r[0].paket, "P10-14 · PBM: 1 paket (20 soal)\nP10-15 · PPU: 2 paket (40 soal)\nP10-16 · TIU: 5 soal");
+  assert.deepEqual([r[0].diterima, r[0].ditolak, r[0].fee], [55, 5, 550000], "running work is not yet accepted or payable");
+  assert.deepEqual([r[1].diterima, r[1].ditolak, r[1].fee], [0, 20, 0]);
+
+  const ExcelJS = require("exceljs");
+  const buf = await m.bukuLaporan(m.susunLaporan(rows, {}), { judul: "LAPORAN", namaTab: "Pengambilan Oktober", rekap: r, judulRekap: "REKAP FEE" }, ExcelJS);
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(buf);
+  assert.deepEqual(wb.worksheets.map((w) => w.name), ["Pengambilan Oktober", "Rekap fee"]);
+  // Isi baris lewat array tidak terbaca lintas konteks vm; judul & baris total ditulis per sel.
+  const ws = wb.getWorksheet("Rekap fee");
+  assert.equal(ws.getCell("A1").value, "REKAP FEE");
+  assert.equal(ws.getCell("A5").value, "TOTAL · 2 guru");
+  assert.deepEqual([ws.getCell("D5").value, ws.getCell("E5").value, ws.getCell("F5").value], [55, 25, 550000], "totals: accepted, rejected, payable fee");
+  assert.match(String(ws.getCell("A6").value), /Running\/QC|dikerjakan/);
+});

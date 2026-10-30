@@ -74,11 +74,12 @@ const pesanWa = (p, jenis) => {
   }
 };
 
-// Ke mana kuota soal yang ditolak: [nilai, label, ringkasan untuk konfirmasi]
+// Ke mana kuota soal yang ditolak (v3.19.0: dua pilihan, bawaan arsip):
+// [nilai, label, ringkasan untuk konfirmasi]. Menghanguskan dilakukan nanti
+// dari Katalog → Kuota diarsipkan.
 const TUJUAN_TOLAK = [
-  ["buka", "Buka lagi ke katalog (bisa diambil guru lain)", "kuota dibuka lagi"],
-  ["arsip", "Arsipkan dulu — tidak tampil di katalog; tim akademik memutuskan nanti di Katalog → Kuota diarsipkan", "diarsipkan"],
-  ["hangus", "Tidak dibuka (kebutuhan dikurangi permanen)", "kebutuhan dikurangi"],
+  ["arsip", "Kembali ke akademik (arsip) — belum tampil di katalog; tim akademik memutuskan nanti di Katalog → Kuota diarsipkan", "kembali ke akademik (arsip)"],
+  ["buka", "Kembali ke publik — langsung dibuka lagi di katalog bulan ini", "kembali ke publik (katalog)"],
 ];
 
 function PilihTujuanTolak({ n, label, nilai, onPilih }) {
@@ -97,7 +98,7 @@ function PilihTujuanTolak({ n, label, nilai, onPilih }) {
 /** Form review satu pengumpulan: jumlah disetujui + revisi + reject harus pas. */
 function FormReview({ p, onKirim, onBatal, sibuk }) {
   const n = belumSelesai(p);
-  const [v, setV] = useState({ setuju: n, revisi: 0, tolak: 0, tujuanTolak: "buka", catatan: "" });
+  const [v, setV] = useState({ setuju: n, revisi: 0, tolak: 0, tujuanTolak: "arsip", catatan: "" });
   // Catatan hanya wajib bila ada soal revisi; selain itu disembunyikan sampai diminta.
   const [tambahCatatan, setTambahCatatan] = useState(false);
   const perluCatatan = +v.revisi > 0;
@@ -183,7 +184,7 @@ function FormReview({ p, onKirim, onBatal, sibuk }) {
  */
 function FormHentikan({ p, onKirim, onBatal, sibuk }) {
   const n = belumSelesai(p);
-  const [v, setV] = useState({ setuju: 0, tolak: n, tujuanTolak: "buka", alasan: "" });
+  const [v, setV] = useState({ setuju: 0, tolak: n, tujuanTolak: "arsip", alasan: "" });
   const pas = (+v.setuju || 0) + (+v.tolak || 0) === n;
   const angka = (k, label, kelas) => (
     <label className={"rv-angka " + kelas}>

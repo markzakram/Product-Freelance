@@ -12,6 +12,21 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.19.0 — Penolakan bawaan ke arsip & sheet Rekap fee untuk CLO (30 Oktober 2026)
+
+- Kuota soal yang ditolak (form review dan Hentikan pengambilan) kini cukup **dua pilihan**,
+  dengan bawaan **Kembali ke akademik (arsip)**: belum tampil di katalog, tim akademik
+  memutuskan nanti di Katalog → Kuota diarsipkan (buka, pindah bulan, atau hanguskan).
+  Pilihan lain: **Kembali ke publik** — langsung dibuka lagi di katalog bulan ini.
+  Opsi "tidak dibuka/hangus" tidak lagi ditawarkan saat menolak; menghanguskan dilakukan
+  dari arsip. Ubah tujuan kuota juga memakai dua pilihan ini.
+- **Laporan Excel** di Log pengambilan mendapat sheet kedua **Rekap fee** untuk tim CLO:
+  NO · NAMA GURU · PAKET YANG DIAMBIL · SOAL DITERIMA · SOAL DITOLAK · FEE DIBAYARKAN,
+  plus baris total. Paket yang diambil = semua baris proyek itu per guru (mis.
+  "P10-14 · PBM: 1 paket (20 soal)"); soal diterima & fee = baris Approved/Paid; soal
+  ditolak = baris Cancel. Soal yang masih dikerjakan/QC/revisi belum dihitung. Kedua
+  sheet mengikuti saringan yang sedang aktif.
+
 ## 3.18.2 — Ubah tujuan kuota soal yang sudah ditolak (30 Oktober 2026)
 
 - Panel **Detail pengambilan → Tindakan lain** menampilkan ringkasan kuota soal ditolak

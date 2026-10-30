@@ -48,7 +48,7 @@ import { MODE_DEMO } from "@/lib/demo";
 import { ST as ST_PJ, hitungMundur, laporanBaru, labelH, tanggalPendek } from "@/lib/pengerjaanOpsi";
 import { isiPaket, rincianPaket, ISI_MIN, ISI_MAKS, TIPE_PROYEK } from "@/lib/paket";
 import { barisRekap, bankDanRekening, judulRekap, unduhExcel, salinRekap } from "@/lib/rekapFee";
-import { susunLaporan, unduhLaporan } from "@/lib/laporanPengambilan";
+import { susunLaporan, susunRekapFee, unduhLaporan } from "@/lib/laporanPengambilan";
 
 const STATUS_KNOWN = ["Running Soal", "QC Soal", "Revisi Soal", "Approved", "Running Video", STATUS_BATAL];
 const SEMUA = "Semua";
@@ -1571,7 +1571,8 @@ function ProjectModal({ mode, draft, onDraft, onPilih, onSave, onCancel, busy, m
 const BLANK_A = { tanggal: "", idProject: "", guru: "", idGuru: "", subtes: "", jumlah: "", status: "", picSoal: "", picVideo: "", tarif: "", ketTarif: "" };
 
 function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, master, aksiEl, namaBulan, aturan = {}, pengerjaan = [], filterAktif = false }) {
-  // Laporan Excel per guru (yang diambil, paket, soal, total) dari baris yang sedang tampil.
+  // Laporan Excel per guru (yang diambil, paket, soal, total) dari baris yang sedang tampil,
+  // + sheet "Rekap fee" untuk tim CLO (paket, soal diterima/ditolak, fee dibayarkan).
   const [buatLaporan, setBuatLaporan] = useState(false);
   const unduhLaporanExcel = async () => {
     setBuatLaporan(true);
@@ -1586,6 +1587,8 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, m
       await unduhLaporan(grup, {
         judul: `LAPORAN PENGAMBILAN FREELANCE ${String(namaBulan || "").toUpperCase()} ${th}${sebagian.toUpperCase()}`,
         namaTab: `Pengambilan ${namaBulan || ""}`.trim(),
+        rekap: susunRekapFee(rows, { projects, aturan, pengerjaan }),
+        judulRekap: `REKAP FEE FREELANCE ${String(namaBulan || "").toUpperCase()} ${th}${sebagian.toUpperCase()}`,
         namaFile: `Laporan Pengambilan Freelance ${namaBulan || ""} ${th}${sebagian}.xlsx`,
       });
     } catch (e) {
@@ -1635,7 +1638,7 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, m
           className="btn btn-ghost"
           disabled={buatLaporan || !rows.length}
           onClick={unduhLaporanExcel}
-          title="Unduh Excel per guru: yang diambil, jumlah paket, soal per paket, total soal, total semua (dari baris yang sedang tampil, tanpa baris Cancel)"
+          title="Unduh Excel dari baris yang sedang tampil — sheet 1: per guru yang diambil, paket, soal, total (tanpa Cancel); sheet 2 Rekap fee untuk CLO: paket diambil, soal diterima/ditolak, fee dibayarkan"
         >
           <Icon name="download" />
           {buatLaporan ? "Menyusun…" : "Laporan Excel"}
