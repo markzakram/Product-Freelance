@@ -839,18 +839,24 @@ test("an already-decided rejection can be redirected, e.g. reopened questions mo
 test("fee recap for CLO counts taken packages, accepted and rejected questions and payable fee per teacher", async () => {
   const m = await load("lib/laporanPengambilan.js");
   const rows = [
-    { guru: "Adinda", idGuru: "7", idProject: "P10-14", subtes: "PBM", jumlah: 15, status: "Approved", fee: 150000 },
+    { guru: "Adinda", idGuru: "7", idProject: "P10-14", subtes: "PBM", jumlah: 10, status: "Approved", fee: 100000 },
+    { guru: "Adinda", idGuru: "7", idProject: "P10-14", subtes: "PBM", jumlah: 5, status: "Approved", fee: 37500, tarif: 7500, ketTarif: "Potongan 25% · revisi lewat batas · PJ-MV9FK696-F99C" },
     { guru: "Adinda", idGuru: "7", idProject: "P10-14", subtes: "PBM", jumlah: 5, status: "Cancel", fee: 0 },
     { guru: "Adinda", idGuru: "7", idProject: "P10-15", subtes: "PPU", jumlah: 40, status: "Paid", fee: 400000 },
     { guru: "Adinda", idGuru: "7", idProject: "P10-16", subtes: "TIU", jumlah: 5, status: "Running Soal", fee: 50000 },
     { guru: "Bima", idGuru: "8", idProject: "P10-14", subtes: "PBM", jumlah: 0, status: "Cancel", fee: 0 },
     { guru: "Bima", idGuru: "8", idProject: "P10-14", subtes: "PBM", jumlah: 20, status: "Cancel", fee: 0 },
   ];
-  const r = JSON.parse(JSON.stringify(m.susunRekapFee(rows, { aturan: { "P10-14": { isiPaket: 20 }, "P10-15": { isiPaket: 20 } } })));
+  const projects = [{ id: "P10-14", harga: 10000 }, { id: "P10-15", harga: 10000 }, { id: "P10-16", harga: 10000 }];
+  const r = JSON.parse(JSON.stringify(m.susunRekapFee(rows, { projects, aturan: { "P10-14": { isiPaket: 20 }, "P10-15": { isiPaket: 20 } } })));
   assert.deepEqual(r.map((g) => g.nama), ["Adinda", "Bima"]);
   assert.equal(r[0].paket, "P10-14 · PBM: 1 paket (20 soal)\nP10-15 · PPU: 2 paket (40 soal)\nP10-16 · TIU: 5 soal");
-  assert.deepEqual([r[0].diterima, r[0].ditolak, r[0].fee], [55, 5, 550000], "running work is not yet accepted or payable");
-  assert.deepEqual([r[1].diterima, r[1].ditolak, r[1].fee], [0, 20, 0]);
+  assert.deepEqual([r[0].diterima, r[0].ditolak, r[0].dikerjakan, r[0].fee], [55, 5, 5, 537500], "running work is shown separately, not yet payable");
+  assert.equal(r[0].rincian, "P10-14: 10 soal × Rp10.000 = Rp100.000\nP10-14: 5 soal × Rp7.500 = Rp37.500 (Potongan 25% · revisi lewat batas)\nP10-15: 40 soal × Rp10.000 = Rp400.000", "full-price and cut questions are listed separately");
+  assert.equal(r[0].potongan, 12500);
+  assert.deepEqual([r[1].diterima, r[1].ditolak, r[1].dikerjakan, r[1].fee], [0, 20, 0, 0]);
+  const tanpaKet = JSON.parse(JSON.stringify(m.susunRekapFee([{ guru: "C", idProject: "P10-14", jumlah: 4, status: "Approved", fee: 32000 }], { projects })));
+  assert.equal(tanpaKet[0].rincian, "P10-14: 4 soal × Rp8.000 = Rp32.000 (potongan 20%)", "a cut without a note still shows its percentage");
 
   const ExcelJS = require("exceljs");
   const buf = await m.bukuLaporan(m.susunLaporan(rows, {}), { judul: "LAPORAN", namaTab: "Pengambilan Oktober", rekap: r, judulRekap: "REKAP FEE" }, ExcelJS);
@@ -861,6 +867,7 @@ test("fee recap for CLO counts taken packages, accepted and rejected questions a
   const ws = wb.getWorksheet("Rekap fee");
   assert.equal(ws.getCell("A1").value, "REKAP FEE");
   assert.equal(ws.getCell("A5").value, "TOTAL · 2 guru");
-  assert.deepEqual([ws.getCell("D5").value, ws.getCell("E5").value, ws.getCell("F5").value], [55, 25, 550000], "totals: accepted, rejected, payable fee");
-  assert.match(String(ws.getCell("A6").value), /Running\/QC|dikerjakan/);
+  assert.deepEqual([ws.getCell("D5").value, ws.getCell("E5").value, ws.getCell("F5").value, ws.getCell("H5").value], [55, 25, 5, 537500], "totals: accepted, rejected, in progress, payable fee");
+  assert.equal(ws.getCell("G5").value, "Total potongan tarif: Rp12.500");
+  assert.match(String(ws.getCell("A6").value), /Masih dikerjakan/);
 });

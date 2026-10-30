@@ -12,6 +12,16 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.19.1 — Rekap fee: masih dikerjakan & rincian tarif (30 Oktober 2026)
+
+- Sheet **Rekap fee** mendapat kolom **MASIH DIKERJAKAN** (soal di baris Running/QC/Revisi,
+  belum dibayar) dan **RINCIAN FEE**: soal diterima dikelompokkan per proyek dan tarif,
+  mis. "P10-14: 10 soal × Rp10.000 = Rp100.000" lalu "P10-14: 5 soal × Rp7.500 = Rp37.500
+  (Potongan 25% · revisi lewat batas)". Tarif di bawah harga katalog ditandai persen
+  potongannya beserta Ket. Tarif dari Log (revisi lewat batas, denda, dll.).
+- Baris total menampilkan **total potongan tarif** (selisih dari harga katalog) di samping
+  total fee yang dibayarkan.
+
 ## 3.19.0 — Penolakan bawaan ke arsip & sheet Rekap fee untuk CLO (30 Oktober 2026)
 
 - Kuota soal yang ditolak (form review dan Hentikan pengambilan) kini cukup **dua pilihan**,

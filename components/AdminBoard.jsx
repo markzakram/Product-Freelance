@@ -1638,7 +1638,7 @@ function LogTable({ rows, projects, teachers, opts, stat, run, busy, readOnly, m
           className="btn btn-ghost"
           disabled={buatLaporan || !rows.length}
           onClick={unduhLaporanExcel}
-          title="Unduh Excel dari baris yang sedang tampil — sheet 1: per guru yang diambil, paket, soal, total (tanpa Cancel); sheet 2 Rekap fee untuk CLO: paket diambil, soal diterima/ditolak, fee dibayarkan"
+          title="Unduh Excel dari baris yang sedang tampil — sheet 1: per guru yang diambil, paket, soal, total (tanpa Cancel); sheet 2 Rekap fee untuk CLO: paket diambil, soal diterima/ditolak/masih dikerjakan, rincian fee per tarif, fee dibayarkan"
         >
           <Icon name="download" />
           {buatLaporan ? "Menyusun…" : "Laporan Excel"}
