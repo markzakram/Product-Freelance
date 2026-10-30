@@ -290,6 +290,58 @@ function FormUbahTolak({ p, diarsipkan = 0, onKirim, onBatal, sibuk }) {
   );
 }
 
+/**
+ * Koreksi hasil akhir pengambilan yang sudah Selesai: jumlah diterima (tarif penuh /
+ * potongan 25%) dan ditolak ditetapkan ulang. Server menyesuaikan log, katalog, arsip.
+ */
+function FormKoreksi({ p, onKirim, onBatal, sibuk }) {
+  const tolakLama = (p.tolakBuka || 0) + (p.tolakHangus || 0);
+  const adaTelat = (p.telat || 0) > 0;
+  const [v, setV] = useState({ tepat: p.tepat || 0, telat: p.telat || 0, tolak: tolakLama, tujuanTolak: "arsip", alasan: "" });
+  const total = (+v.tepat || 0) + (+v.telat || 0) + (+v.tolak || 0);
+  const pas = total === p.jumlah;
+  const dA = (+v.tepat || 0) + (+v.telat || 0) - ((p.tepat || 0) + (p.telat || 0));
+  const berubah = (+v.tepat || 0) !== (p.tepat || 0) || (+v.telat || 0) !== (p.telat || 0);
+  const angka = (k, label, kelas) => (
+    <label className={"rv-angka " + kelas}>
+      <span>{label}</span>
+      <input className="input sm" type="number" min={0} max={p.jumlah} value={v[k]} onChange={(e) => setV((x) => ({ ...x, [k]: e.target.value === "" ? "" : Math.max(0, parseInt(e.target.value, 10) || 0) }))} />
+    </label>
+  );
+  const kirim = () => {
+    const pesan = `Koreksi hasil akhir ${p.subtes} (${p.idProyek}) — ${p.nama || p.email}?\n\nSebelum: ${(p.tepat || 0) + (p.telat || 0)} diterima, ${tolakLama} ditolak\nSesudah: ${(+v.tepat || 0) + (+v.telat || 0)} diterima${adaTelat ? ` (${+v.telat || 0} dengan potongan 25%)` : ""}, ${+v.tolak || 0} ditolak\n\nBaris log, kuota katalog, dan arsip ikut disesuaikan; CLO akan mendapat tugas kabar baru.`;
+    if (window.confirm(pesan)) onKirim({ tepat: +v.tepat || 0, telat: +v.telat || 0, tolak: +v.tolak || 0, tujuanTolak: v.tujuanTolak, alasan: v.alasan.trim() });
+  };
+  return (
+    <div className="pj-tolak pj-koreksi">
+      <b className="rv-judul">Koreksi hasil akhir · {numberID(p.jumlah)} soal</b>
+      <p className="muted">
+        Sekarang: {numberID((p.tepat || 0) + (p.telat || 0))} diterima{adaTelat ? ` (${numberID(p.telat)} dengan potongan 25%)` : ""}, {numberID(tolakLama)} ditolak.
+      </p>
+      <div className="rv-baris">
+        {angka("tepat", adaTelat ? "Diterima (tarif penuh)" : "Diterima", "appr")}
+        {adaTelat ? angka("telat", "Diterima (potongan 25%)", "qc") : null}
+        {angka("tolak", "Ditolak", "rev")}
+      </div>
+      {!pas ? <small className="neg">Jumlahnya {numberID(total)} — harus pas {numberID(p.jumlah)} soal.</small> : null}
+      {pas && dA > 0 ? <small className="muted">{numberID(dA)} soal ditolak akan jadi diterima — diambil dari arsip pengambilan ini dulu, lalu yang hangus, lalu yang dibuka lagi di katalog (selama belum diambil guru lain).</small> : null}
+      {pas && dA < 0 ? <PilihTujuanTolak n={-dA} label="yang jadi ditolak" nilai={v.tujuanTolak} onPilih={(t) => setV((x) => ({ ...x, tujuanTolak: t }))} /> : null}
+      <label className="ffield">
+        <span>Alasan koreksi (wajib — ikut di kabar ke guru)</span>
+        <textarea className="input" rows={2} value={v.alasan} maxLength={500} onChange={(e) => setV((x) => ({ ...x, alasan: e.target.value }))} placeholder="mis. salah input — 10 soal lagi ternyata sudah benar" />
+      </label>
+      <div className="pj-aksi">
+        <button type="button" className="btn btn-ghost sm" onClick={onBatal}>
+          Batal
+        </button>
+        <button type="button" className="btn btn-blue sm" disabled={!pas || !berubah || sibuk || !v.alasan.trim()} onClick={kirim}>
+          Simpan koreksi
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function PengerjaanPanel(props) {
-  return <PengambilanWorkspace {...props} FormReview={FormReview} FormHentikan={FormHentikan} FormUbahTolak={FormUbahTolak} pesanWa={pesanWa} />;
+  return <PengambilanWorkspace {...props} FormReview={FormReview} FormHentikan={FormHentikan} FormUbahTolak={FormUbahTolak} FormKoreksi={FormKoreksi} pesanWa={pesanWa} />;
 }

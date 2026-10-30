@@ -332,7 +332,7 @@ async function system(legacy = {}) {
   class Clock extends Date { static now() { return store.at; } }
   const waktu = () => { const d = new Date(store.at + 7 * 3600000).toISOString(); return `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)} ${d.slice(11, 16)}`; };
   const m = await load("lib/pengerjaan.js", {
-    [full("tabSheet")]: { namaTab: (name) => name, bacaBaris: async (tab) => (tab === "Arsip kuota" ? store.arsip.map((v, i) => ({ row: i + 2, v: v.map(String) })) : [{ row: 2, v: [...store.row] }]), tambahBaris: async (tab, header, rows) => { store.tambah.push([tab, rows]); if (tab === "Arsip kuota") store.arsip.push(...rows); }, ubahBaris: async () => { throw Error("Unexpected non-atomic write"); }, pastikanTab: async () => {}, kolomAkhir: () => "AR" },
+    [full("tabSheet")]: { namaTab: (name) => name, bacaBaris: async (tab) => (tab === "Arsip kuota" ? store.arsip.map((v, i) => ({ row: i + 2, v: v.map(String) })) : [{ row: 2, v: [...store.row] }]), tambahBaris: async (tab, header, rows) => { store.tambah.push([tab, rows]); if (tab === "Arsip kuota") store.arsip.push(...rows); }, ubahBaris: async (tab, row, isi) => { if (tab !== "Arsip kuota") throw Error("Unexpected non-atomic write"); Object.entries(isi).forEach(([k, v]) => { store.arsip[row - 2][k] = v; }); }, pastikanTab: async () => {}, kolomAkhir: () => "AR" },
     [full("gauth")]: {
       SHEET_IDS: { master: "isolated-test" }, authParams: async () => ({ write: true }), batchRead: async () => [store.history], batchClear: async () => {},
       sheetMeta: async () => [{ title: "Pengerjaan", sheetId: 1 }, { title: "Riwayat pengerjaan", sheetId: 2 }],
@@ -347,7 +347,7 @@ async function system(legacy = {}) {
       },
     },
     [full("akun")]: { waktuWib: waktu, bacaPengaturan: async () => ({}), simpanPengaturan: async () => {} },
-    [full("juli")]: { getBoard: async () => ({ projects: [{ id: "PU-01", harga: 1000, row: 5, kebutuhan: 100, sisa: store.sisa ?? 50 }], assignments: [{ row: 10, idProject: "PU-01", idGuru: "1", guru: "Ayu" }, ...(store.barisTolak ? [{ row: 11, idProject: "PU-01", status: "Cancel", ketTarif: "Ditolak 15 soal (dibuka lagi 15, tidak dibuka/arsip 0) · PJ-1" }] : [])] }), updateAssignment: async (row, data) => { store.log.push(["ubah", row, data]); }, updateProject: async (row, data) => { store.log.push(["proyek", row, data]); }, createAssignment: async (data) => { store.log.push(["baru", data]); return { row: 11 }; }, deleteAssignment: async () => {} },
+    [full("juli")]: { getBoard: async () => ({ projects: [{ id: "PU-01", harga: 1000, row: 5, kebutuhan: 100, sisa: store.sisa ?? 50 }], assignments: [{ row: 10, idProject: "PU-01", idGuru: "1", guru: "Ayu", status: store.statusUtama || "" }, ...(store.barisTolak ? [{ row: 11, idProject: "PU-01", status: "Cancel", ketTarif: "Ditolak 15 soal (dibuka lagi 15, tidak dibuka/arsip 0) · PJ-1" }] : [])] }), updateAssignment: async (row, data) => { store.log.push(["ubah", row, data]); }, updateProject: async (row, data) => { store.log.push(["proyek", row, data]); }, createAssignment: async (data) => { store.log.push(["baru", data]); return { row: 11 }; }, deleteAssignment: async () => {} },
     [full("months")]: { getAllMonths: async () => ({ log: [] }) },
     [full("aturanProyek")]: { deadlineProyek: async () => "2026-10-25", bacaAturan: async () => new Map([["Oktober_:PU-01", {}]]), kunciAturan: (b, id) => `${b}:${id}`, titikDari: () => base.titik },
   }, { Date: Clock });
@@ -870,4 +870,39 @@ test("fee recap for CLO counts taken packages, accepted and rejected questions a
   assert.deepEqual([ws.getCell("D5").value, ws.getCell("E5").value, ws.getCell("F5").value, ws.getCell("H5").value], [55, 25, 5, 537500], "totals: accepted, rejected, in progress, payable fee");
   assert.equal(ws.getCell("G5").value, "Total potongan tarif: Rp12.500");
   assert.match(String(ws.getCell("A6").value), /Masih dikerjakan/);
+});
+
+test("a finished result can be corrected: rejected questions come back from the archive, accepted ones can go to the archive", async () => {
+  const { m, store, read } = await system();
+  await assert.rejects(m.koreksiHasilAkhir("PJ-1", { tepat: 10, tolak: 10, alasan: "x" }, "Nadia"), /sudah Selesai/);
+  await m.hentikan("PJ-1", { setuju: 5, tolak: 15, tujuanTolak: "arsip", alasan: "Mundur" }, "Nadia");
+  store.log = []; store.barisTolak = true;
+  await assert.rejects(m.koreksiHasilAkhir("PJ-1", { tepat: 10, tolak: 9, alasan: "Salah input" }, "Nadia"), /harus 20 soal/);
+  await assert.rejects(m.koreksiHasilAkhir("PJ-1", { tepat: 10, tolak: 10 }, "Nadia"), /alasan/);
+  await assert.rejects(m.koreksiHasilAkhir("PJ-1", { tepat: 5, tolak: 15, alasan: "Sama" }, "Nadia"), /Tidak ada yang berubah/);
+  store.statusUtama = "Paid";
+  await assert.rejects(m.koreksiHasilAkhir("PJ-1", { tepat: 10, tolak: 10, alasan: "Salah input" }, "Nadia"), /Paid/);
+  store.statusUtama = "Approved";
+
+  // ditolak → diterima: 5 soal ditarik dari arsip pengambilan ini
+  await m.koreksiHasilAkhir("PJ-1", { tepat: 10, tolak: 10, alasan: "Salah input" }, "Nadia");
+  let p = await read();
+  assert.deepEqual([p.tepat, p.telat, p.tolakBuka, p.tolakHangus], [10, 0, 0, 10]);
+  assert.equal(String(store.arsip[0][4]), "10", "archive shrinks by the questions now accepted");
+  assert.ok(store.log.some(([j, row, d]) => j === "proyek" && row === 5 && d.kebutuhan === 105), "catalogue need restored for the accepted questions");
+  assert.ok(store.log.some(([j, row, d]) => j === "ubah" && row === 10 && d.jumlah === 10 && d.status === "Approved"));
+  assert.ok(store.log.some(([j, row, d]) => j === "ubah" && row === 11 && d.jumlah === 10));
+  const pantau = await load("lib/pantauanOpsi.js");
+  const k = pantau.keputusanPengambilan(p)[0];
+  assert.equal(pantau.judulKeputusan(k), "Hasil akhir dikoreksi", "CLO gets a new result to announce");
+  assert.equal(k.meta.dihentikan, true, "a stopped assignment stays marked as stopped");
+  assert.match(pantau.pesanKabar(p, k), /kami koreksi[\s\S]*Alasan: Salah input[\s\S]*10 soal diterima, 10 soal ditolak/);
+
+  // diterima → ditolak: 6 soal masuk arsip, kebutuhan katalog dikurangi
+  store.log = [];
+  await m.koreksiHasilAkhir("PJ-1", { tepat: 4, tolak: 16, tujuanTolak: "arsip", alasan: "6 soal ternyata plagiat" }, "Nadia");
+  p = await read();
+  assert.deepEqual([p.tepat, p.tolakHangus], [4, 16]);
+  assert.ok(store.log.some(([j, row, d]) => j === "proyek" && d.kebutuhan === 94));
+  assert.equal(store.arsip.length, 2); assert.equal(String(store.arsip[1][4]), "6");
 });

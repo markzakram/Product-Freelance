@@ -14,7 +14,7 @@ export function judulAktivitas(e) {
     case "minta_revisi": return `Revisi ${e.versi} diminta · ${laporan}`;
     case "pengumpulan": return "Hasil akhir dikumpulkan";
     case "revisi_akhir": return `Revisi ${e.versi - 1} dikirim · Hasil akhir`;
-    case "review": return e.lama ? "Review terakhir yang tersimpan" : e.meta?.dihentikan ? "Pengambilan dihentikan" : e.meta?.revisi ? `Revisi ${e.versi || e.meta.ronde} diminta · Hasil akhir` : `Review ${e.meta?.ronde || ""} · selesai`;
+    case "review": return e.lama ? "Review terakhir yang tersimpan" : e.meta?.koreksi ? `Hasil akhir dikoreksi · ${e.meta.setuju} diterima, ${e.meta.tolak} ditolak` : e.meta?.dihentikan ? "Pengambilan dihentikan" : e.meta?.revisi ? `Revisi ${e.versi || e.meta.ronde} diminta · Hasil akhir` : `Review ${e.meta?.ronde || ""} · selesai`;
     case "acc": return "Pengajuan disetujui";
     case "tolak": return "Pengajuan ditolak";
     case "batal": return "Pengajuan dibatalkan";

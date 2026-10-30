@@ -12,6 +12,20 @@ pesan commit — supaya versi di layar, di berkas ini, dan di riwayat git selalu
 
 ---
 
+## 3.21.0 — Koreksi hasil akhir yang sudah Selesai (30 Oktober 2026)
+
+- Panel **Detail pengambilan → Tindakan lain** untuk pengambilan berstatus **Selesai**
+  (hasil review maupun dihentikan) kini punya **Koreksi hasil akhir**: tetapkan ulang
+  jumlah **diterima** (dan yang dipotong 25% bila ada) serta **ditolak**, dengan alasan
+  wajib dan konfirmasi.
+- Soal yang berubah dari ditolak → diterima diambil dari arsip pengambilan itu dulu, lalu
+  yang hangus, lalu yang dibuka lagi di katalog (ditolak bila sudah diambil guru lain).
+  Soal yang berubah dari diterima → ditolak masuk arsip (bawaan) atau dibuka ke publik.
+- Server menulis ulang baris log (Approved / potongan 25% / Cancel) seperti review akhir,
+  menyesuaikan kebutuhan katalog dan Arsip kuota, dan mencatat riwayat "Hasil akhir
+  dikoreksi". CLO mendapat tugas kabar baru dengan draf berisi alasan dan hasil terbaru.
+- Koreksi ditolak bila baris log sudah **Paid** (sudah dibayar) — ubah manual di Log.
+
 ## 3.20.0 — Mode gelap "Grafit" untuk dashboard admin (30 Oktober 2026)
 
 - Palet gelap admin diganti dari nuansa ungu menjadi **Grafit**: latar hitam netral

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { izinAdmin, bolehPeran } from "@/lib/authServer";
 import { canWrite } from "@/lib/gauth";
 import { getBoard } from "@/lib/juli";
-import { bacaPengerjaan, putuskan, maksAktif, aturMaksAktif, review, hentikan, ubahTujuanTolak, terapkanDenda, lengkapiTitik, tandaiProgresDicek, periksaProgres, catatKabarPengambilan } from "@/lib/pengerjaan";
+import { bacaPengerjaan, putuskan, maksAktif, aturMaksAktif, review, hentikan, ubahTujuanTolak, koreksiHasilAkhir, terapkanDenda, lengkapiTitik, tandaiProgresDicek, periksaProgres, catatKabarPengambilan } from "@/lib/pengerjaan";
 import { aturanBulan, aturDeadline, aturLapor, aturPaket, aturTipe, aturSemua } from "@/lib/aturanProyek";
 import { AKTIF } from "@/lib/pengerjaanOpsi";
 import { bacaAkun } from "@/lib/akun";
@@ -69,6 +69,8 @@ export async function POST(req) {
           ok: true,
           hasil: await hentikan(body.id, { setuju: body.setuju, tolak: body.tolak, tujuanTolak: body.tujuanTolak, alasan: body.alasan }, sesi.nama),
         });
+      case "koreksi": // Tindakan lain: koreksi jumlah diterima/ditolak pengambilan yang sudah Selesai
+        return NextResponse.json({ ok: true, hasil: await koreksiHasilAkhir(body.id, { tepat: body.tepat, telat: body.telat, tolak: body.tolak, tujuanTolak: body.tujuanTolak, alasan: body.alasan }, sesi.nama) });
       case "ubahTolak": // Tindakan lain: tujuan kuota soal yang sudah ditolak diubah (mis. ke arsip)
         return NextResponse.json({ ok: true, hasil: await ubahTujuanTolak(body.id, { dari: body.dari, ke: body.ke, jumlah: body.jumlah, alasan: body.alasan }, sesi.nama) });
       case "arsip": // Katalog → Kuota diarsipkan: buka ke katalog / pindah ke bulan lain / hanguskan
